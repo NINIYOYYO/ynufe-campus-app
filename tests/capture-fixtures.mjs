@@ -102,6 +102,23 @@ for (const [name, endpoint, body] of TARGETS) {
     }
 }
 
+// 公告详情页地址带 ggid，需从公告列表里现取一条，无法写死在 TARGETS 中
+try {
+    const listHtml = readFileSync(join(OUT, 'announcements.html'), 'utf-8');
+    const m = listHtml.match(/openWindow\(\s*['"]([^'"]*ggly_show[^'"]*)['"]/);
+    if (m) {
+        let html = await fetchPage(m[1]);
+        for (const [from, to] of REDACTIONS) html = html.split(from).join(to);
+        writeFileSync(join(OUT, 'announcement_detail.html'), html, 'utf-8');
+        console.log(`  ✓ ${'announcement_detail'.padEnd(16)} ${String(html.length).padStart(7)} chars`);
+    } else {
+        console.warn('  ! 公告列表中未找到 ggly_show 链接，跳过详情页 fixture');
+    }
+} catch (e) {
+    console.error(`  ✗ announcement_detail: ${e.message}`);
+    failed++;
+}
+
 console.log(
     failed === 0
         ? '\nfixture 抓取完成，现在可以运行 npm run test:parsers'

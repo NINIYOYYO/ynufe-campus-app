@@ -100,4 +100,58 @@ export class AnnouncementParser {
 
         return list;
     }
+
+    /**
+     * 解析公告详情页正文与附件。
+     *
+     * Args:
+     *     htmlStr (string): /jsxsd/ggly/ggly_show?ggid=... 响应的 HTML。
+     *
+     * Returns:
+     *     { paragraphs: string[]; attachments: string[] }: 正文段落与附件名列表。
+     */
+    static parseDetail(htmlStr: string): { paragraphs: string[]; attachments: string[] } {
+        const doc = this.getDoc(htmlStr);
+        doc.querySelectorAll("script, style").forEach(el => el.remove());
+
+        // 正文容器：优先取已知选择器，都不命中时退化为「文字最多的块级元素」。
+        // 强智各部署的容器命名不一致，这里保持宽松，解析不到时由 UI 层如实提示。
+        const KNOWN = ["#ggnr", ".ggnr", "#ggnrtd", "#content", ".content", ".Nsb_layout_r"];
+        let container: Element | null = null;
+        for (const sel of KNOWN) {
+            const el = doc.querySelector(sel);
+            if (el && (el.textContent || "").trim().length > 20) {
+                container = el;
+                break;
+            }
+        }
+        if (!container) {
+            let bestLen = 0;
+            doc.querySelectorAll("td, div, article, section").forEach(el => {
+                // 只考虑不再包含同类块级子节点的「叶子块」，避免整页被当成正文
+                if (el.querySelector("td, div, article, section")) return;
+                const len = (el.textContent || "").trim().length;
+                if (len > bestLen) {
+                    bestLen = len;
+                    container = el;
+                }
+            });
+        }
+        if (!container) return { paragraphs: [], attachments: [] };
+
+        const paragraphs = (container.textContent || "")
+            .split(/\r?\n/)
+            .map(s => s.replace(/ /g, " ").trim())
+            .filter(s => s.length > 0);
+
+        // 附件通常是指向下载接口的链接
+        const attachments: string[] = [];
+        doc.querySelectorAll("a[href]").forEach(a => {
+            const href = a.getAttribute("href") || "";
+            const name = a.textContent?.trim() || "";
+            if (name && /down|file|attach|fujian/i.test(href)) attachments.push(name);
+        });
+
+        return { paragraphs, attachments };
+    }
 }

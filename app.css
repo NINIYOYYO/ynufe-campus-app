@@ -2510,3 +2510,64 @@ body.theme-light .logout-icon {
     align-items: center;
     gap: 3px;
 }
+
+/* ==================== 公告详情抽屉 ====================
+ * 标题已由抽屉头部展示，正文区只承载元信息 + 真实正文，
+ * 不再重复标题、也不再用一整张卡片去装一句占位说明。
+ */
+.ann-detail-meta {
+    color: var(--text-secondary);
+    font-size: 12px;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--card-border);
+}
+
+.ann-detail-body p {
+    color: var(--text-primary);
+    font-size: 14px;
+    line-height: 1.75;
+    margin-bottom: 12px;
+    text-align: justify;
+    word-break: break-word;
+}
+
+.ann-detail-body p:last-child {
+    margin-bottom: 0;
+}
+
+/* 加载中 / 无正文 / 加载失败等状态，统一为低调的居中提示 */
+.ann-detail-hint {
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.6;
+    text-align: center;
+    padding: 28px 12px;
+}
+
+.ann-detail-files {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--card-border);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.ann-detail-files small {
+    color: var(--text-secondary);
+    font-size: 12px;
+    margin-right: 2px;
+}
+
+.ann-detail-files span {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--primary-color);
+    background: rgba(var(--primary-color-rgb), 0.12);
+    border: 1px solid rgba(var(--primary-color-rgb), 0.22);
+    word-break: break-all;
+}

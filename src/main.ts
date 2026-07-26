@@ -1295,21 +1295,47 @@ export class YnufeUI {
     /**
      * 在 BottomSheet 中弹窗展示公告详情。
      */
-    static showAnnouncementDetail(ann: AnnouncementItem): void {
-        const content = `
-            <div class="glass-card" style="padding: 16px; margin-bottom: 14px; background: var(--card-bg); border: 1px solid var(--card-border);">
-                <h3 style="color: var(--text-primary); font-size: 15px; font-weight: 600; margin-bottom: 10px; line-height: 1.5;">${escapeHtml(ann.title)}</h3>
-                <div style="color: var(--text-secondary); font-size: 12px; display: flex; align-items: center; gap: 4px;">
-                    发布时间：${escapeHtml(ann.date)}
-                </div>
+    static async showAnnouncementDetail(ann: AnnouncementItem): Promise<void> {
+        // 标题由抽屉头部承载，正文区不再重复展示；
+        // 发布时间降为一行元信息，不再单独占一张卡片。
+        BottomSheet.show(ann.title, "通知", `
+            <div class="ann-detail-meta">${escapeHtml(ann.date)}</div>
+            <div class="ann-detail-body" id="ann-detail-body">
+                <div class="ann-detail-hint">正在加载公告正文…</div>
             </div>
-            <div class="glass-card" style="padding: 16px; background: var(--card-bg); border: 1px solid var(--card-border);">
-                <p style="color: var(--text-secondary); font-size: 13px; line-height: 1.6; text-align: center;">
-                    可在学校教务系统的通知链接中查阅该条公告的详细文档附件。
-                </p>
-            </div>
-        `;
-        BottomSheet.show(ann.title, "通知", content);
+        `);
+
+        const body = document.getElementById("ann-detail-body");
+        if (!body) return;
+
+        if (!ann.url) {
+            body.innerHTML = `<div class="ann-detail-hint">该公告未提供详情链接</div>`;
+            return;
+        }
+
+        try {
+            const html = await YnufeClient.getHtml(ann.url);
+            const detail = AnnouncementParser.parseDetail(html);
+
+            if (!detail.paragraphs.length && !detail.attachments.length) {
+                body.innerHTML = `<div class="ann-detail-hint">未能提取到正文内容</div>`;
+                return;
+            }
+
+            const paragraphs = detail.paragraphs
+                .map(p => `<p>${escapeHtml(p)}</p>`)
+                .join("");
+            const attachments = detail.attachments.length
+                ? `<div class="ann-detail-files"><small>附件</small>${
+                      detail.attachments.map(f => `<span>${escapeHtml(f)}</span>`).join("")
+                  }</div>`
+                : "";
+
+            body.innerHTML = paragraphs + attachments;
+        } catch (e) {
+            const reason = e instanceof SessionExpiredError ? "登录已过期" : "加载失败，请稍后重试";
+            body.innerHTML = `<div class="ann-detail-hint">${escapeHtml(reason)}</div>`;
+        }
     }
 
     /**
