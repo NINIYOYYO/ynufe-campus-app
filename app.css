@@ -2532,3 +2532,57 @@ body.theme-light .logout-icon {
     background: rgba(var(--primary-color-rgb), 0.22);
     transform: scale(0.97);
 }
+
+/* ==================== 排印系统：数字与标签 ====================
+ *
+ * 高级感的排印来自「轻而大」的数字与退居次要层级的小标签，而不是加粗描边。
+ * 数字统一 tabular-nums 等宽对齐（成绩列表、学分、倒计时的数位不再抖动），
+ * 大数字降字重、收字距；小标签统一 11px 并略开字距，与正文拉开质感差。
+ */
+body {
+    font-variant-numeric: tabular-nums;
+}
+
+/* 关键数字：字重降、字号升、字距收紧 */
+.percentage {
+    font-size: 20px;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+}
+
+.grade-score {
+    font-weight: 500;
+    letter-spacing: -0.02em;
+}
+
+.countdown-days .num {
+    font-weight: 500;
+    letter-spacing: -0.02em;
+}
+
+/* 小标签：统一 11px、字距微开、保持辅助色 */
+.mini-meta,
+.grade-meta {
+    font-size: 11px;
+    letter-spacing: 0.03em;
+}
+
+.announce-date,
+.info-item small {
+    letter-spacing: 0.03em;
+}
+
+.gpa-subcard h3 {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    margin-bottom: 12px;
+}
+
+/* 进度环：端点圆角、底环退淡，数字成为唯一焦点 */
+.circle-progress {
+    stroke-linecap: round;
+}
+
+.circle-bg {
+    stroke: rgba(148, 163, 184, 0.14);
+}
