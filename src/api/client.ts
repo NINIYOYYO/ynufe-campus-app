@@ -38,6 +38,22 @@ export class YnufeClient {
     }
 
     /**
+     * 把 /jsxsd 开头的相对路径解析为当前环境下可直接访问的地址。
+     *
+     * 供需要真实 URL 的场景使用（如附件下载的 <a href>），
+     * 保证与 fetch 走同一套环境判定：浏览器内是同源代理路径，原生壳内是绝对域名。
+     *
+     * Args:
+     *     endpoint (string): 以 / 开头的相对路径。
+     *
+     * Returns:
+     *     string: 可直接用于导航或下载的地址。
+     */
+    static resolveUrl(endpoint: string): string {
+        return `${this.BASE_URL}${endpoint}`;
+    }
+
+    /**
      * 校验请求返回的 HTML 文本是否触发了教务系统的登录重定向。
      * 检测到过期时：广播 ynufe-session-expired 事件并抛出 SessionExpiredError，
      * 上层 catch 后应中止本轮同步（绝不能拿登录页去解析、写缓存）。

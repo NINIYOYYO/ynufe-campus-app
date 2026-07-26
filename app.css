@@ -2561,13 +2561,23 @@ body.theme-light .logout-icon {
     margin-right: 2px;
 }
 
-.ann-detail-files span {
+/* 附件是可点击的下载链接，需要有明确的可交互观感与足够的触摸目标 */
+.ann-detail-files a {
     display: inline-block;
-    padding: 5px 10px;
+    padding: 8px 12px;
     border-radius: 8px;
     font-size: 12px;
+    line-height: 1.4;
+    min-height: 34px;
     color: var(--primary-color);
     background: rgba(var(--primary-color-rgb), 0.12);
     border: 1px solid rgba(var(--primary-color-rgb), 0.22);
+    text-decoration: none;
     word-break: break-all;
+    transition: background 0.18s ease, transform 0.15s ease;
+}
+
+.ann-detail-files a:active {
+    background: rgba(var(--primary-color-rgb), 0.22);
+    transform: scale(0.97);
 }

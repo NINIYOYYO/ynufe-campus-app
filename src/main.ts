@@ -1315,7 +1315,7 @@ export class YnufeUI {
 
         try {
             const html = await YnufeClient.getHtml(ann.url);
-            const detail = AnnouncementParser.parseDetail(html);
+            const detail = AnnouncementParser.parseDetail(html, ann.url);
 
             if (!detail.paragraphs.length && !detail.attachments.length) {
                 body.innerHTML = `<div class="ann-detail-hint">未能提取到正文内容</div>`;
@@ -1325,9 +1325,13 @@ export class YnufeUI {
             const paragraphs = detail.paragraphs
                 .map(p => `<p>${escapeHtml(p)}</p>`)
                 .join("");
+            // 附件必须是真链接：href 走 resolveUrl，浏览器内是同源代理路径、
+            // 原生壳内是绝对域名，两种环境都能带着会话 Cookie 取到文件。
             const attachments = detail.attachments.length
                 ? `<div class="ann-detail-files"><small>附件</small>${
-                      detail.attachments.map(f => `<span>${escapeHtml(f)}</span>`).join("")
+                      detail.attachments.map(f =>
+                          `<a href="${escapeHtml(YnufeClient.resolveUrl(f.url))}" target="_blank" rel="noopener">${escapeHtml(f.name)}</a>`
+                      ).join("")
                   }</div>`
                 : "";
 

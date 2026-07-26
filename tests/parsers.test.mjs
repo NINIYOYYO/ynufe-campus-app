@@ -209,6 +209,20 @@ section('选课中心');
 const xk = ServiceParser.parseXkCenter(read('course_select'));
 ok('无选课活动时返回空数组', Array.isArray(xk));
 
+// 附件 href 来自第三方 HTML，会被写进 <a>，必须先过白名单
+section('公告附件地址白名单（防止把第三方 href 直接写进 <a>）');
+const PAGE = '/jsxsd/ggly/ggly_show?ggid=ABC123';
+const safe = (h) => AnnouncementParser.safeResourcePath(h, PAGE);
+eq('相对路径可解析', safe('../uploadfiles/a.doc'), '/jsxsd/uploadfiles/a.doc');
+eq('绝对路径保留查询串', safe('/jsxsd/down?id=9'), '/jsxsd/down?id=9');
+eq('本站绝对地址可接受', safe('https://xjwis.ynufe.edu.cn/jsxsd/f.pdf'), '/jsxsd/f.pdf');
+eq('javascript 伪协议被拒', safe('javascript:alert(1)'), null);
+eq('大小写混写的伪协议同样被拒', safe('JaVaScRiPt:alert(1)'), null);
+eq('data 伪协议被拒', safe('data:text/html,<script>'), null);
+eq('站外地址被拒', safe('https://evil.example.com/x.exe'), null);
+eq('锚点被拒', safe('#top'), null);
+eq('空值被拒', safe(''), null);
+
 // 结构变化必须报错，而不是伪装成"暂无数据"——这正是上述 BUG 长期潜伏的原因
 section('结构变化检测（防止解析失败伪装成空数据）');
 const GARBAGE = '<html><body><table id="dataList"><tr><th>无关表头</th></tr></table></body></html>';

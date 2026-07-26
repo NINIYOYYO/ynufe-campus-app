@@ -1,5 +1,12 @@
 import { AnnouncementItem } from '../types/announcement';
+import { AppConfig } from '../config';
 import { ParseError, buildHeaderIndex, hasEmptyMarker, pickIndex } from '../utils/tableUtils';
+
+/** 公告附件：展示名 + 教务网相对路径 */
+export interface AnnouncementAttachment {
+    name: string;
+    url: string;
+}
 
 /**
  * 云南财经大学校内公告通知 DOM 解析器
@@ -110,7 +117,37 @@ export class AnnouncementParser {
      * Returns:
      *     { paragraphs: string[]; attachments: string[] }: 正文段落与附件名列表。
      */
-    static parseDetail(htmlStr: string): { paragraphs: string[]; attachments: string[] } {
+    /**
+     * 把详情页里的链接地址解析为「可安全使用的教务网相对路径」。
+     *
+     * 详情页 HTML 来自第三方，其中的 href 会被写进 <a>，因此必须先做白名单校验：
+     * 拒绝 javascript: 等伪协议，并且只允许指向教务网自身的资源。
+     *
+     * Args:
+     *     href (string): 原始 href。
+     *     pageUrl (string): 详情页自身地址，用于解析相对路径。
+     *
+     * Returns:
+     *     string | null: 形如 "/jsxsd/..." 的相对路径；不安全或非教务网资源时为 null。
+     */
+    static safeResourcePath(href: string, pageUrl: string): string | null {
+        const raw = (href || "").trim();
+        if (!raw || raw.startsWith("#")) return null;
+        // 伪协议一律拒绝（javascript:、data:、vbscript: 等）
+        if (/^[a-z][a-z0-9+.-]*:/i.test(raw) && !/^https?:/i.test(raw)) return null;
+
+        try {
+            const origin = new URL(AppConfig.TARGET_HOST).origin;
+            const base = new URL(pageUrl || "/", origin);
+            const resolved = new URL(raw, base);
+            if (resolved.origin !== origin) return null;
+            return resolved.pathname + resolved.search;
+        } catch {
+            return null;
+        }
+    }
+
+    static parseDetail(htmlStr: string, pageUrl: string = ""): { paragraphs: string[]; attachments: AnnouncementAttachment[] } {
         const doc = this.getDoc(htmlStr);
         doc.querySelectorAll("script, style").forEach(el => el.remove());
 
@@ -144,12 +181,22 @@ export class AnnouncementParser {
             .map(s => s.replace(/ /g, " ").trim())
             .filter(s => s.length > 0);
 
-        // 附件通常是指向下载接口的链接
-        const attachments: string[] = [];
+        // 附件：详情页里指向教务网自身资源的链接。
+        // 不再按 href 关键字猜测「像不像附件」——那样既会漏也会误判，
+        // 而是收录所有安全且非本页自身的链接，并保留真实地址供下载。
+        const attachments: AnnouncementAttachment[] = [];
+        const seen = new Set<string>();
         doc.querySelectorAll("a[href]").forEach(a => {
-            const href = a.getAttribute("href") || "";
-            const name = a.textContent?.trim() || "";
-            if (name && /down|file|attach|fujian/i.test(href)) attachments.push(name);
+            const name = a.textContent?.replace(/ /g, " ").trim() || "";
+            if (!name) return;
+
+            const path = this.safeResourcePath(a.getAttribute("href") || "", pageUrl);
+            if (!path || seen.has(path)) return;
+            // 跳过指向公告详情页自身的链接（返回、打印之类）
+            if (pageUrl && path === pageUrl.split("#")[0]) return;
+
+            seen.add(path);
+            attachments.push({ name, url: path });
         });
 
         return { paragraphs, attachments };
