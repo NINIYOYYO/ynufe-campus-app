@@ -1406,7 +1406,13 @@ export class YnufeUI {
         }
 
         try {
-            const html = await YnufeClient.getHtml(ann.url);
+            // 请求与入场动画并行，但必须等两者都完成再换正文：
+            // 入场的 translateY(100%) 按抽屉自身高度解析，动画中途换内容导致
+            // 高度突变，过渡起点被重新解释，观感上就是"动画播了两次"。
+            const [html] = await Promise.all([
+                YnufeClient.getHtml(ann.url),
+                BottomSheet.settled()
+            ]);
             const detail = AnnouncementParser.parseDetail(html, ann.url);
 
             if (!detail.paragraphs.length && !detail.attachments.length) {
@@ -1428,7 +1434,9 @@ export class YnufeUI {
                   }</div>`
                 : "";
 
-            body.innerHTML = paragraphs + attachments;
+            // 包一层 .sheet-swap-in：新节点插入时播一次 220ms 柔和显现，
+            // 正文替换不再是生硬的一闪
+            body.innerHTML = `<div class="sheet-swap-in">${paragraphs + attachments}</div>`;
 
             body.querySelectorAll(".ann-attach-btn").forEach(btn => {
                 btn.addEventListener("click", () => {
@@ -1438,6 +1446,8 @@ export class YnufeUI {
                 });
             });
         } catch (e) {
+            // 请求可能瞬间失败（如会话过期直接抛出），错误提示同样要等入场结束再换
+            await BottomSheet.settled();
             const reason = e instanceof SessionExpiredError ? "登录已过期" : "加载失败，请稍后重试";
             body.innerHTML = `<div class="ann-detail-hint">${escapeHtml(reason)}</div>`;
         }

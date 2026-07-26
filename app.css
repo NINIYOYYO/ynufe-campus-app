@@ -2600,3 +2600,20 @@ body {
 #bottom-sheet .sheet-handle:active {
     opacity: 0.6;
 }
+
+/* 抽屉正文异步换入时的柔和显现：等入场滑动结束后才替换内容（见
+   BottomSheet.settled），替换瞬间由这段短显现衔接，避免生硬一闪 */
+@keyframes sheetSwapIn {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.sheet-swap-in {
+    animation: sheetSwapIn 0.22s ease-out;
+}

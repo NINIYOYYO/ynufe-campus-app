@@ -74,6 +74,41 @@ export class BottomSheet {
     }
 
     /**
+     * 等待入场滑动过渡结束。
+     *
+     * 异步装填的抽屉（如公告详情）必须等入场动画播完再替换正文：
+     * 入场用的 translateY(100%) 是按元素自身高度解析的百分比，正文一换、
+     * 高度突变，进行中的过渡起点会被重新解释，观感上像动画重播了一次。
+     *
+     * Returns:
+     *     Promise<void>: transform 过渡结束（或 400ms 兜底超时）后 resolve。
+     *     抽屉已经静止时依赖兜底超时，不会悬挂。
+     */
+    static settled(): Promise<void> {
+        return new Promise(resolve => {
+            const sheet = document.getElementById("bottom-sheet");
+            const content = sheet?.querySelector<HTMLElement>(".sheet-content") || null;
+            if (!sheet || !content || !sheet.classList.contains("active")) {
+                resolve();
+                return;
+            }
+
+            let done = false;
+            const finish = () => {
+                if (done) return;
+                done = true;
+                content.removeEventListener("transitionend", onEnd);
+                resolve();
+            };
+            const onEnd = (e: TransitionEvent) => {
+                if (e.propertyName === "transform") finish();
+            };
+            content.addEventListener("transitionend", onEnd);
+            window.setTimeout(finish, 400); // 过渡 0.3s，余量兜底（含过渡已结束的情形）
+        });
+    }
+
+    /**
      * 平滑隐藏底部抽屉浮层（遮罩原地淡出，抽屉本体下滑）。
      */
     static hide(): void {
