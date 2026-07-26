@@ -1044,9 +1044,98 @@ export class YnufeUI {
                     <div class="grade-gpa">绩点: ${escapeHtml(g.gpa)}</div>
                 </div>
             `;
+            card.addEventListener("click", () => this.showGradeDetail(g));
             container.appendChild(card);
         });
         this.playEntrance(container);
+    }
+
+    /**
+     * 在抽屉中展示单门课程的完整信息与成绩构成。
+     *
+     * 成绩列表只放得下课名/学分/绩点，而教务网的成绩表实际有 21 列，
+     * 成绩本身还挂着 pscj_list.do 明细页（期末/期中/平时各自的分数与占比）。
+     * 这里把两者合并展示：先用已有数据即时渲染，再异步补上构成明细。
+     *
+     * Args:
+     *     g (GradeItem): 被点击的成绩条目。
+     */
+    static async showGradeDetail(g: GradeItem): Promise<void> {
+        const scoreNum = parseFloat(g.score);
+        const isFail = g.score === "不合格" || (!isNaN(scoreNum) && scoreNum < 60);
+
+        /** 生成一条「标签 / 值」信息行，值为空时整行省略。 */
+        const row = (label: string, value?: string): string =>
+            value && value !== "-" && value.trim()
+                ? `<div class="detail-row"><span>${escapeHtml(label)}</span><b>${escapeHtml(value)}</b></div>`
+                : "";
+
+        BottomSheet.show(g.courseName, g.category || "课程", `
+            <div class="grade-detail-hero">
+                <div class="grade-detail-score ${isFail ? "fail" : ""}">${escapeHtml(g.score)}</div>
+                <div class="grade-detail-sub">绩点 ${escapeHtml(g.gpa)} · 学分 ${escapeHtml(g.credit)}</div>
+            </div>
+            <div class="detail-rows">
+                ${row("开课学期", g.semester)}
+                ${row("课程编号", g.courseId)}
+                ${row("总学时", g.hours)}
+                ${row("考核方式", g.assessMode)}
+                ${row("考试性质", g.examNature)}
+                ${row("课程性质", g.courseNature)}
+                ${row("分组名", g.groupName)}
+            </div>
+            <div id="grade-detail-components">
+                ${g.detailUrl ? `<div class="ann-detail-hint">正在加载成绩构成…</div>` : ""}
+            </div>
+        `);
+
+        if (!g.detailUrl) return;
+        const slot = document.getElementById("grade-detail-components");
+        if (!slot) return;
+
+        try {
+            // 与抽屉入场并行，两者都就绪再换内容，避免动画中途高度突变
+            const [html] = await Promise.all([
+                YnufeClient.getHtml(g.detailUrl),
+                BottomSheet.settled()
+            ]);
+            const detail = GradeParser.parseScoreDetail(html);
+
+            if (detail.components.length === 0) {
+                await BottomSheet.morphHeight(() => { slot.innerHTML = ""; });
+                return;
+            }
+
+            const bars = detail.components.map(c => {
+                const pct = Math.max(0, Math.min(100, parseFloat(c.ratio) || 0));
+                const val = Math.max(0, Math.min(100, parseFloat(c.score) || 0));
+                return `
+                    <div class="score-part">
+                        <div class="score-part-head">
+                            <span>${escapeHtml(c.label)}</span>
+                            <em>占 ${escapeHtml(c.ratio)}</em>
+                            <b>${escapeHtml(c.score)}</b>
+                        </div>
+                        <div class="score-bar"><i style="width:${val}%"></i></div>
+                        <div class="score-part-note">按占比折合 ${(val * pct / 100).toFixed(1)} 分</div>
+                    </div>`;
+            }).join("");
+
+            await BottomSheet.morphHeight(() => {
+                slot.innerHTML = `
+                    <div class="sheet-swap-in">
+                        <div class="detail-section-title">成绩构成</div>
+                        ${bars}
+                        ${detail.total ? `<div class="score-total">总成绩 <b>${escapeHtml(detail.total)}</b></div>` : ""}
+                    </div>`;
+            });
+        } catch (e) {
+            await BottomSheet.settled();
+            const reason = e instanceof SessionExpiredError ? "登录已过期" : "成绩构成加载失败";
+            await BottomSheet.morphHeight(() => {
+                slot.innerHTML = `<div class="ann-detail-hint">${escapeHtml(reason)}</div>`;
+            });
+        }
     }
 
     /**

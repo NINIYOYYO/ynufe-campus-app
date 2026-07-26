@@ -119,6 +119,23 @@ try {
     failed++;
 }
 
+// 成绩构成明细页地址带 jx0404id/cj0708id，同样需从成绩列表现取一条
+try {
+    const gradesHtml = readFileSync(join(OUT, 'grades.html'), 'utf-8');
+    const m = gradesHtml.match(/openWindow\(\s*['"]([^'"]*pscj_list[^'"]*)['"]/);
+    if (m) {
+        let html = await fetchPage(m[1].replace(/&amp;/g, '&'));
+        for (const [from, to] of REDACTIONS) html = html.split(from).join(to);
+        writeFileSync(join(OUT, 'score_detail.html'), html, 'utf-8');
+        console.log(`  ✓ ${'score_detail'.padEnd(16)} ${String(html.length).padStart(7)} chars`);
+    } else {
+        console.warn('  ! 成绩列表中未找到 pscj_list 链接，跳过成绩构成 fixture');
+    }
+} catch (e) {
+    console.error(`  ✗ score_detail: ${e.message}`);
+    failed++;
+}
+
 console.log(
     failed === 0
         ? '\nfixture 抓取完成，现在可以运行 npm run test:parsers'

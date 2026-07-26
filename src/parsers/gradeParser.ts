@@ -1,4 +1,4 @@
-import { GradeItem, GradeSummary, LevelGradeItem } from '../types/grade';
+import { GradeItem, GradeSummary, LevelGradeItem, ScoreComponent, ScoreDetail } from '../types/grade';
 import { ParseError, buildHeaderIndex, cellText, hasEmptyMarker, pickIndex } from '../utils/tableUtils';
 
 /**
@@ -67,10 +67,23 @@ export class GradeParser {
                 ? scoreLink.textContent?.trim() || ""
                 : (scoreCell ? scoreCell.textContent?.trim() || "" : "");
 
+            // 成绩链接同时是「成绩构成明细」的入口：
+            // javascript:openWindow('/jsxsd/kscj/pscj_list.do?...')
+            let detailUrl = "";
+            if (scoreLink) {
+                const m = (scoreLink.getAttribute("href") || "")
+                    .match(/openWindow\(\s*['"]([^'"]+)['"]/);
+                if (m && m[1].includes("pscj_list")) detailUrl = m[1];
+            }
+
             const creditStr = cellText(tds, head, ["学分"], 7) || "0";
             const hours = cellText(tds, head, ["总学时"], 8) || "-";
             const point = cellText(tds, head, ["绩点"], 9) || "0";
             const category = cellText(tds, head, ["课程属性"], 13);
+            const groupName = cellText(tds, head, ["分组名"], 4);
+            const assessMode = cellText(tds, head, ["考核方式"], 11);
+            const examNature = cellText(tds, head, ["考试性质"], 12);
+            const courseNature = cellText(tds, head, ["课程性质"], 14);
 
             if (semester) semesterSet.add(semester);
             if (courseName) {
@@ -83,7 +96,12 @@ export class GradeParser {
                     gpa: point,
                     hours,
                     point,
-                    category
+                    category,
+                    groupName,
+                    assessMode,
+                    examNature,
+                    courseNature,
+                    detailUrl
                 });
             }
         }
@@ -102,6 +120,60 @@ export class GradeParser {
             semesters: sortedSemesters,
             gradesList
         };
+    }
+
+    /**
+     * 解析单门课程的成绩构成明细。
+     *
+     * 真实表头（8 列）：
+     * [序号, 期末成绩, 期末成绩比例, 期中成绩, 期中成绩比例, 平时成绩, 平时成绩比例, 总成绩]
+     * 未参与考核的项（如无期中）分数与比例为空或 0，此处会被过滤掉，
+     * 只保留真实存在的构成项。
+     *
+     * Args:
+     *     htmlStr (string): /jsxsd/kscj/pscj_list.do 响应的 HTML。
+     *
+     * Returns:
+     *     ScoreDetail: 构成项列表与总成绩。
+     */
+    static parseScoreDetail(htmlStr: string): ScoreDetail {
+        const doc = this.getDoc(htmlStr);
+        const dataTable = doc.querySelector("table#dataList") || doc.querySelector("table.Nsb_r_list");
+        if (!dataTable) {
+            throw new ParseError("GradeParser.parseScoreDetail", "未找到成绩构成表格");
+        }
+
+        const head = buildHeaderIndex(dataTable);
+        const rows = dataTable.querySelectorAll("tr");
+
+        for (let i = 1; i < rows.length; i++) {
+            const tds = rows[i].querySelectorAll("td");
+            if (tds.length < 8) continue;
+
+            const pairs: Array<[string, string, string]> = [
+                ["期末成绩", "期末成绩", "期末成绩比例"],
+                ["期中成绩", "期中成绩", "期中成绩比例"],
+                ["平时成绩", "平时成绩", "平时成绩比例"],
+            ];
+            const components: ScoreComponent[] = [];
+            pairs.forEach(([label, scoreKey, ratioKey], idx) => {
+                const score = cellText(tds, head, [scoreKey], 1 + idx * 2);
+                const ratio = cellText(tds, head, [ratioKey], 2 + idx * 2);
+                // 该项未参与考核时分数与比例均为空/零，不展示
+                const meaningful = score && score !== "0" && ratio && ratio !== "0%";
+                if (meaningful) components.push({ label, score, ratio });
+            });
+
+            const total = cellText(tds, head, ["总成绩"], 7);
+            if (components.length > 0 || total) {
+                return { components, total };
+            }
+        }
+
+        if (!hasEmptyMarker(htmlStr)) {
+            throw new ParseError("GradeParser.parseScoreDetail", "成绩构成表格存在但未解析出数据行");
+        }
+        return { components: [], total: "" };
     }
 
     /**

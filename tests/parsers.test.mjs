@@ -156,6 +156,23 @@ ok('解析出成绩明细', g.gradesList.length > 0, `得到 ${g.coursesCount} �
 ok('课程名与学期均非空',
    g.gradesList.every(x => x.courseName && x.semester));
 
+section('成绩明细入口与成绩构成');
+ok('每门课都解析出成绩明细链接',
+   g.gradesList.every(x => (x.detailUrl || '').includes('pscj_list')),
+   `缺链接 ${g.gradesList.filter(x => !x.detailUrl).length} 门`);
+ok('扩展字段已提取（考核方式/课程性质）',
+   g.gradesList.some(x => x.assessMode) && g.gradesList.some(x => x.courseNature));
+
+const sd = GradeParser.parseScoreDetail(read('score_detail'));
+ok('解析出成绩构成项', sd.components.length > 0, JSON.stringify(sd.components));
+ok('构成项均带分数与占比',
+   sd.components.every(c => c.score && /%$/.test(c.ratio)),
+   JSON.stringify(sd.components));
+eq('总成绩正确', sd.total, '84');
+// 占比之和应为 100%，可据此确认没有漏项或错列
+eq('各项占比之和为 100',
+   sd.components.reduce((s, c) => s + parseFloat(c.ratio), 0), 100);
+
 // BUG: 此前按 [序号,学期,考试号,名称,日期,成绩] 取列，而真实表头是
 // [序号, 考级课程(等级), 分数类(笔试/机试/总成绩), 等级类(笔试/机试/总成绩), 考级时间]，
 // 导致四级 470 分被显示成 0。
