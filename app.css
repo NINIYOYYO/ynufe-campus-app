@@ -603,6 +603,53 @@ select option {
 .tab-content.active .scroll-list > :nth-child(n+5),
 .tab-content.active .classroom-grid-list > :nth-child(n+5) { animation-delay: 260ms; }
 
+/* ==================== 长列表性能保护 ====================
+ *
+ * 空教室查询单次可返回 130+ 张卡片、成绩页有 70+ 门课，而 .glass-card 带
+ * backdrop-filter 会把每张卡提升为独立合成层、每帧重新采样背景。若这些卡片
+ * 再同时跑入场动画，低端 Android WebView 会明显掉帧。
+ *
+ * 因此对长列表做两件事：入场动画只保留前 10 项；列表内的卡片不使用
+ * backdrop-filter（卡片背景本身已是半透明渐变，观感差异极小）。
+ * 注意：动画被关掉时必须显式恢复 opacity——基线规则把列表子项设成了
+ * opacity:0，只靠动画的 forwards 才变可见。
+ */
+.tab-content.active .scroll-list > :nth-child(n+11),
+.tab-content.active .classroom-grid-list > :nth-child(n+11) {
+    animation: none;
+    opacity: 1;
+}
+
+.scroll-list .glass-card,
+.classroom-grid-list .glass-card {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+/* ==================== 动效降级 ====================
+ * 系统开启"减少动态效果"时关闭骨牌动效与过渡。
+ * 这里的 !important 是该 media query 的通行写法：必须压过散落各处的动画声明，
+ * 同时把 opacity 强制恢复，否则列表项会因动画被禁而永久不可见。
+ */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    .tab-content > *,
+    .sub-tab-content > *,
+    .scroll-list > *,
+    .classroom-grid-list > *,
+    .timetable-grid > * {
+        opacity: 1 !important;
+    }
+}
+
 /* 二级选项卡胶囊条 (Sub-Tab Bar) 升级为毛玻璃胶囊 */
 .sub-tab-bar {
     display: flex;
