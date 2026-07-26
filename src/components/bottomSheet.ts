@@ -109,6 +109,60 @@ export class BottomSheet {
     }
 
     /**
+     * 以高度补间的方式替换抽屉内容，避免正文一换高度骤变的"拉长"感。
+     *
+     * 抽屉底端锚定、高度由内容撑开，异步装填正文（尤其长文）时高度会瞬间
+     * 蹿高。这里用 FLIP：先记录旧高度，同步执行 mutate 换入新内容并量出
+     * 新高度，再把 height 从旧值过渡到新值，结束后交还给 auto。
+     *
+     * Args:
+     *     mutate (() => void): 同步修改抽屉内容的回调（如 innerHTML 替换）。
+     *
+     * Returns:
+     *     Promise<void>: 高度过渡结束（或 360ms 兜底）后 resolve。
+     */
+    static async morphHeight(mutate: () => void): Promise<void> {
+        const sheet = document.getElementById("bottom-sheet");
+        const content = sheet?.querySelector<HTMLElement>(".sheet-content") || null;
+        if (!content) { mutate(); return; }
+
+        const from = content.offsetHeight;
+        // 量新内容的自然高度：临时放开 height，max-height/overflow 仍会封顶，
+        // 因此 offsetHeight 得到的是最终会呈现的高度（含 80vh 上限）
+        content.style.height = "auto";
+        mutate();
+        const to = content.offsetHeight;
+
+        // 变化极小时不值得动画，直接交还 auto（同一帧内完成，无闪烁）
+        if (Math.abs(to - from) < 2) {
+            content.style.height = "";
+            return;
+        }
+
+        content.style.height = `${from}px`;
+        void content.offsetWidth; // 强制 reflow，使起点高度定格
+        content.style.transition = "height 0.3s cubic-bezier(0.16, 1, 0.3, 1)";
+        content.style.height = `${to}px`;
+
+        await new Promise<void>(resolve => {
+            let done = false;
+            const finish = () => {
+                if (done) return;
+                done = true;
+                content.removeEventListener("transitionend", onEnd);
+                content.style.height = "";      // 交还 auto，后续内容变化不受固定高度限制
+                content.style.transition = "";   // 恢复样式表里的 transform 过渡
+                resolve();
+            };
+            const onEnd = (e: TransitionEvent) => {
+                if (e.propertyName === "height") finish();
+            };
+            content.addEventListener("transitionend", onEnd);
+            window.setTimeout(finish, 360);
+        });
+    }
+
+    /**
      * 平滑隐藏底部抽屉浮层（遮罩原地淡出，抽屉本体下滑）。
      */
     static hide(): void {

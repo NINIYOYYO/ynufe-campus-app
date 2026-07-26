@@ -1434,9 +1434,11 @@ export class YnufeUI {
                   }</div>`
                 : "";
 
-            // 包一层 .sheet-swap-in：新节点插入时播一次 220ms 柔和显现，
-            // 正文替换不再是生硬的一闪
-            body.innerHTML = `<div class="sheet-swap-in">${paragraphs + attachments}</div>`;
+            // 长文会让抽屉高度骤增，用 morphHeight 把高度变化补间为过渡；
+            // 内层 .sheet-swap-in 负责内容本身的柔和显现
+            await BottomSheet.morphHeight(() => {
+                body.innerHTML = `<div class="sheet-swap-in">${paragraphs + attachments}</div>`;
+            });
 
             body.querySelectorAll(".ann-attach-btn").forEach(btn => {
                 btn.addEventListener("click", () => {
