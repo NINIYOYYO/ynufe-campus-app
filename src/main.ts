@@ -51,6 +51,42 @@ export class YnufeUI {
         return this.sessionInvalid;
     }
 
+    /** 各区块最近一次渲染的数据指纹，用于跳过内容未变化的重复渲染 */
+    private static renderFingerprints: Record<string, string> = {};
+
+    /**
+     * 判断某区块的数据是否与上一次渲染完全相同。
+     *
+     * 启动时同一块内容会被渲染两次：先用本地缓存秒开，静默同步完成后再用
+     * 服务器数据渲染一遍。由于渲染方式是清空 innerHTML 后重新插入节点，
+     * 而入场动画绑定在元素插入上，用户就会看到骨牌动效播两遍——两次渲染
+     * 间隔越接近动画时长，观感越像"抖了一下"，这也是它表现为"有概率"的原因。
+     * 绝大多数情况下两次数据完全一致，直接跳过第二次渲染即可。
+     *
+     * Args:
+     *     key (string): 区块标识。
+     *     data (unknown): 本次待渲染的数据。
+     *
+     * Returns:
+     *     boolean: true 表示与上次一致、可以跳过本次渲染。
+     */
+    private static isSameAsRendered(key: string, data: unknown): boolean {
+        let fingerprint: string;
+        try {
+            fingerprint = JSON.stringify(data);
+        } catch {
+            return false; // 无法序列化时保守起见照常渲染
+        }
+        if (this.renderFingerprints[key] === fingerprint) return true;
+        this.renderFingerprints[key] = fingerprint;
+        return false;
+    }
+
+    /** 退出登录或切换账号时清空指纹，避免下一位用户的首次渲染被误跳过。 */
+    static resetRenderFingerprints(): void {
+        this.renderFingerprints = {};
+    }
+
     /**
      * 统一处理各业务模块的加载异常。
      *
@@ -402,6 +438,9 @@ export class YnufeUI {
             YnufeSession.setHasSession(true);
             this.startHeartbeat();
 
+            // 登录不重载页面，换账号时必须清掉上一位用户的渲染指纹
+            this.resetRenderFingerprints();
+
             const profileLoaded = await this.loadHomeBusinessData();
             this.showLoading(false);
 
@@ -508,8 +547,7 @@ export class YnufeUI {
                 this.loadExamsData(true)
             ]);
 
-            // 首页考试倒计时：优先用刚拉取的考试缓存渲染
-            this.renderExamCountdown(YnufeSession.getCache<ExamItem[]>("ynufe_cached_exams") || []);
+            // 考试倒计时由 renderExamsList 内部统一触发，此处不再重复渲染一遍
 
             // 任一子模块失败不影响整体（各自保留旧缓存），但都失败时报告异常
             return results.some(r => r !== false);
@@ -935,6 +973,12 @@ export class YnufeUI {
             return matchSem && matchSearch;
         });
 
+        // 指纹要连筛选条件一起算，否则切换学期/搜索时会被误判为「无变化」
+        if (container.childElementCount > 0 &&
+            this.isSameAsRendered("grades", { selectSem, searchText, filtered })) {
+            return;
+        }
+
         if (filtered.length === 0) {
             container.innerHTML = `<div class="empty-state"><p>未查询到匹配成绩</p></div>`;
             return;
@@ -1043,6 +1087,7 @@ export class YnufeUI {
     static renderExamsList(list: ExamItem[]): void {
         const container = document.getElementById("exams-term-list");
         if (!container) return;
+        if (container.childElementCount > 0 && this.isSameAsRendered("exams", list)) return;
         container.innerHTML = "";
 
         if (!Array.isArray(list) || list.length === 0) {
@@ -1264,6 +1309,7 @@ export class YnufeUI {
     static renderAnnouncementsList(list: AnnouncementItem[]): void {
         const container = document.getElementById("home-announcements-list");
         if (!container) return;
+        if (container.childElementCount > 0 && this.isSameAsRendered("announcements", list)) return;
         container.innerHTML = "";
 
         if (!Array.isArray(list) || list.length === 0) {
