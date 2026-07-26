@@ -1,6 +1,7 @@
 import { YnufeClient } from '../api/client';
 import { YnufeSession } from '../stores/sessionStore';
 import { encodeInp } from '../utils/crypto';
+import { ProfileParser } from '../parsers/profileParser';
 
 /**
  * AutoLogin: 持久化登录 / 会话自动续期服务
@@ -71,14 +72,22 @@ export class AutoLogin {
     }
 
     /**
-     * 正向验证当前会话：请求主框架页，能解析到非登录页即视为有效。
+     * 正向验证当前会话：必须真的能解析出学籍信息才算有效。
+     *
+     * 不能用「没抛 SessionExpiredError + 页面体量够大」来判定：教务网在未登录时
+     * 并不总是跳登录页——实测直接返回一个 1022 字节的「404错误」页，既不含
+     * sys/login.jsp / LoginToXkLdap 等任何标记，长度也超过阈值，于是被误判为
+     * 会话有效。调用方据此认为续期成功，转头拉数据又失败，陷入
+     * 「续期成功 → 拉取失败 → 再次判定过期」的空转，用户永远等不到登录框。
+     *
+     * Returns:
+     *     Promise<boolean>: 仅当页面中解析出有效学籍姓名时为 true。
      */
     static async verifySession(): Promise<boolean> {
         try {
-            // getHtml 内部检测到登录重定向会直接抛 SessionExpiredError，
-            // 因此这里只要没抛异常且返回了正常体量的页面即视为会话有效。
-            const html = await YnufeClient.getHtml("/jsxsd/framework/xsMain.jsp");
-            return !!html && html.length > 300;
+            const html = await YnufeClient.getHtml("/jsxsd/framework/xsMain_new.jsp?t1=1");
+            const profile = ProfileParser.parseProfile(html);
+            return !!profile.name && profile.name !== "未登录";
         } catch {
             return false;
         }

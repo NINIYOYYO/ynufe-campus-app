@@ -43,6 +43,13 @@ export class YnufeUI {
     private static KEY_CURRENT_WEEK = "ynufe_current_teaching_week";
     /** 当前教学周；undefined 表示假期或未能获取 */
     private static currentTeachingWeek: number | undefined = undefined;
+    /** 上一次同步是否因会话失效而失败（用于区分"网络问题"与"需要重新登录"） */
+    private static sessionInvalid = false;
+
+    /** 供模块级启动流程读取的只读视图。 */
+    static get isSessionInvalid(): boolean {
+        return this.sessionInvalid;
+    }
 
     /**
      * 统一处理各业务模块的加载异常。
@@ -468,12 +475,21 @@ export class YnufeUI {
             const mainHtml = await YnufeClient.getHtml("/jsxsd/framework/xsMain_new.jsp?t1=1");
             const profile = ProfileParser.parseProfile(mainHtml);
 
-            // 解析出"未登录"说明页面结构不对/会话异常，不渲染不缓存
+            // 解析出"未登录"说明页面结构不对/会话异常，不渲染不缓存。
+            //
+            // 注意：教务网在会话失效时并不总是跳登录页——实测无会话访问 xsMain_new.jsp
+            // 拿到的是一个 1022 字节的「404错误」页，不含 sys/login.jsp / LoginToXkLdap
+            // 等任何标记，checkSessionTimeout 无法识别。但"请求成功却解析不出学籍"
+            // 本身即等价于会话无效，故在此补触发续期流程；否则用户会一直卡在旧缓存上，
+            // 点刷新还只能得到"请检查网络"的误导提示。
             if (!profile.name || profile.name === "未登录") {
-                console.warn("[YnufeUI] Profile parse failed, aborting home sync to protect cache.");
+                console.warn("[YnufeUI] 未解析出学籍信息，判定为会话失效，触发续期流程");
+                this.sessionInvalid = true;
+                window.dispatchEvent(new CustomEvent("ynufe-session-expired"));
                 return false;
             }
 
+            this.sessionInvalid = false;
             this.renderProfile(profile);
             YnufeSession.setCache("ynufe_cached_profile", profile);
 
@@ -1611,6 +1627,12 @@ export class YnufeUI {
                 const success = await this.loadHomeBusinessData();
                 if (success) {
                     this.updateSyncStatus("online", "数据已最新");
+                } else if (this.sessionInvalid) {
+                    // 会话已失效：直接给出登录入口，而不是反复提示"检查网络"。
+                    // 启动时若命中缓存分支，登录框是被跳过的，这里是用户唯一的重新登录途径。
+                    this.updateSyncStatus("offline", "登录已过期 · 点击登录");
+                    this.toggleModal("login-overlay", true);
+                    this.refreshCaptchaImg();
                 } else {
                     this.updateSyncStatus("offline", "未同步 · 点击刷新");
                     // 失败时若非会话问题（会话问题由 onSessionExpired 处理），提示网络
@@ -1714,6 +1736,10 @@ document.addEventListener("DOMContentLoaded", async () => {
             const success = await YnufeUI.loadHomeBusinessData();
             if (success) {
                 YnufeUI.updateSyncStatus("online", "数据已最新");
+            } else if (YnufeUI.isSessionInvalid) {
+                // 缓存分支下登录框是被跳过的，必须让状态标签明确指向"重新登录"，
+                // 否则用户只会看到旧数据配一个"点击刷新"，怎么点都好不了
+                YnufeUI.updateSyncStatus("offline", "登录已过期 · 点击登录");
             } else {
                 YnufeUI.updateSyncStatus("offline", "未同步 · 点击刷新");
             }
