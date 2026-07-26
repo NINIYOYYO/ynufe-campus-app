@@ -18,6 +18,12 @@ export default defineConfig({
         target: 'https://xjwis.ynufe.edu.cn',
         changeOrigin: true,
         secure: false,
+        // 登录成功后教务网会 302 到绝对地址 http://xjwis.ynufe.edu.cn/jsxsd/...，
+        // 若原样透传，浏览器会跨域跟跳并被 CORS 拦截，导致「密码正确却登录失败」。
+        // autoRewrite 把 Location 中的主机改写回当前开发服务器。
+        autoRewrite: true,
+        protocolRewrite: 'http',
+        cookieDomainRewrite: '',
         headers: {
           Referer: 'https://xjwis.ynufe.edu.cn/jsxsd/',
           Origin: 'https://xjwis.ynufe.edu.cn',

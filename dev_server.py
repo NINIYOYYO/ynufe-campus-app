@@ -1,6 +1,7 @@
 import http.server
 import urllib.request
 import urllib.error
+import urllib.parse
 import socketserver
 import ssl
 import os
@@ -24,6 +25,31 @@ ssl_context.verify_mode = ssl.CERT_NONE
 #: 教务网的资源不止 /jsxsd/——公告附件由富文本编辑器上传，实际位于
 #: /ewebeditor/uploadfile/xxx.doc，此前不在代理范围内，点击附件必然 404。
 PROXY_PREFIXES = ("/jsxsd/", "/ewebeditor/", "/uploadfiles/")
+
+#: 教务网主机名，用于识别并改写重定向地址
+TARGET_NETLOC = urllib.parse.urlsplit(TARGET_HOST).netloc
+
+
+def rewrite_location(value):
+    """把指向教务网的重定向地址改写为同源相对路径。
+
+    登录成功后教务网会 302 到绝对地址（例如
+    http://xjwis.ynufe.edu.cn/jsxsd/framework/xsMain.jsp）。若原样透传，
+    浏览器会跨域跟跳并被 CORS 拦截，表现为「密码正确却登录失败」。
+
+    Args:
+        value (str): 原始 Location 头。
+
+    Returns:
+        str: 指向教务网时返回 path[?query]，其余情况原样返回。
+    """
+    parts = urllib.parse.urlsplit(value)
+    if parts.netloc and parts.netloc == TARGET_NETLOC:
+        rebuilt = parts.path or "/"
+        if parts.query:
+            rebuilt += "?" + parts.query
+        return rebuilt
+    return value
 
 
 class YnufeProxyHandler(http.server.SimpleHTTPRequestHandler):
@@ -78,6 +104,8 @@ class YnufeProxyHandler(http.server.SimpleHTTPRequestHandler):
                 
                 for header, value in response.headers.items():
                     if header.lower() not in ('content-length', 'transfer-encoding', 'content-encoding'):
+                        if header.lower() == 'location':
+                            value = rewrite_location(value)
                         self.send_header(header, value)
                 
                 content = response.read()
@@ -88,6 +116,8 @@ class YnufeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.send_response(e.code)
             for header, value in e.headers.items():
                 if header.lower() not in ('content-length', 'transfer-encoding', 'content-encoding'):
+                    if header.lower() == 'location':
+                        value = rewrite_location(value)
                     self.send_header(header, value)
             content = e.read()
             self.send_header('Content-Length', str(len(content)))
