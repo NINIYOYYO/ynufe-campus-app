@@ -151,35 +151,34 @@ export class AnnouncementParser {
         const doc = this.getDoc(htmlStr);
         doc.querySelectorAll("script, style").forEach(el => el.remove());
 
-        // 正文容器：优先取已知选择器，都不命中时退化为「文字最多的块级元素」。
-        // 强智各部署的容器命名不一致，这里保持宽松，解析不到时由 UI 层如实提示。
-        const KNOWN = ["#ggnr", ".ggnr", "#ggnrtd", "#content", ".content", ".Nsb_layout_r"];
+        // 详情页主体是一张三行表格：[0] 标题、[1] 正文、[2] 发布类别/发布人/时间。
+        // 取行数 >= 3 且文字最多的表格，避开页头的工具条表格。
         let container: Element | null = null;
-        for (const sel of KNOWN) {
-            const el = doc.querySelector(sel);
-            if (el && (el.textContent || "").trim().length > 20) {
-                container = el;
-                break;
+        let bestLen = 0;
+        doc.querySelectorAll("table").forEach(t => {
+            const rows = t.querySelectorAll("tr");
+            if (rows.length < 3) return;
+            const len = (t.textContent || "").trim().length;
+            if (len > bestLen) {
+                bestLen = len;
+                container = rows[1].querySelector("td") || t;
             }
-        }
-        if (!container) {
-            let bestLen = 0;
-            doc.querySelectorAll("td, div, article, section").forEach(el => {
-                // 只考虑不再包含同类块级子节点的「叶子块」，避免整页被当成正文
-                if (el.querySelector("td, div, article, section")) return;
-                const len = (el.textContent || "").trim().length;
-                if (len > bestLen) {
-                    bestLen = len;
-                    container = el;
-                }
-            });
-        }
+        });
         if (!container) return { paragraphs: [], attachments: [] };
 
-        const paragraphs = (container.textContent || "")
-            .split(/\r?\n/)
-            .map(s => s.replace(/ /g, " ").trim())
-            .filter(s => s.length > 0);
+        // 附件另行渲染，先从正文副本里摘掉，避免文件名在正文里重复出现一遍
+        const clone = (container as Element).cloneNode(true) as Element;
+        clone.querySelectorAll("a").forEach(a => a.remove());
+
+        // 正文是 Word 粘贴产生的富文本，数字与中英文被拆进大量 <span>。
+        // 必须以 <p> 为单位整段取文本（段内不插分隔符），否则会碎成
+        // "2022" "〕" "115" "号" 这样的单字片段。
+        const norm = (s: string) => s.replace(/ /g, " ").replace(/\s+/g, " ").trim();
+        const blocks = clone.querySelectorAll("p");
+        const paragraphs = (blocks.length > 0
+            ? Array.from(blocks).map(p => norm(p.textContent || ""))
+            : (clone.textContent || "").split(/\r?\n/).map(norm)
+        ).filter(s => s.length > 0);
 
         // 附件：详情页里指向教务网自身资源的链接。
         // 不再按 href 关键字猜测「像不像附件」——那样既会漏也会误判，
@@ -187,7 +186,9 @@ export class AnnouncementParser {
         const attachments: AnnouncementAttachment[] = [];
         const seen = new Set<string>();
         doc.querySelectorAll("a[href]").forEach(a => {
-            const name = a.textContent?.replace(/ /g, " ").trim() || "";
+            // 教务网的附件链接带 download="真实文件名.xls"，比链接文字更可靠
+            const name = (a.getAttribute("download") || a.textContent || "")
+                .replace(/ /g, " ").trim();
             if (!name) return;
 
             const path = this.safeResourcePath(a.getAttribute("href") || "", pageUrl);

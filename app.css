@@ -2562,7 +2562,7 @@ body.theme-light .logout-icon {
 }
 
 /* 附件是可点击的下载链接，需要有明确的可交互观感与足够的触摸目标 */
-.ann-detail-files a {
+.ann-detail-files button {
     display: inline-block;
     padding: 8px 12px;
     border-radius: 8px;
@@ -2572,12 +2572,14 @@ body.theme-light .logout-icon {
     color: var(--primary-color);
     background: rgba(var(--primary-color-rgb), 0.12);
     border: 1px solid rgba(var(--primary-color-rgb), 0.22);
-    text-decoration: none;
+    text-align: left;
+    font-family: inherit;
+    cursor: pointer;
     word-break: break-all;
     transition: background 0.18s ease, transform 0.15s ease;
 }
 
-.ann-detail-files a:active {
+.ann-detail-files button:active {
     background: rgba(var(--primary-color-rgb), 0.22);
     transform: scale(0.97);
 }

@@ -1325,20 +1325,74 @@ export class YnufeUI {
             const paragraphs = detail.paragraphs
                 .map(p => `<p>${escapeHtml(p)}</p>`)
                 .join("");
-            // 附件必须是真链接：href 走 resolveUrl，浏览器内是同源代理路径、
-            // 原生壳内是绝对域名，两种环境都能带着会话 Cookie 取到文件。
+            // 附件不用 <a href> 直跳：教务系统对上传目录做了封锁，直连会返回一个
+            // 写着「非法访问文件！」的 HTML 页面。改为点击后取回二进制流，
+            // 校验确实是文件才触发保存，否则如实告知被限制。
             const attachments = detail.attachments.length
                 ? `<div class="ann-detail-files"><small>附件</small>${
-                      detail.attachments.map(f =>
-                          `<a href="${escapeHtml(YnufeClient.resolveUrl(f.url))}" target="_blank" rel="noopener">${escapeHtml(f.name)}</a>`
+                      detail.attachments.map((f, i) =>
+                          `<button type="button" class="ann-attach-btn" data-idx="${i}">${escapeHtml(f.name)}</button>`
                       ).join("")
                   }</div>`
                 : "";
 
             body.innerHTML = paragraphs + attachments;
+
+            body.querySelectorAll(".ann-attach-btn").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    const idx = parseInt(btn.getAttribute("data-idx") || "-1", 10);
+                    const file = detail.attachments[idx];
+                    if (file) this.downloadAttachment(file.url, file.name);
+                });
+            });
         } catch (e) {
             const reason = e instanceof SessionExpiredError ? "登录已过期" : "加载失败，请稍后重试";
             body.innerHTML = `<div class="ann-detail-hint">${escapeHtml(reason)}</div>`;
+        }
+    }
+
+    /**
+     * 下载公告附件。
+     *
+     * 教务系统对 /ewebeditor/uploadfile/ 目录做了封锁：无论是否携带有效会话、
+     * Referer 为何值，直接访问都会返回一个 200 的 HTML「出错页面：非法访问文件！」
+     * （同目录的 sysimage 图标却能正常取到，说明是针对上传目录的定向限制）。
+     * 因此这里先取回内容并判别，确认是真文件才落盘，避免用户点开一个空白错误页。
+     *
+     * Args:
+     *     url (string): 附件的教务网相对路径。
+     *     name (string): 保存用的文件名。
+     */
+    static async downloadAttachment(url: string, name: string): Promise<void> {
+        this.showToast(`正在获取「${name}」…`, "info");
+        try {
+            const { blob, contentType } = await YnufeClient.getBlob(url);
+
+            // 被拦截时返回的是体积很小的 HTML 错误页，而非二进制文件
+            if (contentType.includes("text/html") || blob.size < 4096) {
+                const head = await blob.slice(0, 4096).text();
+                if (head.includes("非法访问文件") || head.includes("出错页面")) {
+                    this.showToast("教务系统限制了该附件的直接下载", "warn");
+                    return;
+                }
+            }
+
+            const objectUrl = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = objectUrl;
+            a.download = name;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(objectUrl);
+            this.showToast(`「${name}」已开始下载`, "success");
+        } catch (e) {
+            if (e instanceof SessionExpiredError) {
+                this.showToast("登录已过期，请重新登录后再试", "warn");
+            } else {
+                console.error("[YnufeUI] 附件下载失败:", e);
+                this.showToast("附件下载失败，请检查网络", "error");
+            }
         }
     }
 

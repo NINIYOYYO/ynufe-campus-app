@@ -150,6 +150,29 @@ export class YnufeClient {
     }
 
     /**
+     * 拉取任意教务网资源的二进制流（用于公告附件等文件下载）。
+     *
+     * Args:
+     *     endpoint (string): 以 / 开头的相对路径。
+     *
+     * Returns:
+     *     Promise<{ blob: Blob; contentType: string }>: 响应体与其 Content-Type。
+     */
+    static async getBlob(endpoint: string): Promise<{ blob: Blob; contentType: string }> {
+        const resp = await fetch(`${this.BASE_URL}${endpoint}`, {
+            method: "GET",
+            credentials: "include",
+        });
+        if (!resp.ok) {
+            throw new Error(`Download failed with status ${resp.status}`);
+        }
+        return {
+            blob: await resp.blob(),
+            contentType: resp.headers.get("Content-Type") || "",
+        };
+    }
+
+    /**
      * 请求并拉取验证码图片 Blob 二进制流。
      */
     static async getCaptchaBlob(): Promise<Blob> {

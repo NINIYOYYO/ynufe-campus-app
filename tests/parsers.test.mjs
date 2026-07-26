@@ -209,6 +209,28 @@ section('选课中心');
 const xk = ServiceParser.parseXkCenter(read('course_select'));
 ok('无选课活动时返回空数组', Array.isArray(xk));
 
+section('公告详情正文与附件');
+const DETAIL_URL = '/jsxsd/ggly/ggly_show?ggid=6BD6B96CBFF94CE6A97E2B2E5B5EEB2C';
+const detail = AnnouncementParser.parseDetail(read('announcement_detail'), DETAIL_URL);
+ok('解析出正文段落', detail.paragraphs.length > 0, `得到 ${detail.paragraphs.length} 段`);
+// 正文是 Word 粘贴的富文本，数字被拆进独立 <span>；按 <p> 整段取才不会碎成单字
+ok('数字未被拆碎（〔2022〕115号 应完整）',
+   detail.paragraphs.some(p => p.includes('〔2022〕115号')),
+   JSON.stringify(detail.paragraphs.slice(0, 2)));
+ok('段落不是单字片段',
+   detail.paragraphs.filter(p => p.length === 1).length === 0,
+   JSON.stringify(detail.paragraphs.filter(p => p.length === 1)));
+ok('解析出附件', detail.attachments.length > 0, `得到 ${detail.attachments.length} 个`);
+ok('附件名取自 download 属性（含扩展名）',
+   detail.attachments.every(a => /\.(xls|xlsx|doc|docx|pdf|zip)$/i.test(a.name.trim())),
+   JSON.stringify(detail.attachments.map(a => a.name)));
+ok('附件地址指向上传目录',
+   detail.attachments.every(a => a.url.startsWith('/ewebeditor/uploadfile/')),
+   JSON.stringify(detail.attachments.map(a => a.url)));
+// 附件另行渲染，正文里不应再重复出现同名条目
+ok('正文未重复罗列附件文件名',
+   !detail.paragraphs.some(p => detail.attachments.some(a => p === a.name)));
+
 // 附件 href 来自第三方 HTML，会被写进 <a>，必须先过白名单
 section('公告附件地址白名单（防止把第三方 href 直接写进 <a>）');
 const PAGE = '/jsxsd/ggly/ggly_show?ggid=ABC123';
