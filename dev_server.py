@@ -20,6 +20,12 @@ ssl_context = ssl.create_default_context()
 ssl_context.check_hostname = False
 ssl_context.verify_mode = ssl.CERT_NONE
 
+#: 需要转发到教务网的路径前缀。
+#: 教务网的资源不止 /jsxsd/——公告附件由富文本编辑器上传，实际位于
+#: /ewebeditor/uploadfile/xxx.doc，此前不在代理范围内，点击附件必然 404。
+PROXY_PREFIXES = ("/jsxsd/", "/ewebeditor/", "/uploadfiles/")
+
+
 class YnufeProxyHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         if os.path.exists(DIST_DIR):
@@ -27,14 +33,22 @@ class YnufeProxyHandler(http.server.SimpleHTTPRequestHandler):
         else:
             super().__init__(*args, **kwargs)
 
+    def should_proxy(self):
+        return self.path.startswith(PROXY_PREFIXES)
+
     def do_GET(self):
-        if self.path.startswith("/jsxsd/"):
+        if self.should_proxy():
             self.proxy_request("GET")
         else:
             super().do_GET()
 
     def do_POST(self):
-        self.proxy_request("POST")
+        # 必须同样做前缀判断：此前无条件转发所有 POST，等于把本机变成一个
+        # 携带教务网会话 Cookie 的开放代理，本地任意页面都能借它访问学校系统。
+        if self.should_proxy():
+            self.proxy_request("POST")
+        else:
+            self.send_error(404, "Not proxied")
 
     def proxy_request(self, method):
         target_url = TARGET_HOST + self.path

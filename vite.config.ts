@@ -23,6 +23,20 @@ export default defineConfig({
           Origin: 'https://xjwis.ynufe.edu.cn',
         },
       },
+      // 公告附件由富文本编辑器上传，落在 /ewebeditor/ 而非 /jsxsd/ 下，
+      // 不代理这些前缀会导致点击附件 404。
+      '/ewebeditor': {
+        target: 'https://xjwis.ynufe.edu.cn',
+        changeOrigin: true,
+        secure: false,
+        headers: { Referer: 'https://xjwis.ynufe.edu.cn/jsxsd/' },
+      },
+      '/uploadfiles': {
+        target: 'https://xjwis.ynufe.edu.cn',
+        changeOrigin: true,
+        secure: false,
+        headers: { Referer: 'https://xjwis.ynufe.edu.cn/jsxsd/' },
+      },
     },
   },
 });
