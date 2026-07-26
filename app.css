@@ -530,94 +530,48 @@ select option {
     display: block;
 }
 
-/* ==================== 苹果级交错多米诺骨牌级联动效 ==================== */
-
-/* 骨牌缓动帧：初态向下偏移 24px，稍微收缩 scale，结尾恢复 100% 贴靠 */
+/* ==================== 入场动效：只在数据呈现时播一次 ====================
+ *
+ * 动效由 JS 在渲染数据时给容器加 .stagger-in 触发，播完即移除（见 main.ts
+ * playEntrance）。不再由 .active 驱动——display:none 切回 block 会重启
+ * CSS 动画，靠 .active 驱动意味着每次切 Tab 都重播一遍，重复的入场动画
+ * 是"造作感"的主要来源。
+ *
+ * 关键改变：子项默认可见，不再依赖动画的 forwards 才显形；级联延迟期间的
+ * 隐藏由 animation-fill-mode: both 提供。任何情况下动画丢失都不会再导致
+ * 内容不可见（旧方案的 opacity:0 基线曾多次造成这类问题）。
+ */
 @keyframes dominoEffect {
     0% {
         opacity: 0;
-        transform: translateY(24px) scale(0.985);
+        transform: translateY(12px);
     }
     100% {
         opacity: 1;
-        transform: translateY(0) scale(1);
+        transform: translateY(0);
     }
 }
 
-/* 默认将未激活的子项和长列表子项设为透明，防止切页时的瞬间闪现 */
-.tab-content > *, 
-.scroll-list > *, 
-.classroom-grid-list > *, 
-.timetable-grid > *,
-.sub-tab-content > * {
-    opacity: 0;
+.stagger-in > * {
+    animation: dominoEffect 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* 激活状态下启动多米诺动效 */
-.tab-content.active > *,
-.sub-tab-content.active > *,
-.tab-content.active .scroll-list > *,
-.tab-content.active .classroom-grid-list > *,
-.tab-content.active .timetable-grid > * {
-    animation: dominoEffect 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-/* 级联排队时间延迟分配 (Stagger delays) */
-/* 第一排/卡片 */
-.tab-content.active > :nth-child(1),
-.sub-tab-content.active > :nth-child(1) { animation-delay: 0ms; }
-
-/* 第二排/卡片 */
-.tab-content.active > :nth-child(2),
-.sub-tab-content.active > :nth-child(2) { animation-delay: 45ms; }
-
-/* 第三排/卡片 */
-.tab-content.active > :nth-child(3),
-.sub-tab-content.active > :nth-child(3) { animation-delay: 90ms; }
-
-/* 第四排/卡片 */
-.tab-content.active > :nth-child(4),
-.sub-tab-content.active > :nth-child(4) { animation-delay: 135ms; }
-
-/* 第五排/卡片 */
-.tab-content.active > :nth-child(5),
-.sub-tab-content.active > :nth-child(5) { animation-delay: 180ms; }
-
-/* 第六排/及以后所有卡片 */
-.tab-content.active > :nth-child(n+6),
-.sub-tab-content.active > :nth-child(n+6) { animation-delay: 225ms; }
-
-/* 列表内部卡片（例如多条公告、多门成绩单）的第二层微小级联 */
-.tab-content.active .scroll-list > :nth-child(1),
-.tab-content.active .classroom-grid-list > :nth-child(1) { animation-delay: 80ms; }
-
-.tab-content.active .scroll-list > :nth-child(2),
-.tab-content.active .classroom-grid-list > :nth-child(2) { animation-delay: 125ms; }
-
-.tab-content.active .scroll-list > :nth-child(3),
-.tab-content.active .classroom-grid-list > :nth-child(3) { animation-delay: 170ms; }
-
-.tab-content.active .scroll-list > :nth-child(4),
-.tab-content.active .classroom-grid-list > :nth-child(4) { animation-delay: 215ms; }
-
-.tab-content.active .scroll-list > :nth-child(n+5),
-.tab-content.active .classroom-grid-list > :nth-child(n+5) { animation-delay: 260ms; }
+/* 级联延迟：前五项依次错开，之后统一入场，长列表不无限拖长 */
+.stagger-in > :nth-child(1) { animation-delay: 0ms; }
+.stagger-in > :nth-child(2) { animation-delay: 35ms; }
+.stagger-in > :nth-child(3) { animation-delay: 70ms; }
+.stagger-in > :nth-child(4) { animation-delay: 105ms; }
+.stagger-in > :nth-child(5) { animation-delay: 140ms; }
+.stagger-in > :nth-child(n+6) { animation-delay: 170ms; }
 
 /* ==================== 长列表性能保护 ====================
  *
- * 空教室查询单次可返回 130+ 张卡片、成绩页有 70+ 门课，而 .glass-card 带
- * backdrop-filter 会把每张卡提升为独立合成层、每帧重新采样背景。若这些卡片
- * 再同时跑入场动画，低端 Android WebView 会明显掉帧。
- *
- * 因此对长列表做两件事：入场动画只保留前 10 项；列表内的卡片不使用
- * backdrop-filter（卡片背景本身已是半透明渐变，观感差异极小）。
- * 注意：动画被关掉时必须显式恢复 opacity——基线规则把列表子项设成了
- * opacity:0，只靠动画的 forwards 才变可见。
+ * 空教室查询单次可返回 130+ 张卡片、成绩页有 70+ 门课，而带 backdrop-filter
+ * 的卡片每个都是独立合成层。入场动画只保留前 10 项，其余直接显示；
+ * 列表内的卡片不使用 backdrop-filter（卡片背景本身已是半透明渐变）。
  */
-.tab-content.active .scroll-list > :nth-child(n+11),
-.tab-content.active .classroom-grid-list > :nth-child(n+11) {
+.stagger-in > :nth-child(n+11) {
     animation: none;
-    opacity: 1;
 }
 
 .scroll-list .glass-card,
@@ -627,9 +581,7 @@ select option {
 }
 
 /* ==================== 动效降级 ====================
- * 系统开启"减少动态效果"时关闭骨牌动效与过渡。
- * 这里的 !important 是该 media query 的通行写法：必须压过散落各处的动画声明，
- * 同时把 opacity 强制恢复，否则列表项会因动画被禁而永久不可见。
+ * 系统开启"减少动态效果"时关闭动效与过渡。子项默认可见，无需再强制 opacity。
  */
 @media (prefers-reduced-motion: reduce) {
     *,
@@ -639,14 +591,6 @@ select option {
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
         scroll-behavior: auto !important;
-    }
-
-    .tab-content > *,
-    .sub-tab-content > *,
-    .scroll-list > *,
-    .classroom-grid-list > *,
-    .timetable-grid > * {
-        opacity: 1 !important;
     }
 }
 

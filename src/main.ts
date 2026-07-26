@@ -88,6 +88,41 @@ export class YnufeUI {
     }
 
     /**
+     * 让容器的子项播一次入场级联动效（.stagger-in，见 app.css）。
+     *
+     * 动效类播完即移除：display:none 切回 block 会重启 CSS 动画，类若常驻，
+     * 每次切 Tab 都会重播一遍。移除时机用 animationend 去抖，而不能用固定
+     * 定时器——容器可能在隐藏的 Tab 里渲染，动画要等首次显示才开始跑，
+     * 定时器会在用户看到之前就把类摘掉。
+     *
+     * Args:
+     *     container (HTMLElement | null): 刚完成子项渲染的列表容器。
+     */
+    private static playEntrance(container: HTMLElement | null): void {
+        if (!container) return;
+
+        // 清理上一轮渲染残留的监听与类，保证本轮从干净状态重新触发
+        (container as any)._staggerCleanup?.();
+        void container.offsetWidth; // 强制 reflow，使"移除后重加"对未被替换的子项也能重启动画
+        container.classList.add("stagger-in");
+
+        let timer: number | undefined;
+        const cleanup = () => {
+            if (timer !== undefined) window.clearTimeout(timer);
+            container.removeEventListener("animationend", onEnd);
+            container.classList.remove("stagger-in");
+            delete (container as any)._staggerCleanup;
+        };
+        const onEnd = () => {
+            // 每个子项结束都会触发一次，等 150ms 内不再有新的结束事件才收尾
+            if (timer !== undefined) window.clearTimeout(timer);
+            timer = window.setTimeout(cleanup, 150);
+        };
+        (container as any)._staggerCleanup = cleanup;
+        container.addEventListener("animationend", onEnd);
+    }
+
+    /**
      * 统一处理各业务模块的加载异常。
      *
      * 关键在于把三种情况区分开：会话过期（静默，由续期流程接管）、
@@ -725,6 +760,9 @@ export class YnufeUI {
                 slotEl.appendChild(card);
             }
         });
+
+        // 课表卡片分散在各持久槽位里，动效标记打在网格容器上
+        this.playEntrance(document.querySelector(".timetable-grid"));
     }
 
     /**
@@ -807,6 +845,7 @@ export class YnufeUI {
             card.addEventListener("click", () => this.showCourseDetail(c));
             container.appendChild(card);
         });
+        this.playEntrance(container);
     }
 
     /**
@@ -1007,6 +1046,7 @@ export class YnufeUI {
             `;
             container.appendChild(card);
         });
+        this.playEntrance(container);
     }
 
     /**
@@ -1042,6 +1082,7 @@ export class YnufeUI {
                         `;
                         container.appendChild(card);
                     });
+                    this.playEntrance(container);
                 }
             }
         } catch (e) {
@@ -1120,6 +1161,7 @@ export class YnufeUI {
             `;
             container.appendChild(card);
         });
+        this.playEntrance(container);
 
         // 同步刷新首页倒计时并排程考试提醒
         this.renderExamCountdown(list);
@@ -1185,6 +1227,7 @@ export class YnufeUI {
             `;
             container.appendChild(card);
         });
+        this.playEntrance(container);
     }
 
     /**
@@ -1230,6 +1273,7 @@ export class YnufeUI {
                         `;
                         container.appendChild(card);
                     });
+                    this.playEntrance(container);
                 }
             }
         } catch (e) {
@@ -1275,6 +1319,7 @@ export class YnufeUI {
                         `;
                         container.appendChild(card);
                     });
+                    this.playEntrance(container);
                 }
             }
         } catch (e) {
@@ -1336,6 +1381,7 @@ export class YnufeUI {
             card.addEventListener("click", () => this.showAnnouncementDetail(ann));
             container.appendChild(card);
         });
+        this.playEntrance(container);
     }
 
     /**
@@ -1539,6 +1585,7 @@ export class YnufeUI {
                         card.innerText = roomName;
                         container.appendChild(card);
                     });
+                    this.playEntrance(container);
                 }
             }
         } catch (err) {
