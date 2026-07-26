@@ -259,6 +259,57 @@ export class ThemeCustomizer {
      *     rgb (string): RGB 颜色代码。
      *     save (boolean): 是否保存到 LocalStorage。
      */
+    /**
+     * 估算颜色的相对亮度（0=纯黑，1=纯白）。
+     *
+     * Args:
+     *     hex (string): #rgb 或 #rrggbb 形式的颜色。
+     *
+     * Returns:
+     *     number | null: 亮度；无法解析时为 null。
+     */
+    private static luminanceOf(hex: string): number | null {
+        const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec((hex || "").trim());
+        if (!m) return null;
+        let h = m[1];
+        if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+        const r = parseInt(h.slice(0, 2), 16) / 255;
+        const g = parseInt(h.slice(2, 4), 16) / 255;
+        const b = parseInt(h.slice(4, 6), 16) / 255;
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    }
+
+    /**
+     * 切换深/浅模式时，丢弃与新模式对比度冲突的背景与文字覆盖。
+     *
+     * 风格预设（如「云瓷白」bg=#ffffff）会把背景以内联 !important 写在 body 上，
+     * 而深浅模式只切换 body 的 class。若不清理，切到暗色后文字变成近白色，
+     * 叠在依然雪白的背景上会完全看不清；反之亦然。
+     *
+     * 只清理真正冲突的项：深色模式下丢弃浅色背景、浅色模式下丢弃深色背景，
+     * 用户自选的同向配色予以保留。
+     *
+     * Args:
+     *     mode ("dark" | "light"): 即将生效的模式。
+     */
+    static dropConflictingColors(mode: "dark" | "light"): void {
+        const bg = localStorage.getItem("ynufe_bg_color") || "";
+        const bgLum = this.luminanceOf(bg);
+        if (bgLum !== null) {
+            const conflicts = mode === "dark" ? bgLum > 0.5 : bgLum < 0.5;
+            if (conflicts) {
+                this.setBgColor("", true);
+                this.updateActiveBgUI("");
+                // 背景被丢弃后，自定义文字色的对比度前提也不再成立
+                this.setTextColor("", true);
+                this.updateActiveTextUI("");
+                // 该配色来自某个风格预设时，同时取消其选中态，避免 UI 与实际不符
+                localStorage.removeItem("ynufe_style_preset");
+                this.updateActiveStyleUI("");
+            }
+        }
+    }
+
     static setAccentColor(hex: string, rgb: string, save: boolean = true): void {
         document.body.style.setProperty("--primary-color", hex, "important");
         document.body.style.setProperty("--primary-color-rgb", rgb, "important");

@@ -2030,12 +2030,17 @@ body.theme-light .logout-icon {
 }
 
 /* 2. 顶栏设置与注销按钮的自身 SVG 图标 */
+/* 铃铃与齿轮、退出并排放置，三者必须同源取色；
+   此前 .notify-icon svg 被漏在这条规则外，只继承到 --text-primary，
+   导致切换强调色时唯独铃铛不跟着变。 */
+.notify-icon svg,
 .settings-icon svg,
 .logout-icon svg {
     color: var(--icon-inactive-color) !important; /* 默认是主题色，根据深浅模式配置不透明度 */
     transition: color 0.3s ease, filter 0.3s ease, transform 0.3s ease;
 }
 
+.notify-icon:hover svg,
 .settings-icon:hover svg {
     color: var(--primary-color) !important; /* 悬浮时满亮度 */
     filter: drop-shadow(0 0 4px rgba(var(--primary-color-rgb), 0.55)) !important;

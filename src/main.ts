@@ -1618,6 +1618,9 @@ export class YnufeUI {
             body.classList.add("theme-dark");
         }
         localStorage.setItem("ynufe_theme", mode);
+        // 风格预设把背景以内联 !important 写在 body 上，仅换 class 不会清掉它。
+        // 例如「云瓷白」定死白底，切到暗色后文字转为近白色，就会白底白字。
+        ThemeCustomizer.dropConflictingColors(mode);
         WallpaperManager.applyAdaptiveWallpaperColor(mode);
 
         const btns = document.querySelectorAll(".theme-btn");
