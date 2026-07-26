@@ -24,6 +24,10 @@ export default defineConfig({
         autoRewrite: true,
         protocolRewrite: 'http',
         cookieDomainRewrite: '',
+        // 教务网把 JSESSIONID 下发为 Path=/jsxsd，浏览器据此不会在请求
+        // /ewebeditor/uploadfile/*.doc（公告附件）时携带它，服务端只看到半个
+        // 身份，返回「非法访问文件！」。开发代理下放开作用域，让附件也能带上会话。
+        cookiePathRewrite: '/',
         headers: {
           Referer: 'https://xjwis.ynufe.edu.cn/jsxsd/',
           Origin: 'https://xjwis.ynufe.edu.cn',

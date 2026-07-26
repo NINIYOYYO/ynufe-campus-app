@@ -30,6 +30,34 @@ PROXY_PREFIXES = ("/jsxsd/", "/ewebeditor/", "/uploadfiles/")
 TARGET_NETLOC = urllib.parse.urlsplit(TARGET_HOST).netloc
 
 
+def rewrite_set_cookie(value):
+    """放开 Cookie 的 Path 作用域。
+
+    教务网把 JSESSIONID 下发为 Path=/jsxsd，浏览器据此不会在请求
+    /ewebeditor/uploadfile/*.doc（公告附件）时携带它，服务端只看到 jsxsd
+    这半个身份，返回「非法访问文件！」。开发代理下本机只服务本应用，
+    统一改为 Path=/ 是安全的，且能让附件请求带上会话。
+
+    Args:
+        value (str): 原始 Set-Cookie 头。
+
+    Returns:
+        str: Path 已改写为 / 的 Set-Cookie 头。
+    """
+    parts = [p.strip() for p in value.split(";")]
+    rebuilt = [parts[0]]
+    has_path = False
+    for attr in parts[1:]:
+        if attr.lower().startswith("path="):
+            has_path = True
+            rebuilt.append("Path=/")
+        else:
+            rebuilt.append(attr)
+    if not has_path:
+        rebuilt.append("Path=/")
+    return "; ".join(rebuilt)
+
+
 def rewrite_location(value):
     """把指向教务网的重定向地址改写为同源相对路径。
 
@@ -106,6 +134,8 @@ class YnufeProxyHandler(http.server.SimpleHTTPRequestHandler):
                     if header.lower() not in ('content-length', 'transfer-encoding', 'content-encoding'):
                         if header.lower() == 'location':
                             value = rewrite_location(value)
+                        elif header.lower() == 'set-cookie':
+                            value = rewrite_set_cookie(value)
                         self.send_header(header, value)
                 
                 content = response.read()
@@ -118,6 +148,8 @@ class YnufeProxyHandler(http.server.SimpleHTTPRequestHandler):
                 if header.lower() not in ('content-length', 'transfer-encoding', 'content-encoding'):
                     if header.lower() == 'location':
                         value = rewrite_location(value)
+                    elif header.lower() == 'set-cookie':
+                        value = rewrite_set_cookie(value)
                     self.send_header(header, value)
             content = e.read()
             self.send_header('Content-Length', str(len(content)))
