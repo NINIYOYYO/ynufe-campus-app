@@ -24,9 +24,17 @@ export class YnufeClient {
      *     Capacitor 原生手机应用下返回教务系统域名。
      */
     private static get BASE_URL(): string {
-        const isCapacitor = typeof (window as any).Capacitor !== "undefined";
-        const isLocalHost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-        return (isCapacitor || !isLocalHost) ? AppConfig.TARGET_HOST : "";
+        // 注意：@capacitor/core 被打进 Web 包后，浏览器里同样会定义 window.Capacitor，
+        // 因此「全局是否存在」不能用来判断运行环境，必须调用 isNativePlatform()。
+        // 早期用前者判断，导致浏览器调试时请求被打到绝对域名、直接被 CORS 拦掉，
+        // vite 与 dev_server.py 的 /jsxsd 代理形同虚设。
+        const cap = (window as any).Capacitor;
+        const isNative = typeof cap?.isNativePlatform === "function" && cap.isNativePlatform() === true;
+
+        // 原生壳内由 CapacitorHttp 直连教务网，不受同源策略限制；
+        // 浏览器里则一律走同源相对路径，交给本地代理转发——浏览器直连教务网
+        // 永远会失败（对方不返回 CORS 头），所以这里不存在「直连」的可用场景。
+        return isNative ? AppConfig.TARGET_HOST : "";
     }
 
     /**
