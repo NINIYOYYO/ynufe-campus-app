@@ -1,0 +1,17 @@
+{
+  "appId": "cn.edu.ynufe.campus",
+  "appName": "云财学子",
+  "webDir": "dist",
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    },
+    "CapacitorCookies": {
+      "enabled": true
+    },
+    "LocalNotifications": {
+      "smallIcon": "ic_launcher",
+      "iconColor": "#3b82f6"
+    }
+  }
+}

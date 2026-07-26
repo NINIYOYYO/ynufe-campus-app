@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>云财教务助手</title>
+    <!-- 字体使用系统字体栈（app.css 内定义），不再引用 Google Fonts，避免国内网络下阻塞首屏渲染 -->
+    <link rel="stylesheet" href="app.css">
+</head>
+<body>
+    <!-- 独立壁纸背景层 (支持手机般手势无缝缩放和拖拽移动) -->
+    <div id="wallpaper-bg" class="wallpaper-bg">
+        <img id="wallpaper-img" src="" alt="wallpaper" style="display: none;">
+    </div>
+
+    <!-- 背景层漂浮的液体模糊光斑 (Liquid Blobs) -->
+    <div class="liquid-blob blob1"></div>
+    <div class="liquid-blob blob2"></div>
+    <div class="liquid-blob blob3"></div>
+    
+    <!-- 1. 登录面板 overlay -->
+    <div id="login-overlay" class="overlay active">
+        <div class="glass-card login-card">
+            <div class="logo-area">
+                <div class="logo-glow"></div>
+                <h2>YNUFE</h2>
+                <p>云财智能教务助手</p>
+            </div>
+            
+            <form id="login-form">
+                <div class="input-group">
+                    <label for="username">学号</label>
+                    <input type="text" id="username" placeholder="请输入您的学号" required autocomplete="username">
+                </div>
+                <div class="input-group">
+                    <label for="password">密码</label>
+                    <input type="password" id="password" placeholder="请输入密码" required autocomplete="current-password">
+                </div>
+                <div class="input-group captcha-group">
+                    <label for="captcha">验证码</label>
+                    <div class="captcha-row">
+                        <input type="text" id="captcha" placeholder="请输入验证码" required maxlength="4" autocomplete="off">
+                        <img id="captcha-img" src="" alt="点击刷新" title="点击刷新">
+                    </div>
+                </div>
+                <div class="checkbox-group">
+                    <label class="custom-checkbox">
+                        <input type="checkbox" id="remember-me">
+                        <span class="checkmark"></span>
+                        记住账号密码
+                    </label>
+                </div>
+                
+                <button type="submit" id="btn-login" class="btn-primary glow-button">
+                    <span>登 录</span>
+                </button>
+            </form>
+            <div id="login-msg" class="error-msg"></div>
+        </div>
+    </div>
+
+    <!-- 2. 全局加载遮罩 -->
+    <div id="loading-spinner" class="overlay">
+        <div class="spinner-container">
+            <div class="double-bounce1"></div>
+            <div class="double-bounce2"></div>
+            <p>正在拉取最新教务数据...</p>
+        </div>
+    </div>
+
+    <!-- 3. 主界面容器 (SPA 5 Tabs) -->
+    <main id="app-container" class="blur-container">
+        
+        <!-- ==================== Tab 1: 首页 ==================== -->
+        <section id="tab-home" class="tab-content active">
+            <header class="app-header">
+                <div class="user-greeting">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <p id="time-greeting">您好,</p>
+                        <span id="sync-status-tag" class="sync-tag offline" title="点击刷新/同步最新数据" style="cursor: pointer;">
+                            <span class="sync-dot"></span>
+                            <span class="sync-text">未同步 · 点击刷新</span>
+                        </span>
+                    </div>
+                    <h1 id="user-name-display">云财学子</h1>
+                </div>
+                <div class="header-actions" style="display: flex; gap: 14px; align-items: center;">
+                    <div class="notify-icon" id="btn-notify" title="上课提醒设置">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="cursor: pointer; opacity: 0.8; transition: opacity 0.2s;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                    </div>
+                    <div class="settings-icon" id="btn-settings" title="壁纸与个性化">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="cursor: pointer; opacity: 0.8; transition: opacity 0.2s;"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                    </div>
+                    <div class="logout-icon" id="btn-logout" title="注销登录">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+                    </div>
+                </div>
+            </header>
+
+            <!-- 个人基本卡片 -->
+            <div class="glass-card profile-card">
+                <div class="profile-glow"></div>
+                <div class="profile-info-row"><span class="info-label">院系</span><span class="info-val" id="profile-dept">-</span></div>
+                <div class="profile-info-row"><span class="info-label">专业</span><span class="info-val" id="profile-major">-</span></div>
+                <div class="profile-info-row"><span class="info-label">班级</span><span class="info-val" id="profile-class">-</span></div>
+                <div class="profile-info-row"><span class="info-label">学号</span><span class="info-val" id="profile-id">-</span></div>
+            </div>
+
+            <!-- GPA 绩点与学分大卡 -->
+            <div class="gpa-container">
+                <div class="glass-card gpa-subcard">
+                    <h3>平均绩点 (GPA)</h3>
+                    <div class="radial-progress-container">
+                        <svg class="radial-progress" viewBox="0 0 36 36">
+                            <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            <path id="gpa-progress-bar" class="circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        </svg>
+                        <div class="percentage" id="gpa-val">0.00</div>
+                    </div>
+                </div>
+                <div class="glass-card gpa-subcard">
+                    <h3>已修总学分</h3>
+                    <div class="radial-progress-container">
+                        <svg class="radial-progress" viewBox="0 0 36 36">
+                            <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            <path id="credit-progress-bar" class="circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        </svg>
+                        <div class="percentage" id="credit-val">0.0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 考试倒计时卡片 (有临近考试时才显示) -->
+            <div id="exam-countdown-section" class="section-title" style="display:none;">
+                <h2>考试倒计时</h2>
+            </div>
+            <div id="exam-countdown-list" class="exam-countdown-list" style="display:none;"></div>
+
+            <!-- 今日课程卡片 -->
+            <div class="section-title">
+                <h2>今日课程</h2>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span id="home-week-badge" class="week-badge" style="display:none;"></span>
+                    <span id="today-date-str">7月21日</span>
+                </div>
+            </div>
+            <div id="today-courses-list" class="today-list">
+                <div class="empty-state">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="2" x2="6" y2="4"></line><line x1="10" y1="2" x2="10" y2="4"></line><line x1="14" y1="2" x2="14" y2="4"></line></svg>
+                    <p>今天没有课，享受你的空闲时间吧</p>
+                </div>
+            </div>
+
+            <!-- 通知公告卡片 -->
+            <div class="section-title">
+                <h2>公告通知</h2>
+            </div>
+            <div id="home-announcements-list" class="scroll-list">
+                <!-- 动态载入通知 -->
+            </div>
+        </section>
+
+        <!-- ==================== Tab 2: 课表 ==================== -->
+        <section id="tab-timetable" class="tab-content">
+            <header class="section-header">
+                <h1>课程表</h1>
+                <div class="selector-row">
+                    <select id="select-semester"></select>
+                    <select id="select-week"><option value="">全部周</option></select>
+                </div>
+            </header>
+
+            <div class="timetable-scroll-wrapper">
+                <div class="timetable-grid">
+                    <div class="grid-header">时间</div>
+                    <div class="grid-header">一</div><div class="grid-header">二</div><div class="grid-header">三</div>
+                    <div class="grid-header">四</div><div class="grid-header">五</div>
+                    
+                    <!-- 1-2节 -->
+                    <div class="grid-time-cell"><span>1-2节</span><small>08:00</small></div>
+                    <div class="grid-course-slot" data-day="1" data-session="1"></div>
+                    <div class="grid-course-slot" data-day="2" data-session="1"></div>
+                    <div class="grid-course-slot" data-day="3" data-session="1"></div>
+                    <div class="grid-course-slot" data-day="4" data-session="1"></div>
+                    <div class="grid-course-slot" data-day="5" data-session="1"></div>
+                    
+                    <!-- 3-4节 -->
+                    <div class="grid-time-cell"><span>3-4节</span><small>10:00</small></div>
+                    <div class="grid-course-slot" data-day="1" data-session="2"></div>
+                    <div class="grid-course-slot" data-day="2" data-session="2"></div>
+                    <div class="grid-course-slot" data-day="3" data-session="2"></div>
+                    <div class="grid-course-slot" data-day="4" data-session="2"></div>
+                    <div class="grid-course-slot" data-day="5" data-session="2"></div>
+                    
+                    <!-- 5-6节 -->
+                    <div class="grid-time-cell"><span>5-6节</span><small>14:30</small></div>
+                    <div class="grid-course-slot" data-day="1" data-session="3"></div>
+                    <div class="grid-course-slot" data-day="2" data-session="3"></div>
+                    <div class="grid-course-slot" data-day="3" data-session="3"></div>
+                    <div class="grid-course-slot" data-day="4" data-session="3"></div>
+                    <div class="grid-course-slot" data-day="5" data-session="3"></div>
+                    
+                    <!-- 7-8节 -->
+                    <div class="grid-time-cell"><span>7-8节</span><small>16:30</small></div>
+                    <div class="grid-course-slot" data-day="1" data-session="4"></div>
+                    <div class="grid-course-slot" data-day="2" data-session="4"></div>
+                    <div class="grid-course-slot" data-day="3" data-session="4"></div>
+                    <div class="grid-course-slot" data-day="4" data-session="4"></div>
+                    <div class="grid-course-slot" data-day="5" data-session="4"></div>
+                    
+                    <!-- 9-10节 -->
+                    <div class="grid-time-cell"><span>9-10节</span><small>19:00</small></div>
+                    <div class="grid-course-slot" data-day="1" data-session="5"></div>
+                    <div class="grid-course-slot" data-day="2" data-session="5"></div>
+                    <div class="grid-course-slot" data-day="3" data-session="5"></div>
+                    <div class="grid-course-slot" data-day="4" data-session="5"></div>
+                    <div class="grid-course-slot" data-day="5" data-session="5"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== Tab 3: 成绩 ==================== -->
+        <section id="tab-grades" class="tab-content">
+            <header class="section-header">
+                <h1>成绩信息</h1>
+                <!-- 子卡导航 (Sub-tabs) -->
+                <div class="sub-tab-bar">
+                    <button class="sub-tab-item active" data-sub="sub-grades-final">期末成绩</button>
+                    <button class="sub-tab-item" data-sub="sub-grades-level">等级考试</button>
+                </div>
+            </header>
+
+            <!-- 子卡 1: 期末成绩 -->
+            <div id="sub-grades-final" class="sub-tab-content active">
+                <div class="search-and-select" style="margin-bottom:15px;">
+                    <select id="select-grade-semester"><option value="">全部学期</option></select>
+                    <div class="search-wrapper">
+                        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        <input type="text" id="input-grade-search" placeholder="搜索课程名称...">
+                    </div>
+                </div>
+                <div id="grades-list" class="scroll-list"></div>
+            </div>
+
+            <!-- 子卡 2: 等级考试 -->
+            <div id="sub-grades-level" class="sub-tab-content">
+                <div id="level-grades-list" class="scroll-list">
+                    <div class="empty-state"><p>正在加载等级考试成绩...</p></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== Tab 4: 考试与选课 ==================== -->
+        <section id="tab-exams-xk" class="tab-content">
+            <header class="section-header">
+                <h1>考试与选课</h1>
+                <div class="sub-tab-bar">
+                    <button class="sub-tab-item active" data-sub="sub-exams-term">考试安排</button>
+                    <button class="sub-tab-item" data-sub="sub-exams-class">随堂考试</button>
+                    <button class="sub-tab-item" data-sub="sub-xk-center">选课中心</button>
+                </div>
+            </header>
+
+            <!-- 子卡 1: 考试安排 -->
+            <div id="sub-exams-term" class="sub-tab-content active">
+                <div class="search-and-select" style="margin-bottom:15px;">
+                    <select id="select-exam-semester"></select>
+                    <select id="select-exam-type">
+                        <option value="3">期末</option>
+                        <option value="2">期中</option>
+                        <option value="1">期初</option>
+                    </select>
+                </div>
+                <div id="exams-term-list" class="scroll-list">
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                        <p>未查询到期末考试安排</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 子卡 2: 随堂考试 -->
+            <div id="sub-exams-class" class="sub-tab-content">
+                <div id="exams-class-list" class="scroll-list">
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                        <p>暂无随堂考试记录</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 子卡 3: 选课中心 -->
+            <div id="sub-xk-center" class="sub-tab-content">
+                <div id="xk-activities-list" class="scroll-list">
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg>
+                        <p>当前没有开放的选课活动</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== Tab 5: 服务与实践 ==================== -->
+        <section id="tab-practice-services" class="tab-content">
+            <header class="section-header">
+                <h1>服务与实践</h1>
+                <div class="sub-tab-bar">
+                    <button class="sub-tab-item active" data-sub="sub-services-room">空教室查询</button>
+                    <button class="sub-tab-item" data-sub="sub-practice-thesis">毕业设计与实习</button>
+                </div>
+            </header>
+
+            <!-- 子卡 1: 空教室查询 -->
+            <div id="sub-services-room" class="sub-tab-content active">
+                <div class="glass-card filter-card">
+                    <form id="classroom-query-form">
+                        <div class="form-row">
+                            <div class="form-group half">
+                                <label for="query-xq">校区</label>
+                                <select id="query-xq">
+                                    <option value="1">南院</option>
+                                    <option value="2">北院</option>
+                                    <option value="3">呈贡校区</option>
+                                    <option value="E298641275B7471181C291FA9BC76452">安宁校区</option>
+                                </select>
+                            </div>
+                            <div class="form-group half">
+                                <label for="query-jslx">教室类型</label>
+                                <select id="query-jslx">
+                                    <option value="">全部</option>
+                                    <option value="01">普通教室</option>
+                                    <option value="02">多媒体教室</option>
+                                    <option value="03">实验室</option>
+                                    <option value="04">机房</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group half">
+                                <label for="query-zc">周次</label>
+                                <select id="query-zc"></select>
+                            </div>
+                            <div class="form-group half">
+                                <label for="query-day">星期</label>
+                                <select id="query-day">
+                                    <option value="1">星期一</option><option value="2">星期二</option><option value="3">星期三</option>
+                                    <option value="4">星期四</option><option value="5">星期五</option><option value="6">星期六</option><option value="7">星期日</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group half">
+                                <label for="query-jc-start">开始节次</label>
+                                <select id="query-jc-start">
+                                    <option value="1">第1节</option><option value="3">第3节</option><option value="5">第5节</option><option value="7">第7节</option><option value="9">第9节</option>
+                                </select>
+                            </div>
+                            <div class="form-group half">
+                                <label for="query-jc-end">结束节次</label>
+                                <select id="query-jc-end">
+                                    <option value="2">第2节</option><option value="4">第4节</option><option value="6">第6节</option><option value="8">第8节</option><option value="10">第10节</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-primary glow-button" style="margin-top: 15px;">
+                            <span>查询空教室</span>
+                        </button>
+                    </form>
+                </div>
+                <div class="section-title">
+                    <h2>空闲教室</h2>
+                    <span id="classroom-count">共0间</span>
+                </div>
+                <div id="classrooms-result-list" class="classroom-grid-list">
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="9" y1="22" x2="9" y2="16"></line><line x1="15" y1="22" x2="15" y2="16"></line><line x1="9" y1="16" x2="15" y2="16"></line></svg>
+                        <p>输入条件，点击上方按钮开始查询</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 子卡 2: 毕业设计与实习 -->
+            <div id="sub-practice-thesis" class="sub-tab-content">
+                <!-- 毕业设计卡片 -->
+                <div class="section-title"><h2>毕业设计 (Thesis)</h2></div>
+                <div class="glass-card status-panel">
+                    <div class="status-row"><span class="status-lbl">选题题目</span><span class="status-val bold" id="thesis-title">未完成选题</span></div>
+                    <div class="status-row"><span class="status-lbl">开题报告</span><span class="status-val" id="thesis-report">未上传</span></div>
+                    <div class="status-row"><span class="status-lbl">过程指导次数</span><span class="status-val" id="thesis-guidance-count">0次</span></div>
+                    <div class="status-row"><span class="status-lbl">论文最终成绩</span><span class="status-val bold" id="thesis-grade">-</span></div>
+                </div>
+                
+                <!-- 实习信息卡片 -->
+                <div class="section-title"><h2>毕业实习 (Internship)</h2></div>
+                <div id="practice-internship-list" class="scroll-list">
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+                        <p>暂无实习环节任务</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 4. iOS 风格底端抽屉弹出层 (Bottom Sheet) -->
+    <div id="bottom-sheet" class="bottom-sheet">
+        <div class="sheet-overlay" id="sheet-overlay"></div>
+        <div class="sheet-content">
+            <div class="sheet-handle"></div>
+            <div class="sheet-header">
+                <h2 id="sheet-title">详情</h2>
+                <span class="course-tag" id="sheet-tag">-</span>
+            </div>
+            <div class="sheet-body" id="sheet-body-content">
+                <!-- 动态装填 -->
+            </div>
+        </div>
+    </div>
+    <!-- 6. iOS 风格壁纸与个性化控制面板 (Settings Sheet) -->
+    <div id="settings-sheet" class="bottom-sheet">
+        <div class="sheet-overlay" id="settings-overlay"></div>
+        <div class="sheet-content">
+            <div class="sheet-handle"></div>
+            <div class="sheet-header">
+                <h2>壁纸与个性化</h2>
+                <span class="course-tag" style="background:rgba(59,130,246,0.15); color:var(--primary-color);">Settings</span>
+            </div>
+            <div class="sheet-body">
+                <div class="settings-section" style="margin-bottom: 22px;">
+                    <h3 style="font-size:14px; margin-bottom:12px; color:var(--text-primary); display:flex; align-items:center; gap:6px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.39 5.39 0 0 1-4.4 2.26 5.4 5.4 0 0 1-5.4-5.4c0-1.79.87-3.38 2.21-4.36C12.92 3.04 12.46 3 12 3z"/><circle cx="8.5" cy="9.5" r="1"/><circle cx="15.5" cy="9.5" r="1"/><circle cx="9" cy="14.5" r="1"/></svg>
+                        风格主题（一键换装）
+                    </h3>
+                    <div id="style-preset-grid" class="style-preset-grid"></div>
+                </div>
+
+                <div class="settings-section" style="margin-bottom: 20px;">
+                    <h3 style="font-size:14px; margin-bottom:12px; color:var(--text-primary);">主题模式</h3>
+                    <div class="theme-toggle-bar">
+                        <button class="theme-btn active" data-theme="dark">深色模式 (Dark)</button>
+                        <button class="theme-btn" data-theme="light">浅色模式 (Light)</button>
+                    </div>
+                </div>
+
+                <!-- 2. 主题强调色 (多种配色) -->
+                <div class="settings-section" style="margin-bottom: 20px;">
+                    <h3 style="font-size:14px; margin-bottom:12px; color:var(--text-primary); display:flex; align-items:center; gap:6px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a7 7 0 1 0 10 10"/></svg>
+                        主题强调色 (多种配色)
+                    </h3>
+                    <div class="accent-color-palette" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:6px;">
+                        <button class="accent-color-btn active" data-hex="#3b82f6" data-rgb="59, 130, 246" title="皇家蓝" style="background:#3b82f6;"></button>
+                        <button class="accent-color-btn" data-hex="#8b5cf6" data-rgb="139, 92, 246" title="梦幻紫" style="background:#8b5cf6;"></button>
+                        <button class="accent-color-btn" data-hex="#10b981" data-rgb="16, 185, 129" title="翡翠绿" style="background:#10b981;"></button>
+                        <button class="accent-color-btn" data-hex="#ec4899" data-rgb="236, 72, 153" title="迷幻粉" style="background:#ec4899;"></button>
+                        <button class="accent-color-btn" data-hex="#f59e0b" data-rgb="245, 158, 11" title="琥珀橙" style="background:#f59e0b;"></button>
+                        <button class="accent-color-btn" data-hex="#ef4444" data-rgb="239, 68, 68" title="烈焰红" style="background:#ef4444;"></button>
+                    </div>
+                </div>
+
+                <!-- 3. 主文字颜色自定义 (预设字色 + Color Picker) -->
+                <div class="settings-section" style="margin-bottom: 20px;">
+                    <h3 style="font-size:14px; margin-bottom:12px; color:var(--text-primary); display:flex; align-items:center; justify-content:space-between;">
+                        <span style="display:flex; align-items:center; gap:6px;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><path d="m6 16 6-12 6 12"/><path d="M8 12h8"/></svg>
+                            主文字颜色自定义
+                        </span>
+                        <button id="btn-reset-text-color" style="background:none; border:none; color:var(--primary-color); font-size:12px; cursor:pointer; font-weight:500; padding:0;">恢复默认字色</button>
+                    </h3>
+                    <div class="text-color-palette" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                        <button class="text-color-btn active" data-hex="" title="默认自适应" style="background:var(--card-bg); border:1px solid var(--card-border); color:var(--text-primary); font-size:11px; padding:0 8px; width:auto; border-radius:14px;">默认</button>
+                        <button class="text-color-btn" data-hex="#ffffff" title="纯白" style="background:#ffffff;"></button>
+                        <button class="text-color-btn" data-hex="#111827" title="深邃黑" style="background:#111827;"></button>
+                        <button class="text-color-btn" data-hex="#fbbf24" title="暖金琥珀" style="background:#fbbf24;"></button>
+                        <button class="text-color-btn" data-hex="#38bdf8" title="冰清天蓝" style="background:#38bdf8;"></button>
+                        <button class="text-color-btn" data-hex="#34d399" title="薄荷翠绿" style="background:#34d399;"></button>
+                        <button class="text-color-btn" data-hex="#f472b6" title="柔粉云霞" style="background:#f472b6;"></button>
+                        
+                        <!-- 自由 Color Picker -->
+                        <div class="custom-color-picker-wrapper" title="自由选色" style="position:relative; width:28px; height:28px; border-radius:50%; overflow:hidden; border:2px solid var(--card-border); cursor:pointer;">
+                            <input type="color" id="custom-text-color-picker" style="position:absolute; top:-10px; left:-10px; width:48px; height:48px; cursor:pointer; border:none; background:none;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. 全局背景颜色自定义 (预设背景 + Color Picker) -->
+                <div class="settings-section" style="margin-bottom: 20px;">
+                    <h3 style="font-size:14px; margin-bottom:12px; color:var(--text-primary); display:flex; align-items:center; justify-content:space-between;">
+                        <span style="display:flex; align-items:center; gap:6px;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>
+                            背景底色自定义
+                        </span>
+                        <button id="btn-reset-bg-color" style="background:none; border:none; color:var(--primary-color); font-size:12px; cursor:pointer; font-weight:500; padding:0;">恢复默认背景</button>
+                    </h3>
+                    <div class="bg-color-palette" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                        <button class="bg-color-btn active" data-hex="" title="默认自适应" style="background:var(--card-bg); border:1px solid var(--card-border); color:var(--text-primary); font-size:11px; padding:0 8px; width:auto; border-radius:14px;">默认</button>
+                        <button class="bg-color-btn" data-hex="#0f172a" title="夜蓝黑曜" style="background:#0f172a;"></button>
+                        <button class="bg-color-btn" data-hex="#1a0910" title="勃艮第红" style="background:#1a0910;"></button>
+                        <button class="bg-color-btn" data-hex="#091a14" title="深苔幽绿" style="background:#091a14;"></button>
+                        <button class="bg-color-btn" data-hex="#f3e8ff" title="薰衣草灰" style="background:#f3e8ff;"></button>
+                        <button class="bg-color-btn" data-hex="#fff7ed" title="暖杏奶油" style="background:#fff7ed;"></button>
+                        
+                        <!-- 自由背景 Color Picker -->
+                        <div class="custom-color-picker-wrapper" title="自由选背景色" style="position:relative; width:28px; height:28px; border-radius:50%; overflow:hidden; border:2px solid var(--card-border); cursor:pointer;">
+                            <input type="color" id="custom-bg-color-picker" style="position:absolute; top:-10px; left:-10px; width:48px; height:48px; cursor:pointer; border:none; background:none;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3 style="font-size:14px; margin-bottom:12px; color:var(--text-primary);">自定义手机相册图片</h3>
+                    <div class="custom-wallpaper-upload" style="background:rgba(255,255,255,0.03); border: 1px dashed rgba(255,255,255,0.15); border-radius:14px; padding:20px; text-align:center;">
+                        <div style="display:flex; justify-content:center; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
+                            <label for="wallpaper-file-input" class="upload-btn" style="background:rgba(59,130,246,0.15); color:var(--primary-color); border:1px solid rgba(59,130,246,0.2); border-radius:10px; padding:10px 16px; display:inline-block; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.2s; margin-bottom:0;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px; vertical-align:middle;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                                自定义壁纸
+                            </label>
+                            <button id="btn-reset-wallpaper" style="background:rgba(239,68,68,0.12); color:var(--error-color); border:1px solid rgba(239,68,68,0.2); border-radius:10px; padding:10px 16px; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.2s; display:inline-flex; align-items:center; outline:none;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px; vertical-align:middle;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                恢复默认背景
+                            </button>
+                        </div>
+                        <input type="file" id="wallpaper-file-input" accept="image/*" style="display:none;">
+                        <span id="upload-status-text" style="font-size:11px; color:var(--text-secondary); display:block; line-height:1.4;">提示：支持自定义 JPG/PNG 壁纸，上传后将保存在本地，断网和刷新依旧生效</span>
+                        
+                        <!-- 壁纸手势微调进入按钮 -->
+                        <div id="wallpaper-adjust-section" style="margin-top: 16px; text-align: left; display: none;">
+                            <button type="button" id="btn-enter-wallpaper-adjust" class="btn-primary" style="padding: 10px 14px; font-size: 13px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: auto; height: 38px;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                                <span>调整壁纸大小和位置</span>
+                            </button>
+                        </div>
+
+                        <!-- 壁纸模糊与遮罩无级调控区 -->
+                        <div id="wallpaper-tune-section" style="margin-top: 18px; border-top: 1px solid var(--card-border); padding-top: 16px; text-align: left; display: none;">
+                            <h4 style="font-size:12px; margin-bottom:14px; color:var(--text-primary); display:flex; align-items:center; gap:4px;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg>
+                                壁纸显示优化 (防人物抢戏)
+                            </h4>
+                            
+                            <div style="margin-bottom: 14px;">
+                                <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:11px; color:var(--text-secondary);">
+                                    <span>壁纸高斯模糊</span>
+                                    <span id="val-wallpaper-blur">0px</span>
+                                </div>
+                                <input type="range" id="slider-wallpaper-blur" min="0" max="20" value="0" style="width:100%; height:4px; border-radius:2px; background:var(--card-border); outline:none; -webkit-appearance:none; cursor:pointer;" class="tune-slider">
+                            </div>
+                            
+                            <div>
+                                <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:11px; color:var(--text-secondary);">
+                                    <span>遮罩浓度 (压暗/变白)</span>
+                                    <span id="val-wallpaper-mask">60%</span>
+                                </div>
+                                <input type="range" id="slider-wallpaper-mask" min="10" max="85" value="60" style="width:100%; height:4px; border-radius:2px; background:var(--card-border); outline:none; -webkit-appearance:none; cursor:pointer;" class="tune-slider">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 7. 上课提醒设置面板 (Notify Sheet) -->
+    <div id="notify-sheet" class="bottom-sheet">
+        <div class="sheet-overlay" id="notify-overlay"></div>
+        <div class="sheet-content">
+            <div class="sheet-handle"></div>
+            <div class="sheet-header">
+                <h2>上课提醒</h2>
+                <span class="course-tag" style="background:rgba(var(--primary-color-rgb),0.15); color:var(--primary-color);">Notify</span>
+            </div>
+            <div class="sheet-body">
+                <div class="glass-card notify-panel-card">
+                    <div class="notify-row">
+                        <div class="notify-row-text">
+                            <span class="notify-row-title">开启上课提醒</span>
+                            <span class="notify-row-desc">按课表在上课前推送通知，包含课程、教室与时间</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="notify-enabled-toggle">
+                            <span class="switch-slider"></span>
+                        </label>
+                    </div>
+                    <div class="notify-row">
+                        <div class="notify-row-text">
+                            <span class="notify-row-title">提前提醒时间</span>
+                            <span class="notify-row-desc">距离上课还有多久时通知你出发去教室</span>
+                        </div>
+                        <select id="select-notify-lead" class="notify-lead-select">
+                            <option value="5">提前 5 分钟</option>
+                            <option value="10">提前 10 分钟</option>
+                            <option value="15" selected>提前 15 分钟</option>
+                            <option value="20">提前 20 分钟</option>
+                            <option value="30">提前 30 分钟</option>
+                            <option value="45">提前 45 分钟</option>
+                            <option value="60">提前 1 小时</option>
+                        </select>
+                    </div>
+                    <div class="notify-status-bar">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        <span id="notify-status-text">上课提醒未开启</span>
+                    </div>
+                </div>
+                <p class="notify-hint">提示：提醒基于最近一次同步的课表与教学周排程（覆盖未来两周），课表变动后重新同步即可自动更新。安卓手机请在系统设置中允许本应用的通知权限。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. 底部固定导航栏 (5 Tabs) -->
+    <nav class="bottom-nav">
+        <div class="nav-item active" data-target="tab-home">
+            <div class="nav-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            </div>
+            <span>首页</span>
+        </div>
+        <div class="nav-item" data-target="tab-timetable">
+            <div class="nav-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </div>
+            <span>课表</span>
+        </div>
+        <div class="nav-item" data-target="tab-grades">
+            <div class="nav-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </div>
+            <span>成绩</span>
+        </div>
+        <div class="nav-item" data-target="tab-exams-xk">
+            <div class="nav-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            </div>
+            <span>考试选课</span>
+        </div>
+        <div class="nav-item" data-target="tab-practice-services">
+            <div class="nav-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            </div>
+            <span>实践服务</span>
+        </div>
+    </nav>
+
+    <!-- 6. 壁纸自由拖动缩放手势调整模式 Overlay -->
+    <div id="wallpaper-adjust-overlay" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 9999; pointer-events: auto; touch-action: none; background: rgba(0, 0, 0, 0.35);">
+        <!-- 顶部引导条 -->
+        <div style="position: absolute; top: 50px; left: 50%; transform: translateX(-50%); background: rgba(18, 20, 29, 0.85); border: 1px solid rgba(255, 255, 255, 0.12); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 13px; font-weight: 600; backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); pointer-events: none; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.4); display: flex; align-items: center; gap: 8px; width: 80%; max-width: 280px; justify-content: center; box-sizing: border-box;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+            <span>单指拖动位置，双指捏合缩放</span>
+        </div>
+        
+        <!-- 底部确定/取消按钮 -->
+        <div style="position: absolute; bottom: 50px; left: 0; right: 0; display: flex; justify-content: center; gap: 16px; padding: 0 30px; box-sizing: border-box; pointer-events: none;">
+            <button type="button" id="btn-save-wallpaper-adjust" style="pointer-events: auto; flex: 1; max-width: 140px; background: #0071e3; color: #fff; border: none; padding: 12px 24px; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(0,113,227,0.3); transition: transform 0.2s ease;">保存位置</button>
+            <button type="button" id="btn-cancel-wallpaper-adjust" style="pointer-events: auto; flex: 1; max-width: 140px; background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.20); color: #fff; padding: 12px 24px; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); transition: transform 0.2s ease;">取消</button>
+        </div>
+    </div>
+
+    <!-- 核心 TS 构建入口 -->
+    <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

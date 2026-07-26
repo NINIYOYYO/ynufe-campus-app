@@ -1,0 +1,35 @@
+node_modules/
+
+# Vite 构建产物（Capacitor 的 webDir 即为 dist）
+dist/
+
+# 旧版非构建化实现的遗留目录，已被 src/ + dist/ 取代
+www/
+
+# 测试 fixture 是从教务网抓取的真实页面，含姓名/学号/成绩等个人信息，
+# 一律本地生成（npm run capture:fixtures），不入库。
+tests/fixtures/
+tests/.build/
+
+# 打包产物
+*.apk
+*.aab
+
+# Android / Capacitor：机器相关配置与生成物
+android/local.properties
+android/.gradle/
+android/build/
+android/app/build/
+android/capacitor-cordova-android-plugins/build/
+# cap sync 生成，内容是 dist 的副本
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json
+
+# 签名密钥，绝不入库
+*.keystore
+*.jks
+keystore.properties
+
+.DS_Store
+Thumbs.db

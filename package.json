@@ -1,0 +1,26 @@
+{
+  "name": "ynufe-campus-app",
+  "version": "1.1.0",
+  "description": "YNufe Campus App Enterprise Edition",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "cap-sync": "npx cap sync",
+    "capture:fixtures": "node tests/capture-fixtures.mjs",
+    "test:parsers": "node tests/parsers.test.mjs"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/cli": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/local-notifications": "^6.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.21.5",
+    "linkedom": "^0.18.5",
+    "typescript": "^5.3.3",
+    "vite": "^5.1.4"
+  }
+}

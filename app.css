@@ -1,0 +1,2465 @@
+/* 全局基础配置 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+:root {
+    --primary-color: #3b82f6; 
+    --accent-color: #10b981;  
+    --warning-color: #f59e0b; 
+    --error-color: #ef4444;   
+    --glass-blur: none; /* 去除模糊，展示锐利人物壁纸 */
+}
+
+/* ==================== 深色/夜间模式变量 ==================== */
+body, body.theme-dark {
+    --bg-color: #0d0d17;
+    --card-bg: linear-gradient(135deg, rgba(var(--primary-color-rgb), 0.16) 0%, rgba(var(--wallpaper-dark-rgb, 10, 11, 17), 0.72) 100%);
+    --card-border: rgba(var(--primary-color-rgb), 0.16);
+    --text-primary: #f5f6f9;
+    --text-secondary: #a8aec0;
+    --input-bg: rgba(var(--wallpaper-dark-rgb, 10, 11, 17), 0.60);
+    --input-border: rgba(255, 255, 255, 0.08);
+    --nav-bg: rgba(var(--wallpaper-dark-rgb, 10, 11, 17), 0.70);
+    --nav-border: rgba(255, 255, 255, 0.10);
+    --sub-tab-bg: rgba(255, 255, 255, 0.04);
+    --sub-tab-border: rgba(255, 255, 255, 0.06);
+    --wallpaper-mask: rgba(10, 11, 16, var(--wallpaper-mask-opacity, 0.32));
+    --sheet-bg: linear-gradient(135deg, rgba(var(--primary-color-rgb), 0.18) 0%, rgba(var(--wallpaper-dark-rgb, 10, 11, 17), 0.90) 100%); /* 自适应壁纸暗色偏向抽屉底色 */
+    
+    /* 动态强调色：支持提取自适应壁纸主色 */
+    --primary-color-rgb: 59, 130, 246; /* 默认苹果蓝 */
+    --primary-color: rgb(var(--primary-color-rgb));
+    
+    /* 自适应深色背景渐变与发光球 */
+    --bg-gradient: radial-gradient(circle at 50% 50%, #0d0d17 0%, #06060a 100%);
+    --blob1-color: rgba(59, 130, 246, 0.06);
+    --blob2-color: rgba(147, 51, 234, 0.04);
+    --blob3-color: rgba(16, 185, 129, 0.02);
+    
+    /* 优雅卡片变量 (深色下高透黑曜石微影) */
+    --card-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.06), inset 0 -1px 0 0 rgba(0, 0, 0, 0.20), 0 12px 36px 0 rgba(0, 0, 0, 0.45);
+    --card-backdrop-filter: brightness(80%);
+    
+    /* 按钮与激活标签变量 */
+    --btn-primary-bg: rgba(var(--primary-color-rgb), 0.22);
+    --btn-primary-text: rgb(var(--primary-color-rgb));
+    --btn-primary-border: rgba(var(--primary-color-rgb), 0.35);
+    --sub-tab-active-bg: rgba(var(--primary-color-rgb), 0.25);
+    --sub-tab-active-text: rgb(var(--primary-color-rgb));
+    --sub-tab-active-border: rgba(var(--primary-color-rgb), 0.25);
+    
+    /* 自适应图标不同层级的不透明度变量 (深色下偏薄以显发光) */
+    --icon-inactive-color: rgba(var(--primary-color-rgb), 0.55);
+    --icon-empty-color: rgba(var(--primary-color-rgb), 0.38);
+    --nav-inactive-color: rgba(var(--primary-color-rgb), 0.45);
+}
+
+/* ==================== 浅色/日间模式变量 ==================== */
+body.theme-light {
+    --bg-color: #ffffff; /* 浅色模式背景改为纯白色 */
+    
+    /* 优雅卡片变量 (浅色下极致乳白清透，羽毛般无感投影，白瓷反光边框) */
+    --card-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.82) 0%, rgba(var(--primary-color-rgb), 0.08) 100%);
+    --card-border: rgba(255, 255, 255, 0.55);
+    --card-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.60), 0 8px 24px 0 rgba(142, 142, 147, 0.10);
+    --card-backdrop-filter: brightness(98%);
+    --text-primary: #1d1d1f; /* 苹果标志性黑灰 */
+    --text-secondary: #515156; /* 略微加深辅助文字，保证极致透明度下的卓越可读性 */
+    --input-bg: rgba(255, 255, 255, 0.48);
+    --input-border: rgba(255, 255, 255, 0.35);
+    --nav-bg: rgba(255, 255, 255, 0.50); /* Dock栏浅色高透玻璃 */
+    --nav-border: rgba(255, 255, 255, 0.35);
+    --sub-tab-bg: rgba(255, 255, 255, 0.22);
+    --sub-tab-border: rgba(255, 255, 255, 0.30);
+    --wallpaper-mask: rgba(255, 255, 255, var(--wallpaper-mask-opacity, 0.22)); /* 极薄亮色遮罩，支持滑块无级浓度调节 */
+    --sheet-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.94) 0%, rgba(var(--primary-color-rgb), 0.08) 100%); /* 浅色下自适应羽毛级主题渐变抽屉 */
+    
+    /* 动态强调色：支持提取自适应壁纸主色 */
+    --primary-color-rgb: 0, 113, 227; /* 默认苹果皇家蓝 */
+    --primary-color: rgb(var(--primary-color-rgb));
+    
+    /* 自适应浅色背景渐变与软糯发光斑 */
+    --bg-gradient: radial-gradient(circle at 50% 50%, #ffffff 0%, #f4f5f8 50%, #e3e6f0 100%);
+    --blob1-color: rgba(59, 130, 246, 0.07);
+    --blob2-color: rgba(147, 51, 234, 0.05);
+    --blob3-color: rgba(236, 72, 153, 0.04);
+    
+    /* 按钮与激活标签变量 */
+    --btn-primary-bg: var(--primary-color); /* 浅色模式下锁死实心强调色，保证100%字迹辨识度 */
+    --btn-primary-text: #ffffff;
+    --btn-primary-border: transparent;
+    --sub-tab-active-bg: rgba(var(--primary-color-rgb), 0.12); /* 浅色下使用主导色半透明 */
+    --sub-tab-active-text: var(--primary-color);
+    --sub-tab-active-border: rgba(var(--primary-color-rgb), 0.25);
+    
+    /* 自适应图标不同层级的不透明度变量 (浅色下加粗变浓，确保白底高可读性) */
+    --icon-inactive-color: rgba(var(--primary-color-rgb), 0.78);
+    --icon-empty-color: rgba(var(--primary-color-rgb), 0.58);
+    --nav-inactive-color: rgba(var(--primary-color-rgb), 0.68);
+}
+
+/* 浅色模式强锁纯白背景 */
+body.theme-light {
+    background-image: none !important;
+    background-color: #ffffff !important;
+}
+
+/* 浅色模式下修正下拉选项样式，防隐形 */
+body.theme-light select option {
+    background-color: #ffffff;
+    color: #1d1d1f;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    letter-spacing: -0.2px;
+    background-color: var(--bg-color);
+    background-image: var(--bg-gradient); /* 自适应雅致多色温渐变，消灭焦黑眩光 */
+    background-attachment: fixed;
+    background-size: cover;
+    background-position: center;
+    color: var(--text-primary);
+    overflow-x: hidden;
+    min-height: 100vh;
+    padding-bottom: 125px; /* 垫高底部，为悬浮玻璃 Dock 预留无障碍滚动呼吸空间 */
+    transition: background-color 0.8s ease, background-image 0.8s ease;
+}
+
+/* 独立壁纸背景层 (支持手机般手势无缝缩放和拖拽移动) */
+.wallpaper-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -4; /* 在所有内容以及液体光斑之下 */
+    overflow: hidden; /* 锁定手机视口边界，允许隐藏多余未剪切壁纸 */
+    pointer-events: none;
+    display: none;
+}
+
+body.has-custom-wallpaper .wallpaper-bg {
+    display: block;
+}
+
+#wallpaper-img {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform-origin: center center;
+    transition: transform 0.05s ease-out, filter 0.3s ease; /* 顺滑微阻尼动效 + 滤镜平滑过渡 */
+    pointer-events: none;
+    display: block;
+    filter: blur(var(--wallpaper-blur, 0px)); /* 支持高斯模糊，彻底解决背景人物过于抢戏显眼问题 */
+}
+
+/* 当用户自定义上传壁纸时，启用暗色半透明还原滤镜 */
+body.has-custom-wallpaper {
+    background-image: none !important; /* 移出 body 上的背景，由 .wallpaper-bg 承载 */
+}
+body.has-custom-wallpaper::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: var(--wallpaper-mask); /* 动态适配深浅色背景遮罩 */
+    z-index: -3;
+    pointer-events: none;
+}
+body.has-custom-wallpaper .liquid-blob {
+    display: none;
+}
+
+/* 液体流体模糊斑块 (Liquid Blobs) 漂浮 - 尺寸升级为超大面积，透光度倍增 */
+.liquid-blob {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(60px); /* 适度收紧滤镜半径，极大减轻 GPU 实时计算负担 */
+    z-index: -2;
+    pointer-events: none;
+    transition: background-color 1.2s ease, transform 0.8s ease;
+    will-change: transform;
+    transform: translateZ(0); /* 开启 GPU 独立合成图层 */
+    backface-visibility: hidden;
+}
+
+.blob1 {
+    width: 480px;
+    height: 480px;
+    background: var(--blob1-color);
+    top: -150px;
+    left: -150px;
+    animation: float-blob1 25s infinite alternate ease-in-out;
+}
+
+.blob2 {
+    width: 520px;
+    height: 520px;
+    background: var(--blob2-color);
+    bottom: -150px;
+    right: -150px;
+    animation: float-blob2 30s infinite alternate ease-in-out;
+}
+
+.blob3 {
+    width: 400px;
+    height: 400px;
+    background: var(--blob3-color);
+    top: 25%;
+    left: 20%;
+    animation: float-blob3 22s infinite alternate ease-in-out;
+}
+
+@keyframes float-blob1 {
+    0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+    100% { transform: translate(150px, 90px) scale(1.2) rotate(360deg); }
+}
+
+@keyframes float-blob2 {
+    0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+    100% { transform: translate(-180px, -120px) scale(0.9) rotate(-360deg); }
+}
+
+@keyframes float-blob3 {
+    0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+    100% { transform: translate(-100px, 160px) scale(1.15) rotate(180deg); }
+}
+
+/* 隐藏滚动条但保留滚动功能 */
+::-webkit-scrollbar {
+    display: none;
+}
+
+/* === 毛玻璃卡片系统 === */
+.glass-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 20px;
+    backdrop-filter: var(--card-backdrop-filter);
+    -webkit-backdrop-filter: var(--card-backdrop-filter);
+    padding: 20px;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--card-shadow);
+    transform: translateZ(0); /* 开启 GPU 硬件加速 */
+    backface-visibility: hidden;
+    contain: content; /* 限制重绘渲染区域，大幅提升手机端滑动帧率 */
+}
+
+/* === 登录与全屏覆盖层 === */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 2000;
+    background: var(--bg-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+
+.overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.login-card {
+    width: 90%;
+    max-width: 400px;
+    padding: 30px 25px 22px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--card-border); /* 链接自适应边框，实现在浅色/深色模式下都极其完整通透的包边 */
+}
+
+.logo-area {
+    text-align: center;
+    margin-bottom: 30px;
+    position: relative;
+}
+
+.logo-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80px;
+    height: 80px;
+    background: var(--primary-color);
+    filter: blur(40px);
+    opacity: 0.6;
+    z-index: -1;
+}
+
+.logo-area h2 {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    background: linear-gradient(135deg, var(--text-primary) 30%, var(--primary-color)); /* 渐变底色自适应 */
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.logo-area p {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin-top: 5px;
+}
+
+/* === 表单输入样式 === */
+.input-group {
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.input-group label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.input-group input, .input-group select {
+    background: var(--input-bg); /* 自适应输入底色 */
+    border: 1px solid var(--input-border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    color: var(--text-primary); /* 自适应输入文字色，防白底白字 */
+    font-size: 15px;
+    font-family: inherit;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+/* 修复浏览器默认下拉菜单白底导致白字看不清的问题 */
+select option {
+    background-color: var(--bg-color); /* 自适应下拉选项背景 */
+    color: var(--text-primary); /* 自适应下拉选项字色 */
+}
+
+.input-group input:focus, .input-group select:focus {
+    border-color: var(--primary-color);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.2);
+}
+
+.captcha-row {
+    display: flex;
+    gap: 12px;
+}
+
+.captcha-row input {
+    flex: 1;
+    width: 0;        /* 消除 width: 100% 带来的强行撑破和溢出硬伤 */
+    min-width: 0;    /* 解除 HTML input 默认的最小宽度锁定 */
+}
+
+#captcha-img {
+    height: 50px;
+    width: 100px;
+    border-radius: 10px;
+    cursor: pointer;
+    background: #fff;
+    object-fit: fill;
+    border: 1px solid var(--card-border);
+    transition: opacity 0.2s ease;
+}
+
+#captcha-img:active {
+    opacity: 0.7;
+}
+
+/* 复选框样式 */
+.checkbox-group {
+    margin-bottom: 24px;
+}
+
+.custom-checkbox {
+    display: flex;
+    align-items: center;
+    position: relative;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-secondary);
+    user-select: none;
+}
+
+.custom-checkbox input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.checkmark {
+    position: relative;
+    height: 18px;
+    width: 18px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--card-border);
+    border-radius: 4px;
+    margin-right: 10px;
+    transition: all 0.2s ease;
+}
+
+.custom-checkbox:hover input ~ .checkmark {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.custom-checkbox input:checked ~ .checkmark {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+    left: 6px;
+    top: 2px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.custom-checkbox input:checked ~ .checkmark:after {
+    display: block;
+}
+
+/* 按钮样式 */
+.btn-primary {
+    background: var(--btn-primary-bg); /* 自适应背景，深色半透明，浅色强锁实心蓝 */
+    color: var(--btn-primary-text); /* 自适应字色，浅色下为纯白 */
+    border: 1px solid var(--btn-primary-border); /* 自适应边框 */
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    outline: none;
+}
+
+.btn-primary:active {
+    transform: scale(0.97);
+    background: rgba(59, 130, 246, 0.32);
+}
+
+.glow-button {
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.15); /* 优雅的霓虹微光影，防刺眼 */
+}
+
+.glow-button:hover {
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.25);
+}
+
+.error-msg {
+    color: var(--error-color);
+    font-size: 13px;
+    text-align: center;
+    margin-top: 12px;
+    min-height: 0;
+}
+
+.error-msg:empty {
+    display: none;
+}
+
+/* === 加载动画 (Loading Spinner) === */
+.spinner-container {
+    text-align: center;
+}
+
+.double-bounce1, .double-bounce2 {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: var(--primary-color);
+    opacity: 0.6;
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    margin-left: -25px;
+    animation: sk-bounce 2.0s infinite ease-in-out;
+}
+
+.double-bounce2 {
+    animation-delay: -1.0s;
+}
+
+.spinner-container p {
+    margin-top: 100px;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+@keyframes sk-bounce {
+    0%, 100% { transform: scale(0.0) }
+    50% { transform: scale(1.0) }
+}
+
+/* === 主界面容器 & Tab 切换 === */
+.blur-container {
+    padding: 20px 16px 30px 16px;
+    transition: filter 0.3s ease;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* ==================== 苹果级交错多米诺骨牌级联动效 ==================== */
+
+/* 骨牌缓动帧：初态向下偏移 24px，稍微收缩 scale，结尾恢复 100% 贴靠 */
+@keyframes dominoEffect {
+    0% {
+        opacity: 0;
+        transform: translateY(24px) scale(0.985);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* 默认将未激活的子项和长列表子项设为透明，防止切页时的瞬间闪现 */
+.tab-content > *, 
+.scroll-list > *, 
+.classroom-grid-list > *, 
+.timetable-grid > *,
+.sub-tab-content > * {
+    opacity: 0;
+}
+
+/* 激活状态下启动多米诺动效 */
+.tab-content.active > *,
+.sub-tab-content.active > *,
+.tab-content.active .scroll-list > *,
+.tab-content.active .classroom-grid-list > *,
+.tab-content.active .timetable-grid > * {
+    animation: dominoEffect 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* 级联排队时间延迟分配 (Stagger delays) */
+/* 第一排/卡片 */
+.tab-content.active > :nth-child(1),
+.sub-tab-content.active > :nth-child(1) { animation-delay: 0ms; }
+
+/* 第二排/卡片 */
+.tab-content.active > :nth-child(2),
+.sub-tab-content.active > :nth-child(2) { animation-delay: 45ms; }
+
+/* 第三排/卡片 */
+.tab-content.active > :nth-child(3),
+.sub-tab-content.active > :nth-child(3) { animation-delay: 90ms; }
+
+/* 第四排/卡片 */
+.tab-content.active > :nth-child(4),
+.sub-tab-content.active > :nth-child(4) { animation-delay: 135ms; }
+
+/* 第五排/卡片 */
+.tab-content.active > :nth-child(5),
+.sub-tab-content.active > :nth-child(5) { animation-delay: 180ms; }
+
+/* 第六排/及以后所有卡片 */
+.tab-content.active > :nth-child(n+6),
+.sub-tab-content.active > :nth-child(n+6) { animation-delay: 225ms; }
+
+/* 列表内部卡片（例如多条公告、多门成绩单）的第二层微小级联 */
+.tab-content.active .scroll-list > :nth-child(1),
+.tab-content.active .classroom-grid-list > :nth-child(1) { animation-delay: 80ms; }
+
+.tab-content.active .scroll-list > :nth-child(2),
+.tab-content.active .classroom-grid-list > :nth-child(2) { animation-delay: 125ms; }
+
+.tab-content.active .scroll-list > :nth-child(3),
+.tab-content.active .classroom-grid-list > :nth-child(3) { animation-delay: 170ms; }
+
+.tab-content.active .scroll-list > :nth-child(4),
+.tab-content.active .classroom-grid-list > :nth-child(4) { animation-delay: 215ms; }
+
+.tab-content.active .scroll-list > :nth-child(n+5),
+.tab-content.active .classroom-grid-list > :nth-child(n+5) { animation-delay: 260ms; }
+
+/* 二级选项卡胶囊条 (Sub-Tab Bar) 升级为毛玻璃胶囊 */
+.sub-tab-bar {
+    display: flex;
+    background: var(--sub-tab-bg); /* 自适应选项栏背景 */
+    border: 1px solid var(--sub-tab-border); /* 自适应选项栏边框 */
+    padding: 4px;
+    border-radius: 14px;
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.sub-tab-item {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+    text-align: center;
+    outline: none;
+}
+
+.sub-tab-item.active {
+    background: var(--sub-tab-active-bg); /* 自适应半透明激活背景 */
+    color: var(--sub-tab-active-text); /* 自适应激活标签文字 */
+    border: 1px solid var(--sub-tab-active-border); /* 自适应标签边框 */
+    font-weight: 600;
+    box-shadow: 
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.1),
+        0 4px 12px rgba(59, 130, 246, 0.05);
+}
+
+.sub-tab-content {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.sub-tab-content.active {
+    display: block;
+}
+
+/* 头部样式 */
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-top: env(safe-area-inset-top);
+}
+
+.user-greeting p {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.user-greeting h1 {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text-primary); /* 首页欢迎大字自适应，防隐形 */
+    margin-top: 2px;
+}
+
+.logout-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--card-border);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.logout-icon:hover {
+    background: rgba(var(--primary-color-rgb), 0.15);
+    color: var(--primary-color);
+    transform: scale(1.05);
+}
+
+.logout-icon:active {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--error-color);
+    transform: scale(0.95);
+}
+
+/* === 个人信息卡片 === */
+.profile-card {
+    /* 彻底清除硬编码背景，完全继承自 .glass-card 的 var(--card-bg) 自适应配色（深色一套，浅色一套） */
+}
+
+.profile-glow {
+    position: absolute;
+    top: -50px;
+    right: -50px;
+    width: 150px;
+    height: 150px;
+    background: rgba(59, 130, 246, 0.12);
+    filter: blur(40px);
+    border-radius: 50%;
+}
+
+.glass-card.profile-card {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px 20px;
+}
+
+.profile-info-row {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    padding: 0;
+    min-width: 0;
+}
+
+.info-label {
+    color: var(--text-secondary);
+    font-size: 11px;
+    letter-spacing: 1px;
+}
+
+.info-val {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 14.5px;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* GPA / 学分环形图区域 */
+.gpa-container {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 25px;
+}
+
+.gpa-subcard {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 14px 12px 16px;
+    gap: 12px;
+}
+
+.gpa-subcard h3 {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 15px;
+    text-transform: uppercase;
+}
+
+.radial-progress-container {
+    position: relative;
+    width: 85px;
+    height: 85px;
+}
+
+.radial-progress {
+    width: 100%;
+    height: 100%;
+}
+
+.circle-bg {
+    fill: none;
+    stroke: var(--card-border); /* 自适应轨轨边框色线，亮暗皆透亮可见 */
+    stroke-width: 2.8;
+}
+
+.circle {
+    fill: none;
+    stroke-width: 2.8;
+    stroke-linecap: round;
+    transition: stroke-dasharray 1.2s ease-out;
+}
+
+#gpa-progress-bar {
+    stroke: var(--primary-color);
+}
+
+#credit-progress-bar {
+    stroke: var(--primary-color); /* 同步绑定到自适应强调色，消除颜色孤岛 */
+}
+
+.percentage {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary); /* 自适应圆环中心字色，彻底解决绩点/学分白底白字看不清 */
+}
+
+/* 小标题样式 */
+.section-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 24px 0 14px 0;
+}
+
+.section-title h2 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+}
+
+.section-title h2::before {
+    content: "";
+    width: 4px;
+    height: 15px;
+    border-radius: 2px;
+    background: linear-gradient(180deg, var(--primary-color), rgba(var(--primary-color-rgb), 0.35));
+    flex-shrink: 0;
+}
+
+.section-title span {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+/* 今日课程列表 */
+.today-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.course-card-mini {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: transform 0.2s ease;
+}
+
+.course-card-mini:active {
+    transform: scale(0.98);
+}
+
+.mini-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-width: 75%;
+}
+
+.mini-name {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--text-primary); /* 首页今日课表课程名称自适应 */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mini-meta {
+    font-size: 12px;
+    color: var(--text-secondary);
+    display: flex;
+    gap: 10px;
+}
+
+.mini-right {
+    text-align: right;
+}
+
+.time-badge {
+    background: rgba(59, 130, 246, 0.15);
+    color: var(--primary-color);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 6px;
+    display: inline-block;
+    margin-bottom: 4px;
+}
+
+.room-badge {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-primary); /* 今日课表教室文字自适应 */
+}
+
+/* 空状态 (Empty States) 矢量图形化 */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 36px 20px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    grid-column: span 3;
+    width: 100%;
+    box-sizing: border-box;
+    
+    /* 升级为玻璃卡片背景与水晶边框包边，消除“光秃秃缺少背景”缺陷，保证全站视觉高度一致 */
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 20px;
+    box-shadow: var(--card-shadow);
+    backdrop-filter: var(--card-backdrop-filter);
+    -webkit-backdrop-filter: var(--card-backdrop-filter);
+}
+
+.empty-state svg {
+    width: 44px;
+    height: 44px;
+    margin-bottom: 12px;
+}
+
+/* 搜索框放大镜装饰包裹层 */
+.search-and-select .search-wrapper {
+    flex: 2;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-and-select .search-wrapper .search-icon {
+    position: absolute;
+    left: 12px;
+    color: var(--text-secondary);
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.search-and-select .search-wrapper input {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 12px;
+    padding: 10px 12px 10px 36px !important; /* 左内边距让出给放大镜 */
+    color: var(--text-primary);
+    font-size: 14px;
+    outline: none;
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+}
+
+/* === 课表页面与网格 === */
+.section-header {
+    margin-bottom: 20px;
+}
+
+.section-header h1 {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 12px;
+}
+
+.selector-row, .search-and-select {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.selector-row select, .search-and-select select {
+    flex: 1;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-color: var(--input-bg);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 14px 14px;
+    border: 1px solid var(--input-border);
+    border-radius: 12px;
+    padding: 0 36px 0 14px;
+    height: 42px;
+    color: var(--text-primary);
+    font-size: 13.5px;
+    font-weight: 500;
+    font-family: inherit;
+    outline: none;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), 0 4px 12px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    box-sizing: border-box;
+}
+
+body.theme-light .selector-row select, 
+body.theme-light .search-and-select select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%230071e3' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    border-color: rgba(0, 113, 227, 0.2);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.8), 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.selector-row select:hover, .search-and-select select:hover {
+    border-color: var(--primary-color);
+    background-color: rgba(var(--primary-color-rgb), 0.08);
+}
+
+.selector-row select:focus, .search-and-select select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.2);
+}
+
+.search-and-select input {
+    flex: 1.5;
+    height: 42px;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 12px;
+    padding: 0 14px 0 36px !important;
+    color: var(--text-primary);
+    font-size: 13.5px;
+    outline: none;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), 0 4px 12px rgba(0, 0, 0, 0.05);
+    box-sizing: border-box;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+body.theme-light .search-and-select input {
+    border-color: rgba(0, 113, 227, 0.2);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.8), 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.search-and-select input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.2);
+}
+
+/* 全局自适应主题与自定义壁纸融色下拉菜单 (Adaptive Custom Select Component) */
+.custom-select-wrapper {
+    position: relative;
+    display: inline-block;
+    flex: 1;
+    min-width: 0;
+    user-select: none;
+}
+
+.custom-select-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+}
+
+/* 课表页：学期下拉更宽，周次下拉更窄，避免长学期名折行 */
+.selector-row .custom-select-wrapper:first-child,
+.selector-row select:first-child {
+    flex: 1.7;
+}
+
+.custom-select-trigger {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    height: 42px;
+    padding: 0 12px;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 12px;
+    color: var(--text-primary);
+    font-size: 13.5px;
+    font-weight: 500;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), 0 4px 12px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    box-sizing: border-box;
+}
+
+body.theme-light .custom-select-trigger {
+    border-color: var(--input-border);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.8), 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.custom-select-trigger:hover {
+    border-color: var(--primary-color);
+    background: rgba(var(--primary-color-rgb), 0.12);
+}
+
+.custom-select-trigger.active {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.25);
+}
+
+.custom-select-trigger.active .custom-select-arrow {
+    transform: rotate(180deg);
+}
+
+.custom-select-arrow {
+    display: flex;
+    align-items: center;
+    color: var(--primary-color);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 浮层自适应主题与自定义壁纸色温 */
+.custom-select-menu {
+    position: fixed;
+    max-height: 260px;
+    overflow-y: auto;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+    z-index: 999999 !important;
+    padding: 6px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px) scale(0.97);
+    transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease, background 0.3s ease;
+    box-sizing: border-box;
+}
+
+/* 当有自定义壁纸时，提取壁纸主色调融合深色背景 */
+body.has-custom-wallpaper .custom-select-menu {
+    background: rgba(var(--wallpaper-dark-rgb, 18, 20, 30), 0.96) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.65);
+}
+
+/* 浅色主题模式 */
+body.theme-light .custom-select-menu {
+    background: rgba(255, 255, 255, 0.98) !important;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+body.theme-light.has-custom-wallpaper .custom-select-menu {
+    background: rgba(255, 255, 255, 0.96) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.custom-select-menu.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+}
+
+.custom-select-option {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 11px 14px;
+    border-radius: 9px;
+    font-size: 13.5px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.18s ease;
+    margin-bottom: 2px;
+}
+
+.custom-select-option:last-child {
+    margin-bottom: 0;
+}
+
+.custom-select-option:hover {
+    background: rgba(var(--primary-color-rgb), 0.15);
+    color: var(--primary-color);
+}
+
+.custom-select-option .check-mark {
+    display: none;
+    color: var(--primary-color);
+}
+
+.custom-select-option.selected {
+    background: rgba(var(--primary-color-rgb), 0.2);
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.custom-select-option.selected .check-mark {
+    display: flex;
+}
+
+/* === 主题色与文字颜色选色器 (Theme & Text Color Selector) === */
+.accent-color-btn, .text-color-btn, .bg-color-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    outline: none;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    box-sizing: border-box;
+}
+
+.accent-color-btn:hover, .text-color-btn:hover, .bg-color-btn:hover {
+    transform: scale(1.15);
+}
+
+.accent-color-btn.active, .text-color-btn.active, .bg-color-btn.active {
+    border-color: #ffffff;
+    box-shadow: 0 0 0 2px var(--primary-color), 0 4px 12px rgba(0, 0, 0, 0.25);
+    transform: scale(1.1);
+}
+
+body.theme-light .accent-color-btn.active, 
+body.theme-light .text-color-btn.active,
+body.theme-light .bg-color-btn.active {
+    border-color: #ffffff;
+    box-shadow: 0 0 0 2.5px var(--primary-color), 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+
+/* 解除下拉菜单所在卡片和容器的截断限制 */
+.glass-card:has(.active-wrapper),
+.filter-card:has(.active-wrapper),
+.search-and-select:has(.active-wrapper),
+.selector-row:has(.active-wrapper) {
+    overflow: visible !important;
+    z-index: 500 !important;
+}
+
+
+
+
+.timetable-scroll-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid var(--card-border);
+    background: var(--card-bg); /* 自适应浅色白玻璃与深色茶色玻璃 */
+}
+
+.timetable-grid {
+    display: grid;
+    grid-template-columns: 46px repeat(5, minmax(0, 1fr)); /* 5天工作日+1时间，列可收缩，保证 5 天完整显示不横滚 */
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.grid-header {
+    background: rgba(128, 128, 128, 0.03); /* 中性透明背景 */
+    padding: 10px 4px;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    color: var(--text-secondary); /* 自适应文字颜色，解决浅色看不清 */
+    border-bottom: 1px solid var(--card-border);
+    border-right: 1px solid var(--card-border);
+}
+
+.grid-header:last-child {
+    border-right: none;
+}
+
+.grid-time-cell {
+    background: rgba(128, 128, 128, 0.02);
+    padding: 14px 2px;
+    border-bottom: 1px solid var(--card-border);
+    border-right: 1px solid var(--card-border);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.grid-time-cell span {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.grid-time-cell small {
+    font-size: 9px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+.grid-course-slot {
+    padding: 4px;
+    min-width: 0;
+    border-bottom: 1px solid var(--card-border); /* 自适应分隔线 */
+    border-right: 1px solid var(--card-border);
+    min-height: 85px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.grid-course-slot:last-child {
+    border-right: none;
+}
+
+/* 网格内的课程小卡片 (iOS 日历经典左侧彩条 + 半透明悬浮卡片) */
+.grid-course-card {
+    border: 1px solid var(--card-border); /* 1px 晶莹剔透的全包反光玻璃边框 */
+    border-left-width: 3px; /* iOS 日历式左侧彩条（颜色随卡片色系） */
+    border-radius: 9px;
+    padding: 6px 7px;
+    font-size: 10px;
+    text-align: left;
+    color: var(--text-primary);
+    cursor: pointer;
+    height: calc(100% - 6px);
+    margin: 3px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.05), /* 玻璃顶部切面反光阴影 */
+        0 2px 8px rgba(0, 0, 0, 0.04);
+    box-sizing: border-box;
+}
+
+.grid-course-card:active {
+    transform: scale(0.96);
+    filter: brightness(90%);
+}
+
+/* 课程卡片多彩色系定义 (无发光亮条，纯净有色透明玻璃板) */
+.grid-course-card.blue {
+    background: rgba(56, 189, 248, 0.14); /* 苹果仙气淡蓝 */
+    border-left-color: rgba(56, 189, 248, 0.75);
+}
+.grid-course-card.blue:active {
+    background: rgba(56, 189, 248, 0.24);
+}
+
+.grid-course-card.pink {
+    background: rgba(244, 143, 177, 0.14); /* 苹果仙气淡粉 */
+    border-left-color: rgba(244, 143, 177, 0.75);
+}
+.grid-course-card.pink:active {
+    background: rgba(244, 143, 177, 0.24);
+}
+
+.grid-course-card.cyan {
+    background: rgba(45, 212, 191, 0.14); /* 苹果仙气淡青 */
+    border-left-color: rgba(45, 212, 191, 0.75);
+}
+.grid-course-card.cyan:active {
+    background: rgba(45, 212, 191, 0.24);
+}
+
+.grid-course-card.purple {
+    background: rgba(192, 132, 252, 0.14); /* 苹果仙气淡紫 */
+    border-left-color: rgba(192, 132, 252, 0.75);
+}
+.grid-course-card.purple:active {
+    background: rgba(192, 132, 252, 0.24);
+}
+
+/* 兼容原有样式声明，默认 fallback 指向淡蓝 */
+.grid-course-card.green, .grid-course-card.optional {
+    background: rgba(45, 212, 191, 0.14);
+}
+.grid-course-card.indigo {
+    background: rgba(56, 189, 248, 0.14);
+}
+
+.grid-course-card:active {
+    transform: scale(0.95);
+}
+
+.grid-course-name {
+    font-weight: 600;
+    line-height: 1.2;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.grid-course-room {
+    color: var(--text-secondary); /* 自适应文字，解决浅色下反差问题 */
+    margin-top: 4px;
+    font-size: 9px;
+    font-weight: 500;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* === 列表排版样式 (公告、成绩、考试等) === */
+.scroll-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* 公告卡片样式 */
+.announce-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.announce-card:active {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.announce-left {
+    max-width: 80%;
+}
+
+.announce-title {
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.announce-date {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+/* 成绩卡片样式 */
+.grade-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.grade-left {
+    max-width: 70%;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.grade-name {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--text-primary);
+}
+
+.grade-meta {
+    font-size: 12px;
+    color: var(--text-secondary);
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.grade-right {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+}
+
+.grade-score {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.grade-score.fail {
+    color: var(--error-color);
+}
+
+.grade-gpa {
+    font-size: 11px;
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+/* 考试安排及选课卡片 */
+.exam-card, .xk-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 16px;
+    position: relative;
+}
+
+.exam-title, .xk-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.exam-badge, .xk-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(59, 130, 246, 0.15);
+    color: var(--primary-color);
+}
+
+.xk-badge.active {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--accent-color);
+}
+
+.exam-info-grid, .xk-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.info-item small {
+    font-size: 10px;
+    color: var(--text-secondary);
+}
+
+.info-item span {
+    font-size: 13px;
+    color: var(--text-primary);
+}
+
+.info-item.full-width {
+    grid-column: span 2;
+}
+
+.info-item .highlight {
+    font-weight: 700;
+    color: var(--primary-color);
+    font-size: 15px;
+}
+
+/* === 实践环节状态面板 === */
+.status-panel {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--card-border);
+    padding: 18px;
+}
+
+.status-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.status-row:last-child {
+    border-bottom: none;
+}
+
+.status-lbl {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.status-val {
+    font-size: 14px;
+    color: var(--text-primary);
+    text-align: right;
+}
+
+.status-val.bold {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+/* === 空教室查询列表 === */
+.filter-card {
+    padding: 16px;
+}
+
+.form-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group.half {
+    flex: 1;
+}
+
+.form-group label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+.form-group select {
+    padding: 10px 12px;
+    font-size: 13.5px;
+    background: var(--input-bg); /* 自适应输入框底色 */
+    border: 1px solid var(--input-border); /* 自适应输入框边框 */
+    border-radius: 12px; /* 与表格顶部选择框圆角统一 */
+    color: var(--text-primary); /* 强制使用自适应文本，曜黑下自动变白 */
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.form-group select:focus {
+    border-color: var(--primary-color);
+}
+
+.classroom-grid-list {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.classroom-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 12px 6px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+/* === iOS 风格底端抽屉 (Bottom Sheet) === */
+.bottom-sheet {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 3000;
+    visibility: hidden;
+    transition: visibility 0.3s ease;
+}
+
+.bottom-sheet.active {
+    visibility: visible;
+}
+
+.sheet-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.bottom-sheet.active .sheet-overlay {
+    opacity: 1;
+}
+
+.sheet-content {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: var(--sheet-bg); /* 自适应弹出抽屉底色 */
+    border-top: 1px solid var(--card-border); /* 自适应抽屉顶部切边 */
+    border-top-left-radius: 24px; /* 边缘微圆 */
+    border-top-right-radius: 24px;
+    backdrop-filter: blur(22px) saturate(150%) brightness(90%);
+    -webkit-backdrop-filter: blur(22px) saturate(150%) brightness(90%);
+    box-shadow: 
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.2), /* 物理白边高光 */
+        0 -8px 32px rgba(0, 0, 0, 0.4);
+    padding: 12px 20px 40px 20px;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.bottom-sheet.active .sheet-content {
+    transform: translateY(0);
+}
+
+.sheet-handle {
+    width: 40px;
+    height: 4px;
+    background: var(--text-secondary); /* 自适应把手颜色 */
+    opacity: 0.35; /* 适度透光 */
+    border-radius: 2px;
+    margin: 0 auto 20px auto;
+}
+
+.sheet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.sheet-header h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+    max-width: 75%;
+}
+
+.course-tag {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: rgba(59, 130, 246, 0.15);
+    color: var(--primary-color);
+}
+
+.sheet-body {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.detail-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.detail-icon {
+    font-size: 22px;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: var(--btn-primary-bg);
+    color: var(--primary-color);
+    border: 1px solid var(--btn-primary-border);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.detail-txt-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.detail-txt-group small {
+    font-size: 11px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+.detail-txt-group span {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+/* === 底部固定导航栏 (5 Tabs) 升级为悬浮 Dock 玻璃栏 === */
+.bottom-nav {
+    position: fixed;
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+    width: calc(100vw - 32px);
+    height: 65px;
+    background: var(--nav-bg); /* 自适应亮暗模式变量 */
+    border: 1px solid var(--nav-border); /* 自适应亮暗边框变量 */
+    border-radius: 22px;
+    backdrop-filter: brightness(90%);
+    -webkit-backdrop-filter: brightness(90%);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 1000;
+    box-shadow: 
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.2),
+        0 12px 36px rgba(0, 0, 0, 0.45);
+    padding-bottom: 0;
+}
+
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--nav-inactive-color); /* 本身是主题色，默认根据深浅模式配置不透明度 */
+    font-size: 9px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex: 1;
+    height: 100%;
+}
+
+.nav-icon {
+    width: 22px;
+    height: 22px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 4px;
+    transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.nav-item.active {
+    color: var(--primary-color); /* 激活后为 100% 满状态强调色 */
+}
+
+.nav-item.active .nav-icon {
+    transform: translateY(-2px);
+    filter: drop-shadow(0 0 4px rgba(var(--primary-color-rgb), 0.55)); /* 激活后呈现更亮、更饱满的发光环境微光 */
+}
+
+/* === 壁纸与个性化面板专属样式 === */
+.settings-icon, .notify-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--card-border);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.settings-icon:hover {
+    background: rgba(var(--primary-color-rgb), 0.15);
+    color: var(--primary-color);
+    transform: rotate(45deg);
+}
+
+body.theme-light .settings-icon,
+body.theme-light .notify-icon,
+body.theme-light .logout-icon {
+    background: rgba(0, 0, 0, 0.045);
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+.notify-icon {
+    color: var(--text-primary);
+}
+
+.notify-icon:hover {
+    background: rgba(var(--primary-color-rgb), 0.15);
+    color: var(--primary-color);
+}
+
+.settings-icon:active {
+    transform: rotate(45deg) scale(0.92);
+}
+
+.preset-item {
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+}
+
+.preset-item:active {
+    transform: scale(0.95);
+}
+
+.preset-item.active {
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.5), 0 4px 15px rgba(0,0,0,0.25);
+}
+
+.preset-item.active::after {
+    content: "";
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    background-color: var(--primary-color);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 9px 9px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+}
+
+.upload-btn:hover {
+    background: rgba(59, 130, 246, 0.25) !important;
+    transform: translateY(-1px);
+}
+
+.upload-btn:active {
+    transform: translateY(0) scale(0.97);
+}
+
+/* === 主题模式按钮栏样式 === */
+.theme-toggle-bar {
+    display: flex;
+    background: var(--sub-tab-bg);
+    border: 1px solid var(--sub-tab-border);
+    padding: 4px;
+    border-radius: 12px;
+    gap: 4px;
+    margin-bottom: 16px;
+}
+
+.theme-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    padding: 8px;
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+    outline: none;
+}
+
+.theme-btn.active {
+    background: var(--text-primary);
+    color: var(--bg-color); /* 反色展示，保证不管在深色浅色下都极清晰 */
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+/* === 全局 SVG 图标及高亮壁纸自适应强化 === */
+
+/* 1. 空状态下的插画大图标 (茶杯、日历、列表空状态等) */
+.empty-state svg {
+    color: var(--icon-empty-color) !important; /* 默认以主题色低亮微透状态展现，作为优雅底图 */
+    filter: drop-shadow(0 0 4px rgba(var(--primary-color-rgb), 0.12)) !important;
+    transition: color 0.3s ease, filter 0.3s ease;
+}
+
+.glass-card:hover .empty-state svg,
+.today-list:hover .empty-state svg {
+    color: var(--primary-color) !important; /* 悬浮卡片时，空白大图随之亮起 */
+    filter: drop-shadow(0 0 6px rgba(var(--primary-color-rgb), 0.28)) !important;
+}
+
+/* 2. 顶栏设置与注销按钮的自身 SVG 图标 */
+.settings-icon svg,
+.logout-icon svg {
+    color: var(--icon-inactive-color) !important; /* 默认是主题色，根据深浅模式配置不透明度 */
+    transition: color 0.3s ease, filter 0.3s ease, transform 0.3s ease;
+}
+
+.settings-icon:hover svg {
+    color: var(--primary-color) !important; /* 悬浮时满亮度 */
+    filter: drop-shadow(0 0 4px rgba(var(--primary-color-rgb), 0.55)) !important;
+}
+
+.logout-icon:hover svg {
+    color: var(--primary-color) !important; /* 悬浮时满亮度 */
+    filter: drop-shadow(0 0 4px rgba(var(--primary-color-rgb), 0.55)) !important;
+}
+
+/* 3. 搜索输入框内的前置放大镜图标 */
+.search-box svg.search-icon {
+    color: var(--icon-inactive-color) !important; /* 默认低亮主题色 */
+    transition: color 0.3s ease, filter 0.3s ease;
+}
+
+.search-box input:focus + svg.search-icon,
+.search-box input:focus ~ svg.search-icon {
+    color: var(--primary-color) !important; /* 输入框聚焦时点亮放大镜 */
+    filter: drop-shadow(0 0 4px rgba(var(--primary-color-rgb), 0.45)) !important;
+}
+
+/* 4. 今日课程及公告列表里的各项小日期/分类图标 */
+.announce-date svg, 
+.today-list svg,
+.grade-card svg,
+.exam-card svg {
+    color: var(--icon-inactive-color) !important; /* 默认低亮主题色 */
+    transition: color 0.3s ease, filter 0.3s ease;
+}
+
+.announce-card:hover .announce-date svg,
+.announce-card:active .announce-date svg,
+.grade-card:hover svg,
+.exam-card:hover svg {
+    color: var(--primary-color) !important; /* 卡片点击或悬浮时点亮内部小图标 */
+    filter: drop-shadow(0 0 4px rgba(var(--primary-color-rgb), 0.55)) !important;
+}
+
+/* 5. 上传自定义壁纸的状态文字同步强调色 */
+#upload-status-text {
+    transition: color 0.3s ease;
+}
+
+/* === 自定义优化调节滑块样式 === */
+.tune-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--primary-color) !important;
+    box-shadow: 0 0 6px rgba(var(--primary-color-rgb), 0.5);
+    cursor: pointer;
+    transition: transform 0.12s cubic-bezier(0.25, 1, 0.5, 1);
+}
+.tune-slider::-webkit-slider-thumb:active {
+    transform: scale(1.25);
+}
+
+/* === 同步与离线状态指示微标签 === */
+.sync-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    backdrop-filter: blur(10px);
+    transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+    user-select: none;
+}
+
+.sync-tag.online {
+    color: #34c759;
+    background: rgba(52, 199, 89, 0.12);
+    border: 1px solid rgba(52, 199, 89, 0.25);
+}
+
+.sync-tag.online .sync-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #34c759;
+    box-shadow: 0 0 6px rgba(52, 199, 89, 0.8);
+}
+
+.sync-tag.offline {
+    color: #ff9500;
+    background: rgba(255, 149, 0, 0.12);
+    border: 1px solid rgba(255, 149, 0, 0.25);
+}
+
+.sync-tag.offline:active {
+    transform: scale(0.95);
+    opacity: 0.8;
+}
+
+.sync-tag.offline .sync-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #ff9500;
+    box-shadow: 0 0 6px rgba(255, 149, 0, 0.8);
+}
+
+.sync-tag.syncing {
+    color: #0a84ff;
+    background: rgba(10, 132, 255, 0.12);
+    border: 1px solid rgba(10, 132, 255, 0.25);
+}
+
+.sync-tag.syncing .sync-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #0a84ff;
+    animation: syncPulse 1s infinite alternate;
+}
+
+@keyframes syncPulse {
+    from { opacity: 0.4; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1.2); }
+}
+/* ==========================================================================
+   v1.1 追加：Toast 轻提示、上课提醒面板、iOS 开关、界面质感打磨
+   ========================================================================== */
+
+/* ---------- 1. Toast 轻提示（替代 alert） ---------- */
+#toast-container {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 18px);
+    left: 0;
+    right: 0;
+    z-index: 999999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.app-toast {
+    max-width: 86%;
+    padding: 11px 20px;
+    border-radius: 22px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    background: var(--sheet-bg);
+    border: 1px solid var(--card-border);
+    box-shadow: 0 10px 32px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    opacity: 0;
+    transform: translateY(-16px) scale(0.95);
+    transition: opacity 0.35s cubic-bezier(0.22, 1, 0.36, 1), transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.app-toast.show {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+.app-toast.toast-success { border-color: rgba(16, 185, 129, 0.45); box-shadow: 0 10px 32px rgba(16, 185, 129, 0.18); }
+.app-toast.toast-warn    { border-color: rgba(245, 158, 11, 0.45); box-shadow: 0 10px 32px rgba(245, 158, 11, 0.18); }
+.app-toast.toast-error   { border-color: rgba(239, 68, 68, 0.50);  box-shadow: 0 10px 32px rgba(239, 68, 68, 0.20); }
+
+/* ---------- 2. 上课提醒设置面板 ---------- */
+.notify-panel-card {
+    padding: 6px 16px;
+    border-radius: 18px;
+}
+
+.notify-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 15px 0;
+    border-bottom: 1px solid var(--card-border);
+}
+
+.notify-row:last-of-type { border-bottom: none; }
+
+.notify-row-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.notify-row-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.notify-row-desc  { font-size: 11px; color: var(--text-secondary); line-height: 1.45; }
+
+.notify-lead-select { min-width: 128px; }
+
+.notify-status-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 0 14px;
+    font-size: 12px;
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+.notify-hint {
+    margin-top: 14px;
+    font-size: 11px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    padding: 0 4px 8px;
+}
+
+/* 顶栏铃铛按钮与设置按钮一致的交互反馈 */
+.notify-icon svg:active, .settings-icon svg:active, .logout-icon svg:active {
+    transform: scale(0.88);
+    opacity: 1;
+}
+.notify-icon svg, .settings-icon svg, .logout-icon svg {
+    transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s;
+}
+
+/* ---------- 3. iOS 风格开关 (Switch) ---------- */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 30px;
+    flex-shrink: 0;
+}
+
+.switch input { opacity: 0; width: 0; height: 0; }
+
+.switch-slider {
+    position: absolute;
+    inset: 0;
+    cursor: pointer;
+    background: rgba(120, 120, 128, 0.32);
+    border-radius: 30px;
+    transition: background 0.25s ease;
+}
+
+.switch-slider::before {
+    content: "";
+    position: absolute;
+    height: 26px;
+    width: 26px;
+    left: 2px;
+    top: 2px;
+    background: #ffffff;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.switch input:checked + .switch-slider {
+    background: var(--primary-color);
+}
+
+.switch input:checked + .switch-slider::before {
+    transform: translateX(20px);
+}
+
+/* ---------- 4. 全局质感打磨 ---------- */
+
+/* 卡片按压微缩，手感更接近原生 App */
+.glass-card {
+    transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.course-card-mini:active,
+.announce-card:active,
+.grade-card:active,
+.exam-card:active,
+.xk-card:active,
+.classroom-card:active {
+    transform: scale(0.975);
+}
+
+/* 课表格子卡片轻微悬浮层次 */
+.grid-course-card {
+    transition: transform 0.15s ease, filter 0.2s ease;
+}
+.grid-course-card:active {
+    transform: scale(0.94);
+    filter: brightness(1.15);
+}
+
+/* 底部导航选中态弹性放大 */
+.bottom-nav .nav-item .nav-icon {
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.bottom-nav .nav-item.active .nav-icon {
+    transform: translateY(-2px) scale(1.12);
+}
+
+/* Tab 内容进入动画：轻微上浮 + 淡入 */
+@keyframes tabFadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.tab-content.active {
+    animation: tabFadeUp 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* 登录按钮按压反馈 */
+.btn-primary:active {
+    transform: scale(0.97);
+}
+.btn-primary {
+    transition: transform 0.15s ease, box-shadow 0.25s ease, background 0.25s ease;
+}
+
+/* 同步状态标签呼吸感 */
+.sync-tag {
+    transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+/* 细滚动条（WebView 内更精致） */
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-thumb { background: rgba(var(--primary-color-rgb), 0.35); border-radius: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ==========================================================================
+   v1.2 追加：预设风格主题网格、教学周徽章、考试倒计时卡片
+   ========================================================================== */
+
+/* ---------- 预设风格主题网格 ---------- */
+.style-preset-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px 10px;
+}
+
+.style-preset-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    padding: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.style-preset-swatch {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 14px;
+    border: 2px solid var(--card-border);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.12), 0 4px 12px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+    overflow: hidden;
+}
+
+.style-preset-dot {
+    position: absolute;
+    right: 7px;
+    bottom: 7px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.65);
+}
+
+.style-preset-btn:active .style-preset-swatch {
+    transform: scale(0.9);
+}
+
+.style-preset-btn.active .style-preset-swatch {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px var(--primary-color), 0 6px 16px rgba(var(--primary-color-rgb), 0.35);
+    transform: scale(1.04);
+}
+
+.style-preset-name {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: color 0.2s ease;
+}
+
+.style-preset-btn.active .style-preset-name {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+/* ---------- 教学周徽章 ---------- */
+.week-badge {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--primary-color);
+    background: rgba(var(--primary-color-rgb), 0.14);
+    border: 1px solid rgba(var(--primary-color-rgb), 0.22);
+    padding: 3px 9px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+
+/* ---------- 考试倒计时 ---------- */
+.exam-countdown-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.countdown-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: 16px;
+}
+
+.countdown-days {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 58px;
+    padding: 6px 4px;
+    border-radius: 12px;
+    background: rgba(var(--primary-color-rgb), 0.14);
+    border: 1px solid rgba(var(--primary-color-rgb), 0.22);
+    flex-shrink: 0;
+}
+
+.countdown-days .num {
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--primary-color);
+    letter-spacing: -1px;
+}
+
+.countdown-days .unit {
+    font-size: 10px;
+    color: var(--text-secondary);
+    margin-top: 3px;
+}
+
+.countdown-card.urgent .countdown-days {
+    background: rgba(239, 68, 68, 0.16);
+    border-color: rgba(239, 68, 68, 0.32);
+}
+.countdown-card.urgent .countdown-days .num {
+    color: var(--error-color);
+}
+
+.countdown-info { flex: 1; min-width: 0; }
+
+.countdown-name {
+    font-size: 14.5px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 5px;
+}
+
+.countdown-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.countdown-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
