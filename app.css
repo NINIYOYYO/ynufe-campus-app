@@ -2586,3 +2586,17 @@ body {
 .circle-bg {
     stroke: rgba(148, 163, 184, 0.14);
 }
+
+/* ==================== 抽屉拖拽手势 ====================
+ * 把手与标题栏是拖拽起始区，交给 JS 接管垂直手势；
+ * 正文区不设，保留原生滚动。
+ */
+#bottom-sheet .sheet-handle,
+#bottom-sheet .sheet-header {
+    touch-action: none;
+}
+
+/* 把手可交互暗示：略增高热区由标题栏兜底，视觉上仅在按住时提亮 */
+#bottom-sheet .sheet-handle:active {
+    opacity: 0.6;
+}
