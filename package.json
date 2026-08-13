@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "cap-sync": "npx cap sync",
     "capture:fixtures": "node tests/capture-fixtures.mjs",
-    "test:parsers": "node tests/parsers.test.mjs"
+    "test:parsers": "node tests/parsers.test.mjs",
+    "test": "node tests/parsers.test.mjs && node tests/cookieManager.test.mjs && node tests/reminderScheduler.test.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^6.0.0",
