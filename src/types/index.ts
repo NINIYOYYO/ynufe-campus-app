@@ -4,3 +4,4 @@ export * from './grade';
 export * from './exam';
 export * from './announcement';
 export * from './service';
+export * from './theme';
