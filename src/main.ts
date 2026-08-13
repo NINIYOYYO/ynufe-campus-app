@@ -6,6 +6,7 @@ import { TimetableParser } from './parsers/timetableParser';
 import { GradeParser } from './parsers/gradeParser';
 import { ExamParser } from './parsers/examParser';
 import { AnnouncementParser } from './parsers/announcementParser';
+import { AnnouncementView } from './views/announcementView';
 import { ServiceParser } from './parsers/serviceParser';
 import { SyncStatusTag, SyncStatusState } from './components/syncStatusTag';
 import { BottomSheet } from './components/bottomSheet';
@@ -1459,169 +1460,32 @@ export class YnufeUI {
      * Returns:
      *     Promise<boolean>: 是否成功。
      */
+    /**
+     * 拉取最新公告列表并渲染。
+     */
     static async loadAnnouncementsData(): Promise<boolean> {
-        try {
-            const html = await YnufeClient.getHtml("/jsxsd/ggly/ysgg_query");
-            const list = AnnouncementParser.parseAnnouncements(html);
-            this.renderAnnouncementsList(list);
-            YnufeSession.setCache("ynufe_cached_announcements", list);
-            return true;
-        } catch (e) {
-            this.handleLoadError("公告", e);
-            return false;
-        }
+        return AnnouncementView.loadAnnouncementsData();
     }
 
     /**
      * 渲染公告通知列表前 5 条卡片。
      */
     static renderAnnouncementsList(list: AnnouncementItem[]): void {
-        const container = document.getElementById("home-announcements-list");
-        if (!container) return;
-        if (container.childElementCount > 0 && this.isSameAsRendered("announcements", list)) return;
-        container.innerHTML = "";
-
-        if (!Array.isArray(list) || list.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path></svg>
-                    <p>暂无新公告</p>
-                </div>`;
-            return;
-        }
-
-        list.slice(0, 5).forEach(ann => {
-            const card = document.createElement("div");
-            card.className = "announce-card glass-card";
-            card.innerHTML = `
-                <div class="announce-left">
-                    <div class="announce-title">${escapeHtml(ann.title)}</div>
-                    <div class="announce-date"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect></svg>${escapeHtml(ann.date)}</div>
-                </div>
-                <div style="color:var(--text-secondary); display:flex; align-items:center;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                </div>
-            `;
-            card.addEventListener("click", () => this.showAnnouncementDetail(ann));
-            container.appendChild(card);
-        });
-        this.playEntrance(container);
+        AnnouncementView.renderAnnouncementsList(list);
     }
 
     /**
      * 在 BottomSheet 中弹窗展示公告详情。
      */
     static async showAnnouncementDetail(ann: AnnouncementItem): Promise<void> {
-        // 标题由抽屉头部承载，正文区不再重复展示；
-        // 发布时间降为一行元信息，不再单独占一张卡片。
-        BottomSheet.show(ann.title, "通知", `
-            <div class="ann-detail-meta">${escapeHtml(ann.date)}</div>
-            <div class="ann-detail-body" id="ann-detail-body">
-                <div class="ann-detail-hint">正在加载公告正文…</div>
-            </div>
-        `);
-
-        const body = document.getElementById("ann-detail-body");
-        if (!body) return;
-
-        if (!ann.url) {
-            body.innerHTML = `<div class="ann-detail-hint">该公告未提供详情链接</div>`;
-            return;
-        }
-
-        try {
-            // 请求与入场动画并行，但必须等两者都完成再换正文：
-            // 入场的 translateY(100%) 按抽屉自身高度解析，动画中途换内容导致
-            // 高度突变，过渡起点被重新解释，观感上就是"动画播了两次"。
-            const [html] = await Promise.all([
-                YnufeClient.getHtml(ann.url),
-                BottomSheet.settled()
-            ]);
-            const detail = AnnouncementParser.parseDetail(html, ann.url);
-
-            if (!detail.paragraphs.length && !detail.attachments.length) {
-                body.innerHTML = `<div class="ann-detail-hint">未能提取到正文内容</div>`;
-                return;
-            }
-
-            const paragraphs = detail.paragraphs
-                .map(p => `<p>${escapeHtml(p)}</p>`)
-                .join("");
-            // 附件不用 <a href> 直跳：教务系统对上传目录做了封锁，直连会返回一个
-            // 写着「非法访问文件！」的 HTML 页面。改为点击后取回二进制流，
-            // 校验确实是文件才触发保存，否则如实告知被限制。
-            const attachments = detail.attachments.length
-                ? `<div class="ann-detail-files"><small>附件</small>${
-                      detail.attachments.map((f, i) =>
-                          `<button type="button" class="ann-attach-btn" data-idx="${i}">${escapeHtml(f.name)}</button>`
-                      ).join("")
-                  }</div>`
-                : "";
-
-            // 长文会让抽屉高度骤增，用 morphHeight 把高度变化补间为过渡；
-            // 内层 .sheet-swap-in 负责内容本身的柔和显现
-            await BottomSheet.morphHeight(() => {
-                body.innerHTML = `<div class="sheet-swap-in">${paragraphs + attachments}</div>`;
-            });
-
-            body.querySelectorAll(".ann-attach-btn").forEach(btn => {
-                btn.addEventListener("click", () => {
-                    const idx = parseInt(btn.getAttribute("data-idx") || "-1", 10);
-                    const file = detail.attachments[idx];
-                    if (file) this.downloadAttachment(file.url, file.name);
-                });
-            });
-        } catch (e) {
-            // 请求可能瞬间失败（如会话过期直接抛出），错误提示同样要等入场结束再换
-            await BottomSheet.settled();
-            const reason = e instanceof SessionExpiredError ? "登录已过期" : "加载失败，请稍后重试";
-            body.innerHTML = `<div class="ann-detail-hint">${escapeHtml(reason)}</div>`;
-        }
+        return AnnouncementView.showAnnouncementDetail(ann);
     }
 
     /**
      * 下载公告附件。
-     *
-     * 教务系统对 /ewebeditor/uploadfile/ 目录做了封锁：无论是否携带有效会话、
-     * Referer 为何值，直接访问都会返回一个 200 的 HTML「出错页面：非法访问文件！」
-     * （同目录的 sysimage 图标却能正常取到，说明是针对上传目录的定向限制）。
-     * 因此这里先取回内容并判别，确认是真文件才落盘，避免用户点开一个空白错误页。
-     *
-     * Args:
-     *     url (string): 附件的教务网相对路径。
-     *     name (string): 保存用的文件名。
      */
     static async downloadAttachment(url: string, name: string): Promise<void> {
-        this.showToast(`正在获取「${name}」…`, "info");
-        try {
-            const { blob, contentType } = await YnufeClient.getBlob(url);
-
-            // 被拦截时返回的是体积很小的 HTML 错误页，而非二进制文件
-            if (contentType.includes("text/html") || blob.size < 4096) {
-                const head = await blob.slice(0, 4096).text();
-                if (head.includes("非法访问文件") || head.includes("出错页面")) {
-                    this.showToast("教务系统限制了该附件的直接下载", "warn");
-                    return;
-                }
-            }
-
-            const objectUrl = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = objectUrl;
-            a.download = name;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            URL.revokeObjectURL(objectUrl);
-            this.showToast(`「${name}」已开始下载`, "success");
-        } catch (e) {
-            if (e instanceof SessionExpiredError) {
-                this.showToast("登录已过期，请重新登录后再试", "warn");
-            } else {
-                console.error("[YnufeUI] 附件下载失败:", e);
-                this.showToast("附件下载失败，请检查网络", "error");
-            }
-        }
+        return AnnouncementView.downloadAttachment(url, name);
     }
 
     /**

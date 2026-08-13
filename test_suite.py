@@ -68,9 +68,11 @@ src_ts_files = [
     "src/parsers/gradeParser.ts", "src/parsers/examParser.ts",
     "src/parsers/announcementParser.ts", "src/parsers/serviceParser.ts",
     "src/utils/crypto.ts", "src/utils/escapeHtml.ts", "src/utils/colorExtractor.ts",
+    "src/utils/uiFeedback.ts",
     "src/components/wallpaperManager.ts", "src/components/bottomSheet.ts",
     "src/components/syncStatusTag.ts", "src/components/customSelect.ts",
     "src/components/themeCustomizer.ts", "src/styles/app.css",
+    "src/views/announcementView.ts",
 ]
 for rel in src_ts_files:
     assert os.path.exists(os.path.join(BASE, rel)), f"ERROR: Missing source file: {rel}"
