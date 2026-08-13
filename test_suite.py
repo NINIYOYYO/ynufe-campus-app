@@ -79,6 +79,7 @@ src_ts_files = [
     "src/views/gradeView.ts",
     "src/views/timetableView.ts",
     "src/views/settingsView.ts",
+    "src/views/loginView.ts",
     "src/core/app.ts",
     "src/core/router.ts",
 ]

@@ -3,6 +3,7 @@ import { YnufeApp } from './core/app';
 import { YnufeSession } from './stores/sessionStore';
 import { SessionCookieManager } from './services/cookieManager';
 import { AutoLogin } from './services/autoLogin';
+import { LoginView } from './views/loginView';
 import { toggleModal, updateSyncStatus, showLoading, showToast } from './utils/uiFeedback';
 
 /**
@@ -69,5 +70,5 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // 自动登录不可用/失败：弹出登录框
     toggleModal("login-overlay", true);
-    YnufeApp.refreshCaptchaImg();
+    LoginView.refreshCaptchaImg();
 });

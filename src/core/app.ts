@@ -12,6 +12,7 @@ import { ExamView } from '../views/examView';
 import { AnnouncementView } from '../views/announcementView';
 import { ServiceView } from '../views/serviceView';
 import { SettingsView } from '../views/settingsView';
+import { LoginView } from '../views/loginView';
 import { AppRouter } from './router';
 import { SyncStatusState } from '../components/syncStatusTag';
 import { BottomSheet } from '../components/bottomSheet';
@@ -87,28 +88,6 @@ export class YnufeApp {
     }
 
     /**
-     * 自动装填并预填登录弹窗中的账号和密码，直接聚焦验证码输入框。
-     */
-    static prefillLoginForm(): void {
-        const userEl = document.getElementById("username") as HTMLInputElement | null;
-        const passEl = document.getElementById("password") as HTMLInputElement | null;
-        const rememberEl = document.getElementById("remember-me") as HTMLInputElement | null;
-        const captchaEl = document.getElementById("captcha") as HTMLInputElement | null;
-
-        const savedUser = YnufeSession.getUsername();
-        const savedPass = YnufeSession.getPassword();
-        const savedRemember = YnufeSession.getRememberMe();
-
-        if (userEl && savedUser) userEl.value = savedUser;
-        if (passEl && savedPass) passEl.value = savedPass;
-        if (rememberEl) rememberEl.checked = savedRemember || !!savedPass;
-        if (captchaEl) {
-            captchaEl.value = "";
-            setTimeout(() => captchaEl.focus(), 300);
-        }
-    }
-
-    /**
      * 会话过期统一恢复入口：先尝试静默自动续期。
      */
     static onSessionExpired(): void {
@@ -131,9 +110,9 @@ export class YnufeApp {
                 updateSyncStatus("offline", "登录已过期");
                 if (!this.isSilentSync) {
                     showToast("自动续期未成功，请输入验证码完成登录", "warn");
-                    this.prefillLoginForm();
+                    LoginView.prefillLoginForm();
                     toggleModal("login-overlay", true);
-                    this.refreshCaptchaImg();
+                    LoginView.refreshCaptchaImg();
                 }
             }
         });
@@ -277,107 +256,6 @@ export class YnufeApp {
     }
 
     /**
-     * 处理登录表单提交事件，进行前端凭据加密与身份校验。
-     *
-     * Args:
-     *     e (Event): 表单提交事件。
-     */
-    static async handleLogin(e: Event): Promise<void> {
-        e.preventDefault();
-        const userEl = document.getElementById("username") as HTMLInputElement | null;
-        const passEl = document.getElementById("password") as HTMLInputElement | null;
-        const captchaEl = document.getElementById("captcha") as HTMLInputElement | null;
-        const rememberEl = document.getElementById("remember-me") as HTMLInputElement | null;
-        const msgDiv = document.getElementById("login-msg");
-
-        const user = userEl?.value.trim() || "";
-        const pass = passEl?.value.trim() || "";
-        const captcha = captchaEl?.value.trim() || "";
-        const remember = rememberEl?.checked || false;
-
-        if (!user || !pass || !captcha) {
-            if (msgDiv) msgDiv.innerText = "请输入完整的信息及验证码！";
-            return;
-        }
-
-        showLoading(true, "正在安全登录并同步数据...");
-        if (msgDiv) msgDiv.innerText = "";
-
-        try {
-            const key1 = encodeInp(user);
-            const key2 = encodeInp(pass);
-            const encoded = `${key1}%%%${key2}`;
-
-            const loginHtml = await YnufeClient.postForm("/jsxsd/xk/LoginToXkLdap", {
-                userAccount: user,
-                userPassword: "",
-                RANDOMCODE: captcha,
-                encoded
-            });
-
-            if (loginHtml.includes("验证码错误") || loginHtml.includes("验证码已过期")) {
-                showLoading(false);
-                if (msgDiv) msgDiv.innerText = "验证码错误或过期，请重新输入！";
-                this.refreshCaptchaImg();
-                return;
-            }
-
-            if (loginHtml.includes("用户名或密码错误") || loginHtml.includes("账号或密码不正确") || loginHtml.includes("密码错误")) {
-                showLoading(false);
-                if (msgDiv) msgDiv.innerText = "账号或密码有误，请核对！";
-                this.refreshCaptchaImg();
-                return;
-            }
-
-            const verified = await AutoLogin.verifySession();
-            if (!verified) {
-                showLoading(false);
-                if (msgDiv) msgDiv.innerText = "登录未成功，请检查账号密码和验证码后重试！";
-                this.refreshCaptchaImg();
-                return;
-            }
-
-            YnufeSession.saveCredentials(user, pass, remember);
-            YnufeSession.setHasSession(true);
-            this.startHeartbeat();
-
-            await SessionCookieManager.captureAndPersist();
-            await SessionCookieManager.restoreCookies();
-
-            resetRenderFingerprints();
-
-            const profileLoaded = await this.loadHomeBusinessData();
-            showLoading(false);
-
-            if (profileLoaded) {
-                updateSyncStatus("online", "数据已最新");
-                toggleModal("login-overlay", false);
-                showToast("登录成功，数据已同步", "success");
-            } else {
-                if (msgDiv) msgDiv.innerText = "同步教务网数据异常，请重试！";
-                this.refreshCaptchaImg();
-            }
-        } catch (err) {
-            showLoading(false);
-            console.error("[YnufeApp] Login request error:", err);
-            if (msgDiv) msgDiv.innerText = "网络超时，请确认手机已连接校园网！";
-            this.refreshCaptchaImg();
-        }
-    }
-
-    /**
-     * 处理退出登录并清理凭据与缓存。
-     */
-    static handleLogout(): void {
-        if (confirm("确定要退出登录并清除会话与缓存吗？")) {
-            this.stopHeartbeat();
-            NotificationManager.cancelAll();
-            YnufeSession.clearSession();
-            window.location.reload();
-        }
-    }
-
-    /**
      * 拉取并解析首页全套核心业务数据。
      *
      * Returns:
@@ -425,9 +303,10 @@ export class YnufeApp {
      * 全局 DOM 事件处理函数与筛选联动绑定。
      */
     private static bindEvents(): void {
-        document.getElementById("login-form")?.addEventListener("submit", (e) => this.handleLogin(e));
-        document.getElementById("captcha-img")?.addEventListener("click", () => this.refreshCaptchaImg());
-        document.getElementById("btn-logout")?.addEventListener("click", () => this.handleLogout());
+        LoginView.bindEvents(
+            () => this.loadHomeBusinessData(),
+            () => this.stopHeartbeat()
+        );
 
         const syncTag = document.getElementById("sync-status-tag");
         if (syncTag) {
@@ -439,7 +318,7 @@ export class YnufeApp {
                 } else if (this.sessionInvalid) {
                     updateSyncStatus("offline", "登录已过期 · 点击登录");
                     toggleModal("login-overlay", true);
-                    this.refreshCaptchaImg();
+                    LoginView.refreshCaptchaImg();
                 } else {
                     updateSyncStatus("offline", "未同步 · 点击刷新");
                     if (!this.recovering) {
