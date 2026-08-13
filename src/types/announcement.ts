@@ -7,3 +7,10 @@ export interface AnnouncementItem {
     date: string;
     url?: string;
 }
+
+/** 公告附件：展示名 + 教务网相对路径 */
+export interface AnnouncementAttachment {
+    name: string;
+    url: string;
+}
+

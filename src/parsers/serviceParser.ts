@@ -1,14 +1,7 @@
-import { XkActivityItem } from '../types/exam';
+import { XkActivityItem, PracticeThesisInfo } from '../types/service';
 import { ParseError, hasEmptyMarker, pickRichestTable } from '../utils/tableUtils';
 
-export interface PracticeThesisInfo {
-    empty: boolean;
-    msg?: string;
-    title?: string;
-    report?: string;
-    guidanceCount?: string;
-    grade?: string;
-}
+export type { PracticeThesisInfo, XkActivityItem };
 
 /**
  * 选课中心、空教室查询与毕业设计实践环节解析器

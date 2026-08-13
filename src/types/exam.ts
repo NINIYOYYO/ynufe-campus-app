@@ -54,14 +54,3 @@ export interface ClassroomTestItem {
     /** 监考老师 */
     teacher?: string;
 }
-
-/**
- * 选课中心活动项
- */
-export interface XkActivityItem {
-    name: string;
-    type: string;
-    timeRange: string;
-    status: string;
-    url: string;
-}

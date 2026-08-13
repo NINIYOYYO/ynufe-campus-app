@@ -1,12 +1,8 @@
-import { AnnouncementItem } from '../types/announcement';
+import { AnnouncementItem, AnnouncementAttachment } from '../types/announcement';
 import { AppConfig } from '../config';
 import { ParseError, buildHeaderIndex, hasEmptyMarker, pickIndex } from '../utils/tableUtils';
 
-/** 公告附件：展示名 + 教务网相对路径 */
-export interface AnnouncementAttachment {
-    name: string;
-    url: string;
-}
+export type { AnnouncementAttachment };
 
 /**
  * 云南财经大学校内公告通知 DOM 解析器
