@@ -4,6 +4,7 @@ import { YnufeSession } from './stores/sessionStore';
 import { ProfileParser } from './parsers/profileParser';
 import { TimetableParser } from './parsers/timetableParser';
 import { GradeParser } from './parsers/gradeParser';
+import { GradeView } from './views/gradeView';
 import { ExamParser } from './parsers/examParser';
 import { ExamView } from './views/examView';
 import { AnnouncementParser } from './parsers/announcementParser';
@@ -913,310 +914,37 @@ export class YnufeUI {
 
     /**
      * 拉取并解析期末成绩。
-     *
-     * Returns:
-     *     Promise<boolean>: 是否成功。
      */
     static async loadFinalGradesData(silent: boolean = false): Promise<boolean> {
-        if (!silent) this.showLoading(true, "正在获取最新成绩与GPA...");
-        try {
-            const html = await YnufeClient.getHtml("/jsxsd/kscj/cjcx_list?xsfs=all");
-            const summary = GradeParser.parseGrades(html);
-            this.detectNewGrades(summary);
-            this.renderGradesData(summary);
-            YnufeSession.setCache("ynufe_cached_grades_data", summary);
-            return true;
-        } catch (e) {
-            this.handleLoadError("成绩", e);
-            return false;
-        } finally {
-            if (!silent) this.showLoading(false);
-        }
-    }
-
-    /**
-     * 成绩变动检测：对比本地已记录的"已出成绩课程集合"，发现新公布的成绩时
-     * 弹出 Toast 并（若开启通知）推送本地通知。首次运行只建立基线、不打扰。
-     *
-     * Args:
-     *     summary (GradeSummary): 最新解析出的成绩概览。
-     */
-    private static detectNewGrades(summary: GradeSummary): void {
-        try {
-            if (!summary || !Array.isArray(summary.gradesList)) return;
-
-            const isPublished = (g: GradeItem): boolean => {
-                const s = (g.score || "").trim();
-                if (!s || s === "-" || s === "未出" || s === "无成绩") return false;
-                return true;
-            };
-            const keyOf = (g: GradeItem) => `${g.semester}|${g.courseId || g.courseName}`;
-
-            const publishedNow = summary.gradesList.filter(isPublished);
-            const nowKeys = publishedNow.map(keyOf);
-
-            const KEY = "ynufe_graded_keys";
-            const prevRaw = localStorage.getItem(KEY);
-
-            // 首次运行：仅建立基线，不提示
-            if (prevRaw === null) {
-                localStorage.setItem(KEY, JSON.stringify(nowKeys));
-                return;
-            }
-
-            let prevKeys: string[] = [];
-            try { prevKeys = JSON.parse(prevRaw) || []; } catch { prevKeys = []; }
-            const prevSet = new Set(prevKeys);
-
-            const freshly = publishedNow.filter(g => !prevSet.has(keyOf(g)));
-            localStorage.setItem(KEY, JSON.stringify(nowKeys));
-
-            if (freshly.length === 0) return;
-
-            if (freshly.length === 1) {
-                const g = freshly[0];
-                this.showToast(`新成绩公布：${g.courseName} ${g.score}`, "success");
-                NotificationManager.notifyGradeUpdate(`新成绩公布`, `${g.courseName}：${g.score}（绩点 ${g.gpa}）`);
-            } else {
-                this.showToast(`有 ${freshly.length} 门课程公布了新成绩`, "success");
-                const names = freshly.slice(0, 3).map(g => g.courseName).join("、");
-                NotificationManager.notifyGradeUpdate(`${freshly.length} 门新成绩公布`, names + (freshly.length > 3 ? " 等" : ""));
-            }
-        } catch (e) {
-            console.error("[YnufeUI] detectNewGrades error:", e);
-        }
+        return GradeView.loadFinalGradesData(silent);
     }
 
     /**
      * 渲染成绩大卡、SVG 环形进度条及成绩过滤下拉框。
      */
     static renderGradesData(summary: GradeSummary): void {
-        if (!summary) return;
-        this.globalGrades = summary.gradesList || [];
-
-        const gpaVal = document.getElementById("gpa-val");
-        const gpaProgress = document.getElementById("gpa-progress-bar");
-        const creditVal = document.getElementById("credit-val");
-        const creditProgress = document.getElementById("credit-progress-bar");
-
-        const gpaNum = parseFloat(summary.gpa) || 0;
-        const creditNum = parseFloat(summary.totalCredits) || 0;
-
-        if (gpaVal) gpaVal.innerText = summary.gpa;
-        if (gpaProgress) gpaProgress.setAttribute("stroke-dasharray", `${Math.min((gpaNum / 5.0) * 100, 100).toFixed(1)}, 100`);
-        if (creditVal) creditVal.innerText = summary.totalCredits;
-        if (creditProgress) creditProgress.setAttribute("stroke-dasharray", `${Math.min((creditNum / 150) * 100, 100).toFixed(1)}, 100`);
-
-        // 填充学期筛选下拉框
-        const selectDom = document.getElementById("select-grade-semester") as HTMLSelectElement | null;
-        if (selectDom && Array.isArray(summary.semesters)) {
-            selectDom.innerHTML = '<option value="">全部学期</option>';
-
-            const selectExamSem = document.getElementById("select-exam-semester") as HTMLSelectElement | null;
-            if (selectExamSem) selectExamSem.innerHTML = "";
-
-            summary.semesters.forEach(sem => {
-                const opt = document.createElement("option");
-                opt.value = sem;
-                opt.innerText = sem;
-                selectDom.appendChild(opt);
-
-                if (selectExamSem) {
-                    const optExam = document.createElement("option");
-                    optExam.value = sem;
-                    optExam.innerText = sem;
-                    selectExamSem.appendChild(optExam);
-                }
-            });
-        }
-
-        CustomSelect.enhanceAll();
-        this.filterGrades();
+        GradeView.renderGradesData(summary);
     }
 
     /**
      * 根据当前学期下拉框及搜索输入框过滤并渲染成绩卡片列表。
      */
     static filterGrades(): void {
-        const container = document.getElementById("grades-list");
-        if (!container) return;
-
-        const selectSem = (document.getElementById("select-grade-semester") as HTMLSelectElement | null)?.value || "";
-        const searchText = (document.getElementById("input-grade-search") as HTMLInputElement | null)?.value.toLowerCase().trim() || "";
-
-        const filtered = this.globalGrades.filter(g => {
-            const matchSem = !selectSem || g.semester === selectSem;
-            const matchSearch = !searchText || g.courseName.toLowerCase().includes(searchText);
-            return matchSem && matchSearch;
-        });
-
-        // 指纹要连筛选条件一起算，否则切换学期/搜索时会被误判为「无变化」
-        if (container.childElementCount > 0 &&
-            this.isSameAsRendered("grades", { selectSem, searchText, filtered })) {
-            return;
-        }
-
-        if (filtered.length === 0) {
-            container.innerHTML = `<div class="empty-state"><p>未查询到匹配成绩</p></div>`;
-            return;
-        }
-
-        container.innerHTML = "";
-        filtered.forEach(g => {
-            const scoreNum = parseFloat(g.score);
-            const isFail = g.score === "不合格" || (!isNaN(scoreNum) && scoreNum < 60);
-
-            const card = document.createElement("div");
-            card.className = "grade-card glass-card";
-            card.innerHTML = `
-                <div class="grade-left">
-                    <div class="grade-name">${escapeHtml(g.courseName)}</div>
-                    <div class="grade-meta">
-                        <span>学期: ${escapeHtml(g.semester)}</span>
-                        <span>学分: ${escapeHtml(g.credit)}</span>
-                        <span>性质: ${escapeHtml(g.category || '必修')}</span>
-                    </div>
-                </div>
-                <div class="grade-right">
-                    <div class="grade-score ${isFail ? 'fail' : ''}">${escapeHtml(g.score)}</div>
-                    <div class="grade-gpa">绩点: ${escapeHtml(g.gpa)}</div>
-                </div>
-            `;
-            card.addEventListener("click", () => this.showGradeDetail(g));
-            container.appendChild(card);
-        });
-        this.playEntrance(container);
+        GradeView.filterGrades();
     }
 
     /**
      * 在抽屉中展示单门课程的完整信息与成绩构成。
-     *
-     * 成绩列表只放得下课名/学分/绩点，而教务网的成绩表实际有 21 列，
-     * 成绩本身还挂着 pscj_list.do 明细页（期末/期中/平时各自的分数与占比）。
-     * 这里把两者合并展示：先用已有数据即时渲染，再异步补上构成明细。
-     *
-     * Args:
-     *     g (GradeItem): 被点击的成绩条目。
      */
     static async showGradeDetail(g: GradeItem): Promise<void> {
-        const scoreNum = parseFloat(g.score);
-        const isFail = g.score === "不合格" || (!isNaN(scoreNum) && scoreNum < 60);
-
-        /** 生成一条「标签 / 值」信息行，值为空时整行省略。 */
-        const row = (label: string, value?: string): string =>
-            value && value !== "-" && value.trim()
-                ? `<div class="detail-row"><span>${escapeHtml(label)}</span><b>${escapeHtml(value)}</b></div>`
-                : "";
-
-        BottomSheet.show(g.courseName, g.category || "课程", `
-            <div class="grade-detail-hero">
-                <div class="grade-detail-score ${isFail ? "fail" : ""}">${escapeHtml(g.score)}</div>
-                <div class="grade-detail-sub">绩点 ${escapeHtml(g.gpa)} · 学分 ${escapeHtml(g.credit)}</div>
-            </div>
-            <div class="detail-rows">
-                ${row("开课学期", g.semester)}
-                ${row("课程编号", g.courseId)}
-                ${row("总学时", g.hours)}
-                ${row("考核方式", g.assessMode)}
-                ${row("考试性质", g.examNature)}
-                ${row("课程性质", g.courseNature)}
-                ${row("分组名", g.groupName)}
-            </div>
-            <div id="grade-detail-components">
-                ${g.detailUrl ? `<div class="ann-detail-hint">正在加载成绩构成…</div>` : ""}
-            </div>
-        `);
-
-        if (!g.detailUrl) return;
-        const slot = document.getElementById("grade-detail-components");
-        if (!slot) return;
-
-        try {
-            // 与抽屉入场并行，两者都就绪再换内容，避免动画中途高度突变
-            const [html] = await Promise.all([
-                YnufeClient.getHtml(g.detailUrl),
-                BottomSheet.settled()
-            ]);
-            const detail = GradeParser.parseScoreDetail(html);
-
-            if (detail.components.length === 0) {
-                await BottomSheet.morphHeight(() => { slot.innerHTML = ""; });
-                return;
-            }
-
-            const bars = detail.components.map(c => {
-                const pct = Math.max(0, Math.min(100, parseFloat(c.ratio) || 0));
-                const val = Math.max(0, Math.min(100, parseFloat(c.score) || 0));
-                return `
-                    <div class="score-part">
-                        <div class="score-part-head">
-                            <span>${escapeHtml(c.label)}</span>
-                            <em>占 ${escapeHtml(c.ratio)}</em>
-                            <b>${escapeHtml(c.score)}</b>
-                        </div>
-                        <div class="score-bar"><i style="width:${val}%"></i></div>
-                        <div class="score-part-note">按占比折合 ${(val * pct / 100).toFixed(1)} 分</div>
-                    </div>`;
-            }).join("");
-
-            await BottomSheet.morphHeight(() => {
-                slot.innerHTML = `
-                    <div class="sheet-swap-in">
-                        <div class="detail-section-title">成绩构成</div>
-                        ${bars}
-                        ${detail.total ? `<div class="score-total">总成绩 <b>${escapeHtml(detail.total)}</b></div>` : ""}
-                    </div>`;
-            });
-        } catch (e) {
-            await BottomSheet.settled();
-            const reason = e instanceof SessionExpiredError ? "登录已过期" : "成绩构成加载失败";
-            await BottomSheet.morphHeight(() => {
-                slot.innerHTML = `<div class="ann-detail-hint">${escapeHtml(reason)}</div>`;
-            });
-        }
+        return GradeView.showGradeDetail(g);
     }
 
     /**
      * 拉取并渲染社会等级考试成绩。
      */
     static async loadLevelGradesData(silent: boolean = false): Promise<void> {
-        if (!silent) this.showLoading(true, "正在查询等级考试成绩...");
-        const container = document.getElementById("level-grades-list");
-        try {
-            const html = await YnufeClient.getHtml("/jsxsd/kscj/djkscj_list");
-            const list = GradeParser.parseLevelGrades(html);
-            if (container) {
-                if (list.length === 0) {
-                    container.innerHTML = `<div class="empty-state"><p>暂无社会考试等级成绩记录</p></div>`;
-                } else {
-                    container.innerHTML = "";
-                    list.forEach(item => {
-                        const card = document.createElement("div");
-                        card.className = "grade-card glass-card";
-                        card.innerHTML = `
-                            <div class="grade-left">
-                                <div class="grade-name">${escapeHtml(item.name)}</div>
-                                <div class="grade-meta">
-                                    ${item.written && item.written !== "0" ? `<span>笔试: ${escapeHtml(item.written)}</span>` : ""}
-                                    ${item.machine && item.machine !== "0" ? `<span>机试: ${escapeHtml(item.machine)}</span>` : ""}
-                                    ${item.levelResult ? `<span>等级: ${escapeHtml(item.levelResult)}</span>` : ""}
-                                </div>
-                            </div>
-                            <div class="grade-right">
-                                <div class="grade-score" style="color:var(--accent-color);">${escapeHtml(item.score)}</div>
-                                <div class="grade-gpa">考试日期: ${escapeHtml(item.date)}</div>
-                            </div>
-                        `;
-                        container.appendChild(card);
-                    });
-                    this.playEntrance(container);
-                }
-            }
-        } catch (e) {
-            this.handleLoadError("等级考试成绩", e);
-        } finally {
-            if (!silent) this.showLoading(false);
-        }
+        return GradeView.loadLevelGradesData(silent);
     }
 
     /**

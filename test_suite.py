@@ -75,6 +75,7 @@ src_ts_files = [
     "src/views/announcementView.ts",
     "src/views/examView.ts",
     "src/views/serviceView.ts",
+    "src/views/gradeView.ts",
 ]
 for rel in src_ts_files:
     assert os.path.exists(os.path.join(BASE, rel)), f"ERROR: Missing source file: {rel}"
