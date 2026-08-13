@@ -1,3 +1,4 @@
+import './styles/app.css';
 import { YnufeClient, SessionExpiredError } from './api/client';
 import { YnufeSession } from './stores/sessionStore';
 import { ProfileParser } from './parsers/profileParser';

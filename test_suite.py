@@ -70,7 +70,7 @@ src_ts_files = [
     "src/utils/crypto.ts", "src/utils/escapeHtml.ts", "src/utils/colorExtractor.ts",
     "src/components/wallpaperManager.ts", "src/components/bottomSheet.ts",
     "src/components/syncStatusTag.ts", "src/components/customSelect.ts",
-    "src/components/themeCustomizer.ts",
+    "src/components/themeCustomizer.ts", "src/styles/app.css",
 ]
 for rel in src_ts_files:
     assert os.path.exists(os.path.join(BASE, rel)), f"ERROR: Missing source file: {rel}"
