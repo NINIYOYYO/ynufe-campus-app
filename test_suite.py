@@ -63,6 +63,7 @@ print(f" [V] All {len(required_ids)} critical DOM IDs present")
 src_ts_files = [
     "src/main.ts", "src/config.ts", "src/api/client.ts",
     "src/services/autoLogin.ts", "src/services/notificationManager.ts",
+    "src/services/reminderScheduler.ts",
     "src/stores/sessionStore.ts", "src/config/themePresets.ts",
     "src/types/theme.ts",
     "src/parsers/profileParser.ts", "src/parsers/timetableParser.ts",

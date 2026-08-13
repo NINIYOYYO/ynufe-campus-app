@@ -1,6 +1,6 @@
 import { registerPlugin } from '@capacitor/core';
-import { AppConfig } from '../config';
-import { CourseItem, TimetableData } from '../types/timetable';
+import { ReminderScheduler } from './reminderScheduler';
+import { TimetableData } from '../types/timetable';
 
 /* ---- @capacitor/local-notifications 的最小类型与运行时绑定 ----
  * 通过 registerPlugin 直接绑定原生插件（原生实现由 package.json 中的
@@ -143,21 +143,9 @@ export class NotificationManager {
 
     /**
      * 解析教务考试日期时间文本（如 "2026-07-30 09:00-11:00"）为开考 Date。
-     *
-     * Returns:
-     *     Date | null: 无法解析时返回 null。
      */
     static parseExamStart(text: string): Date | null {
-        if (!text) return null;
-        const m = text.match(/(\d{4})-(\d{1,2})-(\d{1,2})(?:[^\d]+(\d{1,2}):(\d{2}))?/);
-        if (!m) return null;
-        const y = parseInt(m[1], 10);
-        const mo = parseInt(m[2], 10) - 1;
-        const d = parseInt(m[3], 10);
-        const hh = m[4] ? parseInt(m[4], 10) : 8;
-        const mm = m[5] ? parseInt(m[5], 10) : 0;
-        const dt = new Date(y, mo, d, hh, mm, 0, 0);
-        return isNaN(dt.getTime()) ? null : dt;
+        return ReminderScheduler.parseExamStart(text);
     }
 
     /**
@@ -184,50 +172,20 @@ export class NotificationManager {
             console.error("[NotificationManager] clear old exam reminders error:", e);
         }
 
-        if (!Array.isArray(exams) || exams.length === 0) return 0;
+        const notices = ReminderScheduler.computeExamReminders(exams, { maxScheduled: 40 });
+        if (notices.length === 0) return 0;
 
-        const now = new Date();
-        const notifications: ScheduleNotification[] = [];
-        let idx = 0;
-
-        for (const ex of exams) {
-            const start = this.parseExamStart(ex.date || ex.time || "");
-            if (!start || start.getTime() <= now.getTime()) continue;
-            const name = ex.name || ex.courseName || "考试";
-            const room = ex.room || ex.location || "待定";
-            const seat = ex.seatNo || ex.seat || "";
-            const timeStr = `${start.getMonth() + 1}月${start.getDate()}日 ${String(start.getHours()).padStart(2, "0")}:${String(start.getMinutes()).padStart(2, "0")}`;
-            const body = `考场 ${room}${seat ? " · 座位 " + seat : ""} · ${timeStr}`;
-
-            // 考前一天 21:00
-            const eveBefore = new Date(start.getFullYear(), start.getMonth(), start.getDate() - 1, 21, 0, 0);
-            if (eveBefore.getTime() > now.getTime() && idx < 40) {
-                notifications.push({
-                    id: this.EXAM_ID_BASE + idx++,
-                    title: `明天考试：${name}`,
-                    body,
-                    schedule: { at: eveBefore, allowWhileIdle: true },
-                    smallIcon: "ic_launcher",
-                });
-            }
-            // 考前 1 小时
-            const hourBefore = new Date(start.getTime() - 60 * 60000);
-            if (hourBefore.getTime() > now.getTime() && idx < 40) {
-                notifications.push({
-                    id: this.EXAM_ID_BASE + idx++,
-                    title: `1 小时后考试：${name}`,
-                    body,
-                    schedule: { at: hourBefore, allowWhileIdle: true },
-                    smallIcon: "ic_launcher",
-                });
-            }
-        }
-
-        if (notifications.length === 0) return 0;
         try {
-            await LocalNotifications.schedule({ notifications });
-            console.log(`[NotificationManager] Scheduled ${notifications.length} exam reminders.`);
-            return notifications.length;
+            const scheduleNotifications: ScheduleNotification[] = notices.map(n => ({
+                id: this.EXAM_ID_BASE + n.idOffset,
+                title: n.title,
+                body: n.body,
+                schedule: { at: n.fireAt, allowWhileIdle: true },
+                smallIcon: "ic_launcher",
+            }));
+            await LocalNotifications.schedule({ notifications: scheduleNotifications });
+            console.log(`[NotificationManager] Scheduled ${scheduleNotifications.length} exam reminders.`);
+            return scheduleNotifications.length;
         } catch (e) {
             console.error("[NotificationManager] exam schedule error:", e);
             return 0;
@@ -252,45 +210,11 @@ export class NotificationManager {
         }
 
         const leadMin = this.getLeadMinutes();
-        const now = new Date();
-
-        // 推算第 1 教学周的周一日期：本周一 - (当前周-1) * 7 天
-        const jsDay = now.getDay() === 0 ? 7 : now.getDay(); // ISO: 周一=1...周日=7
-        const thisMonday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (jsDay - 1));
-        const week1Monday = new Date(thisMonday.getTime() - (data.currentWeek - 1) * 7 * 86400000);
-
-        interface PlannedNotice { fireAt: Date; classAt: Date; course: CourseItem; sessionLabel: string; }
-        const planned: PlannedNotice[] = [];
-
-        // 课表里一门课会按"每小节"各占一个单元格（如 1-2 节即两条记录），
-        // 它们折算到同一大节后是完全相同的一次课，必须去重，否则会重复推送多条提醒。
-        const plannedKeys = new Set<string>();
-
-        for (const c of data.courses) {
-            if (!Array.isArray(c.activeWeeks) || c.activeWeeks.length === 0) continue;
-            const session = c.session || Math.ceil(c.slot / 2);
-            const timeCfg = AppConfig.SESSION_TIMES[session - 1];
-            if (!timeCfg) continue;
-            const [hh, mm] = timeCfg.start.split(":").map(Number);
-
-            for (const wk of c.activeWeeks) {
-                const classDate = new Date(week1Monday.getTime() + ((wk - 1) * 7 + (c.day - 1)) * 86400000);
-                classDate.setHours(hh, mm, 0, 0);
-
-                const key = `${classDate.getTime()}|${c.name}|${c.room}`;
-                if (plannedKeys.has(key)) continue;
-
-                const fireAt = new Date(classDate.getTime() - leadMin * 60000);
-                const daysFromNow = (classDate.getTime() - now.getTime()) / 86400000;
-                if (fireAt.getTime() > now.getTime() && daysFromNow <= this.DAYS_AHEAD) {
-                    plannedKeys.add(key);
-                    planned.push({ fireAt, classAt: classDate, course: c, sessionLabel: timeCfg.label });
-                }
-            }
-        }
-
-        planned.sort((a, b) => a.fireAt.getTime() - b.fireAt.getTime());
-        const capped = planned.slice(0, this.MAX_SCHEDULED);
+        const capped = ReminderScheduler.computeTimetableReminders(data, {
+            leadMinutes: leadMin,
+            daysAhead: this.DAYS_AHEAD,
+            maxScheduled: this.MAX_SCHEDULED,
+        });
 
         if (this.isNative) {
             await this.cancelAll();
@@ -298,8 +222,8 @@ export class NotificationManager {
             const schedule: ScheduleOptions = {
                 notifications: capped.map((p, idx) => ({
                     id: this.ID_BASE + idx,
-                    title: `${leadMin} 分钟后上课：${p.course.name}`,
-                    body: `${p.sessionLabel} · ${p.course.room} · ${p.course.teacher}`,
+                    title: p.title,
+                    body: p.body,
                     schedule: { at: p.fireAt, allowWhileIdle: true },
                     smallIcon: "ic_launcher",
                 }))
@@ -321,9 +245,7 @@ export class NotificationManager {
             if (delay > 0 && delay < 12 * 3600000) {
                 setTimeout(() => {
                     if ("Notification" in window && Notification.permission === "granted") {
-                        new Notification(`${leadMin} 分钟后上课：${p.course.name}`, {
-                            body: `${p.sessionLabel} · ${p.course.room} · ${p.course.teacher}`,
-                        });
+                        new Notification(p.title, { body: p.body });
                     }
                 }, delay);
                 webCount++;
