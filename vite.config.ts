@@ -9,6 +9,7 @@ export default defineConfig({
     minify: 'esbuild',
   },
   server: {
+    host: true,
     port: 8000,
     open: false,
     // 开发模式直接代理教务网，`npm run dev` 即可完整调试登录与数据拉取，

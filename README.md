@@ -11,7 +11,6 @@ campus_app/
 ├── vite.config.ts              # Vite 构建与 /jsxsd 开发代理配置
 ├── capacitor.config.json       # Capacitor 原生壳配置（Http/Cookies/LocalNotifications）
 ├── build_apk.py                # 一键打包 APK 脚本
-├── dev_server.py               # (备用) 零依赖本地代理服务器
 └── src/
     ├── main.ts                 # 业务总控（路由/同步/登录/提醒/UI 调度）
     ├── config.ts               # 全局集中配置（域名、节次时间、心跳间隔等）
@@ -19,6 +18,7 @@ campus_app/
     ├── services/
     │   ├── autoLogin.ts        # 持久化登录：会话探测 + 免验证码静默续期
     │   └── notificationManager.ts  # 上课提醒本地通知排程
+    │   └── cookieManager.ts    # Android 原生 Cookie 穿透与持久化
     ├── stores/sessionStore.ts  # 凭据（混淆存储）与离线缓存
     ├── parsers/                # 各教务页面 DOM 解析器
     ├── components/             # UI 组件（抽屉/下拉/壁纸/主题等）
@@ -33,7 +33,7 @@ npm install
 npm run dev
 ```
 
-打开 `http://localhost:8000` 即可。vite 已内置 `/jsxsd` 反向代理，登录、验证码、数据拉取全部可直接调试（无需再先 build + dev_server.py）。
+打开 `http://localhost:8000` 即可。Vite 已内置 `/jsxsd` 反向代理，登录、验证码、数据拉取全部可直接调试。
 
 ## 解析器回归测试
 

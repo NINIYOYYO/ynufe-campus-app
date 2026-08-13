@@ -13,5 +13,9 @@
       "smallIcon": "ic_launcher",
       "iconColor": "#3b82f6"
     }
+  },
+  "server": {
+    "url": "http://192.168.110.38:8000",
+    "cleartext": true
   }
 }

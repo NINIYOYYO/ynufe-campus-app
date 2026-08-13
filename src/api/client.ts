@@ -1,4 +1,5 @@
 import { AppConfig } from '../config';
+import { SessionCookieManager } from '../services/cookieManager';
 
 /**
  * SessionExpiredError: 教务会话过期专用异常。
@@ -24,24 +25,18 @@ export class YnufeClient {
      *     Capacitor 原生手机应用下返回教务系统域名。
      */
     private static get BASE_URL(): string {
-        // 注意：@capacitor/core 被打进 Web 包后，浏览器里同样会定义 window.Capacitor，
-        // 因此「全局是否存在」不能用来判断运行环境，必须调用 isNativePlatform()。
-        // 早期用前者判断，导致浏览器调试时请求被打到绝对域名、直接被 CORS 拦掉，
-        // vite 与 dev_server.py 的 /jsxsd 代理形同虚设。
         const cap = (window as any).Capacitor;
         const isNative = typeof cap?.isNativePlatform === "function" && cap.isNativePlatform() === true;
-
-        // 原生壳内由 CapacitorHttp 直连教务网，不受同源策略限制；
-        // 浏览器里则一律走同源相对路径，交给本地代理转发——浏览器直连教务网
-        // 永远会失败（对方不返回 CORS 头），所以这里不存在「直连」的可用场景。
+        // 仅当端口为 Vite 开发端口 8000 时走本地开发代理；在手机原生离线版（localhost）下精准返回教务网域名
+        const isViteDev = typeof window !== "undefined" && (window.location.port === "8000" || (!isNative && window.location.hostname !== "xjwis.ynufe.edu.cn"));
+        if (isViteDev) {
+            return "";
+        }
         return isNative ? AppConfig.TARGET_HOST : "";
     }
 
     /**
      * 把 /jsxsd 开头的相对路径解析为当前环境下可直接访问的地址。
-     *
-     * 供需要真实 URL 的场景使用（如附件下载的 <a href>），
-     * 保证与 fetch 走同一套环境判定：浏览器内是同源代理路径，原生壳内是绝对域名。
      *
      * Args:
      *     endpoint (string): 以 / 开头的相对路径。
@@ -54,23 +49,43 @@ export class YnufeClient {
     }
 
     /**
+     * 从 HTTP 响应头中直接提取 Set-Cookie / JSESSIONID 并存入本地。
+     */
+    private static extractAndSaveCookieFromHeaders(resp: Response): void {
+        try {
+            let setCookie = resp.headers.get("Set-Cookie") || resp.headers.get("set-cookie");
+            if (!setCookie && (resp.headers as any).entries) {
+                for (const [k, v] of (resp.headers as any).entries()) {
+                    if (k.toLowerCase() === "set-cookie") {
+                        setCookie = v;
+                        break;
+                    }
+                }
+            }
+            if (setCookie) {
+                const match = setCookie.match(/JSESSIONID=([^;]+)/i);
+                if (match && match[1]) {
+                    SessionCookieManager.saveJsessionId(match[1].trim());
+                }
+            }
+        } catch (e) {
+            console.warn("[YnufeClient] Extract Set-Cookie error:", e);
+        }
+    }
+
+    /**
      * 校验请求返回的 HTML 文本是否触发了教务系统的登录重定向。
-     * 检测到过期时：广播 ynufe-session-expired 事件并抛出 SessionExpiredError，
-     * 上层 catch 后应中止本轮同步（绝不能拿登录页去解析、写缓存）。
      */
     private static checkSessionTimeout(text: string, endpoint: string): void {
         if (endpoint.includes("LoginToXkLdap")) {
             return;
         }
 
-        // 1. 结构性特征：只可能出现在登录页/拦截页，判定为掉线是安全的
         const structural =
             text.includes("sys/login.jsp") ||
             text.includes("LoginToXkLdap") ||
             text.includes("SYSTEM_LOGIN");
 
-        // 2. 纯中文提示词具有歧义：公告标题（如《关于教务系统升级后请重新登录的通知》）
-        //    同样会命中，误判会导致整轮同步被中止。因此仅当页面不含任何业务数据容器时才采信。
         const hasBusinessContent =
             text.includes('id="dataList"') ||
             text.includes('id="kbtable"') ||
@@ -87,6 +102,19 @@ export class YnufeClient {
     }
 
     /**
+     * 伪装为电脑端 Chrome 浏览器的标准请求头。
+     * 解决教务网 Tomcat 因校验 User-Agent / Referer 缺省而将请求判定为“非法访问”返回 994 字节的问题。
+     */
+    private static get COMMON_HEADERS(): Record<string, string> {
+        return {
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+            "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+            "Referer": `${this.BASE_URL}/jsxsd/framework/xsMain.jsp`
+        };
+    }
+
+    /**
      * 发起 GET 请求并获取 HTML 页面源码。
      *
      * Raises:
@@ -95,15 +123,21 @@ export class YnufeClient {
      */
     static async getHtml(endpoint: string): Promise<string> {
         const url = `${this.BASE_URL}${endpoint}`;
+        await SessionCookieManager.restoreCookies();
+        const cookieHeader = SessionCookieManager.getCookieHeader();
+
         try {
             const resp = await fetch(url, {
                 method: "GET",
                 credentials: "include",
                 headers: {
-                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+                    ...this.COMMON_HEADERS,
+                    ...cookieHeader
                 }
             });
             const text = await resp.text();
+            this.extractAndSaveCookieFromHeaders(resp);
+            await SessionCookieManager.captureAndPersist();
             this.checkSessionTimeout(text, endpoint);
             return text;
         } catch (err) {
@@ -123,6 +157,9 @@ export class YnufeClient {
      */
     static async postForm(endpoint: string, formDataObj: Record<string, string>): Promise<string> {
         const url = `${this.BASE_URL}${endpoint}`;
+        await SessionCookieManager.restoreCookies();
+        const cookieHeader = SessionCookieManager.getCookieHeader();
+
         const params = new URLSearchParams();
         for (const key in formDataObj) {
             params.append(key, formDataObj[key]);
@@ -133,12 +170,15 @@ export class YnufeClient {
                 method: "POST",
                 credentials: "include",
                 headers: {
+                    ...this.COMMON_HEADERS,
                     "Content-Type": "application/x-www-form-urlencoded",
-                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+                    ...cookieHeader
                 },
                 body: params.toString()
             });
             const text = await resp.text();
+            this.extractAndSaveCookieFromHeaders(resp);
+            await SessionCookieManager.captureAndPersist();
             this.checkSessionTimeout(text, endpoint);
             return text;
         } catch (err) {
@@ -178,17 +218,24 @@ export class YnufeClient {
     static async getCaptchaBlob(): Promise<Blob> {
         const endpoint = `/jsxsd/verifycode.servlet?t=${Math.random()}`;
         const url = `${this.BASE_URL}${endpoint}`;
+        await SessionCookieManager.restoreCookies();
+        const cookieHeader = SessionCookieManager.getCookieHeader();
+
         try {
             const resp = await fetch(url, {
                 method: "GET",
                 credentials: "include",
                 headers: {
-                    "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
+                    ...this.COMMON_HEADERS,
+                    "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+                    ...cookieHeader
                 }
             });
             if (!resp.ok) {
                 throw new Error(`Captcha request failed with status ${resp.status}`);
             }
+            this.extractAndSaveCookieFromHeaders(resp);
+            await SessionCookieManager.captureAndPersist();
             return await resp.blob();
         } catch (err) {
             console.error("[YnufeClient] Fetch captcha blob error:", err);

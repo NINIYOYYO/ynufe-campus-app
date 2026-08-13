@@ -1,4 +1,5 @@
 import { obfuscate, deobfuscate } from '../utils/crypto';
+import { SessionCookieManager } from '../services/cookieManager';
 
 /**
  * YnufeSession: 用户凭据与离线数据持久化中心
@@ -95,6 +96,7 @@ export class YnufeSession {
      */
     static clearSession(): void {
         localStorage.removeItem(this.KEY_HAS_SESSION);
+        SessionCookieManager.clearCookies();
         const keysToRemove = [
             "ynufe_cached_profile",
             "ynufe_cached_timetable_data",

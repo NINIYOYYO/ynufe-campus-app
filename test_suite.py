@@ -5,6 +5,11 @@
 """
 import os
 import re
+import sys
+
+if sys.platform.startswith('win'):
+    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stderr.reconfigure(encoding='utf-8')
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 

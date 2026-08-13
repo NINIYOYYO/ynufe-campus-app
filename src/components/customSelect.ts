@@ -1,3 +1,5 @@
+import { escapeHtml } from '../utils/escapeHtml';
+
 /**
  * CustomSelect: 全局 iOS 风格精美毛玻璃自定义下拉菜单组件
  * 职责：替代浏览器原生点开后黑边尖角、白底蓝条的硬沉 <select><option> 弹出框，
@@ -144,7 +146,7 @@ export class CustomSelect {
             }
 
             item.innerHTML = `
-                <span>${opt.text}</span>
+                <span>${escapeHtml(opt.text)}</span>
                 <span class="check-mark"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
             `;
 

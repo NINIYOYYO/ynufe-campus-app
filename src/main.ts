@@ -13,6 +13,7 @@ import { CustomSelect } from './components/customSelect';
 import { ThemeCustomizer } from './components/themeCustomizer';
 import { AutoLogin } from './services/autoLogin';
 import { NotificationManager } from './services/notificationManager';
+import { SessionCookieManager } from './services/cookieManager';
 import { AppConfig } from './config';
 import { encodeInp } from './utils/crypto';
 import { escapeHtml } from './utils/escapeHtml';
@@ -149,6 +150,7 @@ export class YnufeUI {
      */
     static init(): void {
         YnufeSession.migratePlaintextCredentials();
+        SessionCookieManager.restoreCookies().catch(() => {});
         this.bindEvents();
         this.bindSubTabEvents();
         this.bindNotifyEvents();
@@ -163,10 +165,15 @@ export class YnufeUI {
             this.startHeartbeat();
         }
 
-        // 页面回到前台时补一次心跳，后台时暂停（省电 + 避免被系统冻结的无效请求）
+        // 页面回到前台时补一次心跳，切后台时强行刷盘内存 Cookie 并暂停心跳
         document.addEventListener("visibilitychange", () => {
             if (document.hidden) {
                 this.stopHeartbeat();
+                SessionCookieManager.captureAndPersist().catch(() => {});
+                const cap = (window as any).Capacitor;
+                if (cap?.Plugins?.CapacitorCookies?.flushCookies) {
+                    cap.Plugins.CapacitorCookies.flushCookies().catch(() => {});
+                }
             } else if (YnufeSession.getHasSession()) {
                 this.startHeartbeat();
             }
@@ -179,6 +186,28 @@ export class YnufeUI {
             const mode = e?.detail?.mode || "dark";
             WallpaperManager.applyAdaptiveWallpaperColor(mode);
         });
+    }
+
+    /**
+     * 自动装填并预填登录弹窗中的账号和密码，直接聚焦验证码输入框。
+     */
+    static prefillLoginForm(): void {
+        const userEl = document.getElementById("username") as HTMLInputElement | null;
+        const passEl = document.getElementById("password") as HTMLInputElement | null;
+        const rememberEl = document.getElementById("remember-me") as HTMLInputElement | null;
+        const captchaEl = document.getElementById("captcha") as HTMLInputElement | null;
+
+        const savedUser = YnufeSession.getUsername();
+        const savedPass = YnufeSession.getPassword();
+        const savedRemember = YnufeSession.getRememberMe();
+
+        if (userEl && savedUser) userEl.value = savedUser;
+        if (passEl && savedPass) passEl.value = savedPass;
+        if (rememberEl) rememberEl.checked = savedRemember || !!savedPass;
+        if (captchaEl) {
+            captchaEl.value = "";
+            setTimeout(() => captchaEl.focus(), 300);
+        }
     }
 
     /**
@@ -206,6 +235,7 @@ export class YnufeUI {
                 this.updateSyncStatus("offline", "登录已过期");
                 if (!this.isSilentSync) {
                     this.showToast("自动续期未成功，请输入验证码完成登录", "warn");
+                    this.prefillLoginForm();
                     this.toggleModal("login-overlay", true);
                     this.refreshCaptchaImg();
                 }
@@ -472,6 +502,10 @@ export class YnufeUI {
             YnufeSession.saveCredentials(user, pass, remember);
             YnufeSession.setHasSession(true);
             this.startHeartbeat();
+
+            // 登录验证成功后，第一时间强制捕获并写入最新生成的 JSESSIONID 凭据
+            await SessionCookieManager.captureAndPersist();
+            await SessionCookieManager.restoreCookies();
 
             // 登录不重载页面，换账号时必须清掉上一位用户的渲染指纹
             this.resetRenderFingerprints();
@@ -1994,6 +2028,7 @@ export class YnufeUI {
 // 自动入口初始化
 document.addEventListener("DOMContentLoaded", async () => {
     YnufeUI.init();
+    await SessionCookieManager.restoreCookies();
 
     const savedUser = YnufeSession.getUsername();
     const savedPass = YnufeSession.getPassword();
