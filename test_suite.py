@@ -74,6 +74,7 @@ src_ts_files = [
     "src/components/themeCustomizer.ts", "src/styles/app.css",
     "src/views/announcementView.ts",
     "src/views/examView.ts",
+    "src/views/serviceView.ts",
 ]
 for rel in src_ts_files:
     assert os.path.exists(os.path.join(BASE, rel)), f"ERROR: Missing source file: {rel}"
