@@ -1,5 +1,6 @@
 import { SessionExpiredError } from '../api/client';
 import { ParseError } from './tableUtils';
+import { SyncStatusTag, SyncStatusState } from '../components/syncStatusTag';
 
 /** 各区块最近一次渲染的数据指纹，用于跳过内容未变化的重复渲染 */
 const renderFingerprints: Record<string, string> = {};
@@ -120,4 +121,31 @@ export function handleLoadError(moduleName: string, e: unknown): void {
 
     console.error(`[YnufeUI] ${moduleName} 加载失败:`, e);
     showToast(`${moduleName}加载失败，请检查网络`, "error");
+}
+
+/**
+ * 显示或隐藏模态弹窗/遮罩层。
+ *
+ * Args:
+ *     modalId (string): 弹窗元素 ID。
+ *     show (boolean): 是否显示。
+ */
+export function toggleModal(modalId: string, show: boolean): void {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = show ? "flex" : "none";
+        if (show) modal.classList.add("active");
+        else modal.classList.remove("active");
+    }
+}
+
+/**
+ * 更新顶部同步指示状态微标签。
+ *
+ * Args:
+ *     status (SyncStatusState): 状态类型。
+ *     text (string): 状态文案。
+ */
+export function updateSyncStatus(status: SyncStatusState, text: string): void {
+    SyncStatusTag.update(status, text);
 }
