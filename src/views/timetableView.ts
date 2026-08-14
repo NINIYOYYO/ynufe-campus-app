@@ -19,6 +19,7 @@ export class TimetableView {
     public static currentTeachingWeek: number | null = null;
 
     private static KEY_CURRENT_SEMESTER = "ynufe_current_semester_id";
+    private static activeRequestSeq = 0;
 
     /**
      * 从服务器拉取指定学期或当前学期的课程表数据。
@@ -31,6 +32,7 @@ export class TimetableView {
      *     Promise<boolean>: 是否成功。
      */
     static async reloadTimetableFromServer(semesterId: string = "", silent: boolean = false): Promise<boolean> {
+        const currentSeq = ++this.activeRequestSeq;
         const result = await withViewLoading({
             silent,
             loadingText: "正在同步课程表...",
@@ -40,6 +42,10 @@ export class TimetableView {
                 ? `/jsxsd/xskb/xskb_list.do?xnxq01id=${encodeURIComponent(semesterId)}`
                 : "/jsxsd/xskb/xskb_list.do";
             const html = await YnufeClient.getHtml(endpoint);
+            if (currentSeq !== this.activeRequestSeq) {
+                console.warn(`[TimetableView] 丢弃已过期的慢请求响应 (seq ${currentSeq} vs latest ${this.activeRequestSeq})`);
+                return false;
+            }
             const data = TimetableParser.parseTimetable(html);
 
             // 课表页周次下拉默认为"(全部)"，解析不出当前周，用首页框架取到的教学周补齐

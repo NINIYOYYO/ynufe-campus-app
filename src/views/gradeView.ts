@@ -15,6 +15,7 @@ import { withViewLoading, renderEmptyState } from '../utils/viewHelper';
  */
 export class GradeView {
     public static globalGrades: GradeItem[] = [];
+    private static activeGradeDetailKey: string | null = null;
 
     /**
      * 拉取并解析期末成绩。
@@ -203,6 +204,9 @@ export class GradeView {
      *     g (GradeItem): 被点击的成绩条目。
      */
     static async showGradeDetail(g: GradeItem): Promise<void> {
+        const targetKey = `${g.semester}|${g.courseId || g.courseName}`;
+        this.activeGradeDetailKey = targetKey;
+
         const scoreNum = parseFloat(g.score);
         const isFail = g.score === "不合格" || (!isNaN(scoreNum) && scoreNum < 60);
 
@@ -239,6 +243,12 @@ export class GradeView {
                 YnufeClient.getHtml(g.detailUrl),
                 BottomSheet.settled()
             ]);
+
+            // 若用户在加载期间已关闭或切换至其他课程详情，放弃 DOM 注入
+            if (this.activeGradeDetailKey !== targetKey) return;
+            const sheet = document.getElementById("bottom-sheet");
+            if (!sheet || !sheet.classList.contains("active")) return;
+
             const detail = GradeParser.parseScoreDetail(html);
 
             if (detail.components.length === 0) {
@@ -262,6 +272,8 @@ export class GradeView {
                     </div>`;
             }).join("");
 
+            if (this.activeGradeDetailKey !== targetKey) return;
+
             await BottomSheet.morphHeight(() => {
                 slot.innerHTML = `
                     <div class="sheet-swap-in">
@@ -271,6 +283,7 @@ export class GradeView {
                     </div>`;
             });
         } catch (e) {
+            if (this.activeGradeDetailKey !== targetKey) return;
             await BottomSheet.settled();
             const reason = e instanceof SessionExpiredError ? "登录已过期" : "成绩构成加载失败";
             await BottomSheet.morphHeight(() => {
