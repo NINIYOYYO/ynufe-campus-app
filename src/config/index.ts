@@ -1,7 +1,13 @@
 /**
+ * 统一配置导出入口
+ */
+export * from './storageKeys';
+export * from './themePresets';
+
+/**
  * AppConfig: 全局集中配置
- * 之前散落在各处的硬编码值（教务网地址、节次时间、空教室查询参数等）统一收拢到这里，
- * 学校调整作息或更换配置时只需改动本文件。
+ *
+ * 集中管理教务网地址、节次作息时间、后台心跳保活间隔、空教室查询参数等。
  */
 export const AppConfig = {
     /** 教务系统域名 */
@@ -31,6 +37,9 @@ export const AppConfig = {
     /**
      * 根据当前日期推算默认学年学期 ID（如 "2025-2026-1"）。
      * 规则：8月-次年1月为第1学期，2月-7月为第2学期。
+     *
+     * Returns:
+     *     string: 学年学期标识符。
      */
     getDefaultSemesterId(): string {
         const now = new Date();
