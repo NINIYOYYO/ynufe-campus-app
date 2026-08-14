@@ -7,6 +7,8 @@ import { ServiceView } from '../views/serviceView';
  * 底部 5 大 Tab 路由与子页签导航控制器
  */
 export class AppRouter {
+    private static loadingTabs = new Set<string>();
+
     /**
      * 切换 SPA 底部导航 Tab 视图。
      *
@@ -28,20 +30,28 @@ export class AppRouter {
     }
 
     /**
-     * 针对各 Tab 加载对应的业务数据。
+     * 针对各 Tab 加载对应的业务数据（带防抖去重锁，避免并发慢请求堆积）。
      *
      * Args:
      *     tabId (string): 目标 Tab DOM ID。
      */
     static async loadTabBusinessData(tabId: string): Promise<void> {
-        if (tabId === "tab-timetable") {
-            await TimetableView.reloadTimetableFromServer("", true);
-        } else if (tabId === "tab-grades") {
-            await GradeView.loadFinalGradesData(true);
-        } else if (tabId === "tab-exams-xk") {
-            await ExamView.loadExamsData(true);
-        } else if (tabId === "tab-practice-services") {
-            await ServiceView.loadPracticeThesisData(true);
+        if (this.loadingTabs.has(tabId)) {
+            return;
+        }
+        this.loadingTabs.add(tabId);
+        try {
+            if (tabId === "tab-timetable") {
+                await TimetableView.reloadTimetableFromServer("", true);
+            } else if (tabId === "tab-grades") {
+                await GradeView.loadFinalGradesData(true);
+            } else if (tabId === "tab-exams-xk") {
+                await ExamView.loadExamsData(true);
+            } else if (tabId === "tab-practice-services") {
+                await ServiceView.loadPracticeThesisData(true);
+            }
+        } finally {
+            this.loadingTabs.delete(tabId);
         }
     }
 

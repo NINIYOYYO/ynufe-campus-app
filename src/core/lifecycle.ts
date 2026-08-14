@@ -56,6 +56,56 @@ export class AppLifecycleManager {
             const mode = e?.detail?.mode || "dark";
             WallpaperManager.applyAdaptiveWallpaperColor(mode);
         });
+
+        this.initBackButtonHandler();
+    }
+
+    /**
+     * 注册 Android 物理/手势返回键监听：当有展开的抽屉或浮层时优先关闭，否则退回后台/退出。
+     */
+    private static initBackButtonHandler(): void {
+        const cap = (window as any).Capacitor;
+        if (!cap?.Plugins?.App?.addListener) return;
+
+        cap.Plugins.App.addListener('backButton', () => {
+            // 1. 壁纸调整遮罩
+            const wallpaperOverlay = document.getElementById("wallpaper-adjust-overlay");
+            if (wallpaperOverlay && wallpaperOverlay.style.display !== "none") {
+                const cancelBtn = document.getElementById("btn-cancel-wallpaper-adjust");
+                if (cancelBtn) cancelBtn.click();
+                else wallpaperOverlay.style.display = "none";
+                return;
+            }
+
+            // 2. 详情 BottomSheet
+            const sheet = document.getElementById("bottom-sheet");
+            if (sheet && sheet.classList.contains("active")) {
+                const closeBtn = document.getElementById("btn-close-sheet");
+                if (closeBtn) closeBtn.click();
+                return;
+            }
+
+            // 3. 设置抽屉
+            const settingsSheet = document.getElementById("settings-sheet");
+            if (settingsSheet && settingsSheet.classList.contains("active")) {
+                const overlay = document.getElementById("settings-overlay");
+                if (overlay) overlay.click();
+                return;
+            }
+
+            // 4. 提醒抽屉
+            const notifySheet = document.getElementById("notify-sheet");
+            if (notifySheet && notifySheet.classList.contains("active")) {
+                const overlay = document.getElementById("notify-overlay");
+                if (overlay) overlay.click();
+                return;
+            }
+
+            // 5. 若无可关闭的抽屉，调用原生最小化/退出
+            if (cap?.Plugins?.App?.exitApp) {
+                cap.Plugins.App.exitApp();
+            }
+        });
     }
 
     /**
