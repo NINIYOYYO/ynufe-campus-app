@@ -1,13 +1,14 @@
 import { YnufeClient } from '../api/client';
 import { TimetableParser } from '../parsers/timetableParser';
 import { TimetableData, CourseItem } from '../types/timetable';
-import { YnufeSession } from '../stores/sessionStore';
 import { NotificationManager } from '../services/notificationManager';
 import { CustomSelect } from '../components/customSelect';
 import { BottomSheet } from '../components/bottomSheet';
-import { AppConfig } from '../config';
+import { AppConfig, StorageKeys } from '../config';
+import { CacheService } from '../services/cacheService';
 import { escapeHtml } from '../utils/escapeHtml';
-import { playEntrance, showLoading, handleLoadError } from '../utils/uiFeedback';
+import { playEntrance } from '../utils/uiFeedback';
+import { withViewLoading, renderEmptyState } from '../utils/viewHelper';
 
 /**
  * 课表展示、5x5 网格矩阵与今日课程视图控制器
@@ -18,7 +19,6 @@ export class TimetableView {
     public static currentTeachingWeek: number | null = null;
 
     private static KEY_CURRENT_SEMESTER = "ynufe_current_semester_id";
-    private static KEY_CURRENT_WEEK = "ynufe_current_week";
 
     /**
      * 从服务器拉取指定学期或当前学期的课程表数据。
@@ -31,16 +31,21 @@ export class TimetableView {
      *     Promise<boolean>: 是否成功。
      */
     static async reloadTimetableFromServer(semesterId: string = "", silent: boolean = false): Promise<boolean> {
-        if (!silent) showLoading(true, "正在同步课程表...");
-        try {
-            const endpoint = semesterId ? `/jsxsd/xskb/xskb_list.do?xnxq01id=${encodeURIComponent(semesterId)}` : "/jsxsd/xskb/xskb_list.do";
+        const result = await withViewLoading({
+            silent,
+            loadingText: "正在同步课程表...",
+            moduleName: "课表"
+        }, async () => {
+            const endpoint = semesterId
+                ? `/jsxsd/xskb/xskb_list.do?xnxq01id=${encodeURIComponent(semesterId)}`
+                : "/jsxsd/xskb/xskb_list.do";
             const html = await YnufeClient.getHtml(endpoint);
             const data = TimetableParser.parseTimetable(html);
 
             // 课表页周次下拉默认为"(全部)"，解析不出当前周，用首页框架取到的教学周补齐
             if (data && !data.currentWeek) {
                 const fallbackWeek = this.currentTeachingWeek
-                    ?? (parseInt(localStorage.getItem(this.KEY_CURRENT_WEEK) || "", 10) || undefined);
+                    ?? (CacheService.get<number>(StorageKeys.CURRENT_TEACHING_WEEK) || undefined);
                 if (fallbackWeek && !isNaN(fallbackWeek)) {
                     data.currentWeek = fallbackWeek;
                 }
@@ -57,18 +62,15 @@ export class TimetableView {
                 }
                 const isCurrentSemester = semesterId === "" || (currentSemId !== "" && semesterId === currentSemId);
                 if (isCurrentSemester && data.courses.length >= 0) {
-                    YnufeSession.setCache("ynufe_cached_timetable_data", data);
+                    CacheService.set(StorageKeys.TIMETABLE_CACHE, data);
                     NotificationManager.rescheduleFromTimetable(data).catch(() => {});
                 }
                 return true;
             }
             return false;
-        } catch (err) {
-            handleLoadError("课表", err);
-            return false;
-        } finally {
-            if (!silent) showLoading(false);
-        }
+        });
+
+        return result ?? false;
     }
 
     /**
@@ -248,11 +250,8 @@ export class TimetableView {
             const tip = weekUnknown
                 ? "当前不在教学周内，或尚未获取到教学周信息"
                 : "今天没有课，享受你的空闲时间吧";
-            container.innerHTML = `
-                <div class="empty-state">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="2" x2="6" y2="4"></line><line x1="10" y1="2" x2="10" y2="4"></line><line x1="14" y1="2" x2="14" y2="4"></line></svg>
-                    <p>${tip}</p>
-                </div>`;
+            const coffeeSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.4; margin-bottom:10px;"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="2" x2="6" y2="4"></line><line x1="10" y1="2" x2="10" y2="4"></line><line x1="14" y1="2" x2="14" y2="4"></line></svg>`;
+            renderEmptyState(container, tip, coffeeSvg);
             return;
         }
 

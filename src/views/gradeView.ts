@@ -1,12 +1,14 @@
 import { YnufeClient, SessionExpiredError } from '../api/client';
 import { GradeParser } from '../parsers/gradeParser';
 import { GradeSummary, GradeItem } from '../types/grade';
-import { YnufeSession } from '../stores/sessionStore';
+import { StorageKeys } from '../config/storageKeys';
+import { CacheService } from '../services/cacheService';
 import { NotificationManager } from '../services/notificationManager';
 import { CustomSelect } from '../components/customSelect';
 import { BottomSheet } from '../components/bottomSheet';
 import { escapeHtml } from '../utils/escapeHtml';
-import { isSameAsRendered, playEntrance, showToast, showLoading, handleLoadError } from '../utils/uiFeedback';
+import { isSameAsRendered, playEntrance, showToast } from '../utils/uiFeedback';
+import { withViewLoading, renderEmptyState } from '../utils/viewHelper';
 
 /**
  * 成绩与平时成绩构成视图控制器
@@ -24,20 +26,20 @@ export class GradeView {
      *     Promise<boolean>: 是否成功。
      */
     static async loadFinalGradesData(silent: boolean = false): Promise<boolean> {
-        if (!silent) showLoading(true, "正在获取最新成绩与GPA...");
-        try {
+        const result = await withViewLoading({
+            silent,
+            loadingText: "正在获取最新成绩与GPA...",
+            moduleName: "成绩"
+        }, async () => {
             const html = await YnufeClient.getHtml("/jsxsd/kscj/cjcx_list?xsfs=all");
             const summary = GradeParser.parseGrades(html);
             this.detectNewGrades(summary);
             this.renderGradesData(summary);
-            YnufeSession.setCache("ynufe_cached_grades_data", summary);
+            CacheService.set(StorageKeys.GRADES_CACHE, summary);
             return true;
-        } catch (e) {
-            handleLoadError("成绩", e);
-            return false;
-        } finally {
-            if (!silent) showLoading(false);
-        }
+        });
+
+        return result ?? false;
     }
 
     /**
@@ -162,7 +164,7 @@ export class GradeView {
         }
 
         if (filtered.length === 0) {
-            container.innerHTML = `<div class="empty-state"><p>未查询到匹配成绩</p></div>`;
+            renderEmptyState(container, "未查询到匹配成绩");
             return;
         }
 
@@ -195,7 +197,7 @@ export class GradeView {
     }
 
     /**
-     * 在抽屉中展示单门课程的完整信息与平时成绩构成。
+     * 弹窗展示单门课程成绩详情及成绩构成。
      *
      * Args:
      *     g (GradeItem): 被点击的成绩条目。
@@ -244,28 +246,37 @@ export class GradeView {
                 return;
             }
 
-            const bars = detail.components.map(c => {
-                const pct = Math.max(0, Math.min(100, parseFloat(c.ratio) || 0));
-                const val = Math.max(0, Math.min(100, parseFloat(c.score) || 0));
-                return `
-                    <div class="score-part">
-                        <div class="score-part-head">
-                            <span>${escapeHtml(c.label)}</span>
-                            <em>占 ${escapeHtml(c.ratio)}</em>
-                            <b>${escapeHtml(c.score)}</b>
-                        </div>
-                        <div class="score-bar"><i style="width:${val}%"></i></div>
-                        <div class="score-part-note">按占比折合 ${(val * pct / 100).toFixed(1)} 分</div>
-                    </div>`;
-            }).join("");
+            const headerRow = `
+                <div class="score-comp-row header">
+                    <span>构成项目</span>
+                    <span>比例</span>
+                    <span>得分</span>
+                </div>
+            `;
+            const compRows = detail.components.map(c => `
+                <div class="score-comp-row">
+                    <span>${escapeHtml(c.label)}</span>
+                    <span class="score-comp-pct">${escapeHtml(c.ratio)}</span>
+                    <span class="score-comp-val">${escapeHtml(c.score)}</span>
+                </div>
+            `).join("");
+
+            const totalScoreHtml = detail.total
+                ? `<div class="score-comp-total">
+                    <span>综合总评</span>
+                    <b>${escapeHtml(detail.total)}</b>
+                   </div>`
+                : "";
 
             await BottomSheet.morphHeight(() => {
                 slot.innerHTML = `
-                    <div class="sheet-swap-in">
-                        <div class="detail-section-title">成绩构成</div>
-                        ${bars}
-                        ${detail.total ? `<div class="score-total">总成绩 <b>${escapeHtml(detail.total)}</b></div>` : ""}
-                    </div>`;
+                    <div class="score-components-box">
+                        <div class="score-comp-title">平时成绩与构成明细</div>
+                        ${headerRow}
+                        ${compRows}
+                        ${totalScoreHtml}
+                    </div>
+                `;
             });
         } catch (e) {
             await BottomSheet.settled();
@@ -283,14 +294,19 @@ export class GradeView {
      *     silent (boolean): 是否静默拉取。
      */
     static async loadLevelGradesData(silent: boolean = false): Promise<void> {
-        if (!silent) showLoading(true, "正在查询等级考试成绩...");
-        const container = document.getElementById("level-grades-list");
-        try {
+        await withViewLoading({
+            silent,
+            loadingText: "正在查询等级考试成绩...",
+            moduleName: "等级考试成绩"
+        }, async () => {
+            const container = document.getElementById("level-grades-list");
             const html = await YnufeClient.getHtml("/jsxsd/kscj/djkscj_list");
             const list = GradeParser.parseLevelGrades(html);
+            CacheService.set(StorageKeys.LEVEL_GRADES_CACHE, list);
+
             if (container) {
                 if (list.length === 0) {
-                    container.innerHTML = `<div class="empty-state"><p>暂无社会考试等级成绩记录</p></div>`;
+                    renderEmptyState(container, "暂无社会考试等级成绩记录");
                 } else {
                     container.innerHTML = "";
                     list.forEach(item => {
@@ -315,10 +331,6 @@ export class GradeView {
                     playEntrance(container);
                 }
             }
-        } catch (e) {
-            handleLoadError("等级考试成绩", e);
-        } finally {
-            if (!silent) showLoading(false);
-        }
+        });
     }
 }

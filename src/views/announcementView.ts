@@ -1,10 +1,12 @@
 import { YnufeClient, SessionExpiredError } from '../api/client';
 import { AnnouncementParser } from '../parsers/announcementParser';
 import { AnnouncementItem } from '../types/announcement';
-import { YnufeSession } from '../stores/sessionStore';
+import { StorageKeys } from '../config/storageKeys';
+import { CacheService } from '../services/cacheService';
 import { BottomSheet } from '../components/bottomSheet';
 import { escapeHtml } from '../utils/escapeHtml';
-import { isSameAsRendered, playEntrance, showToast, handleLoadError } from '../utils/uiFeedback';
+import { isSameAsRendered, playEntrance, showToast } from '../utils/uiFeedback';
+import { withViewLoading, renderEmptyState } from '../utils/viewHelper';
 
 /**
  * 校内公告通知视图控制器
@@ -17,16 +19,18 @@ export class AnnouncementView {
      *     Promise<boolean>: 是否成功。
      */
     static async loadAnnouncementsData(): Promise<boolean> {
-        try {
+        const result = await withViewLoading({
+            silent: true,
+            moduleName: "公告"
+        }, async () => {
             const html = await YnufeClient.getHtml("/jsxsd/ggly/ysgg_query");
             const list = AnnouncementParser.parseAnnouncements(html);
             this.renderAnnouncementsList(list);
-            YnufeSession.setCache("ynufe_cached_announcements", list);
+            CacheService.set(StorageKeys.ANNOUNCEMENTS_CACHE, list);
             return true;
-        } catch (e) {
-            handleLoadError("公告", e);
-            return false;
-        }
+        });
+
+        return result ?? false;
     }
 
     /**
@@ -42,11 +46,8 @@ export class AnnouncementView {
         container.innerHTML = "";
 
         if (!Array.isArray(list) || list.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path></svg>
-                    <p>暂无新公告</p>
-                </div>`;
+            const bellSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.4; margin-bottom:10px;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path></svg>`;
+            renderEmptyState(container, "暂无新公告", bellSvg);
             return;
         }
 

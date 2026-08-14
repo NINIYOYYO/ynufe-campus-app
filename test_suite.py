@@ -61,16 +61,16 @@ print(f" [V] All {len(required_ids)} critical DOM IDs present")
 
 # 3. 检查 TypeScript 源码模块存在
 src_ts_files = [
-    "src/main.ts", "src/config.ts", "src/api/client.ts",
+    "src/main.ts", "src/config/index.ts", "src/config/storageKeys.ts", "src/api/client.ts",
     "src/services/autoLogin.ts", "src/services/notificationManager.ts",
-    "src/services/reminderScheduler.ts",
+    "src/services/reminderScheduler.ts", "src/services/cacheService.ts",
     "src/stores/sessionStore.ts", "src/config/themePresets.ts",
     "src/types/theme.ts",
     "src/parsers/profileParser.ts", "src/parsers/timetableParser.ts",
     "src/parsers/gradeParser.ts", "src/parsers/examParser.ts",
     "src/parsers/announcementParser.ts", "src/parsers/serviceParser.ts",
     "src/utils/crypto.ts", "src/utils/escapeHtml.ts", "src/utils/colorExtractor.ts",
-    "src/utils/uiFeedback.ts",
+    "src/utils/uiFeedback.ts", "src/utils/viewHelper.ts",
     "src/components/wallpaperManager.ts", "src/components/wallpaperGesture.ts",
     "src/components/bottomSheet.ts",
     "src/components/syncStatusTag.ts", "src/components/customSelect.ts",

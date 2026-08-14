@@ -1,11 +1,13 @@
 import { YnufeClient } from '../api/client';
 import { ExamParser } from '../parsers/examParser';
 import { ExamItem, ClassroomTestItem } from '../types/exam';
-import { YnufeSession } from '../stores/sessionStore';
+import { StorageKeys } from '../config/storageKeys';
+import { CacheService } from '../services/cacheService';
 import { NotificationManager } from '../services/notificationManager';
 import { AppConfig } from '../config';
 import { escapeHtml } from '../utils/escapeHtml';
-import { isSameAsRendered, playEntrance, showLoading, handleLoadError } from '../utils/uiFeedback';
+import { isSameAsRendered, playEntrance } from '../utils/uiFeedback';
+import { withViewLoading, renderEmptyState } from '../utils/viewHelper';
 
 /**
  * 期末排考、随堂测试与考试倒计时视图控制器
@@ -27,8 +29,11 @@ export class ExamView {
             || { "1": "期初", "2": "期中", "3": "期末" }[selectType]
             || "";
 
-        if (!silent) showLoading(true, "正在查询考试安排...");
-        try {
+        await withViewLoading({
+            silent,
+            loadingText: "正在查询考试安排...",
+            moduleName: "考试安排"
+        }, async () => {
             const html = await YnufeClient.postForm("/jsxsd/xsks/xsksap_list", {
                 xnxqid: selectSem,
                 xqlb: selectType,
@@ -36,12 +41,8 @@ export class ExamView {
             });
             const list = ExamParser.parseExams(html, selectSem, typeLabel);
             this.renderExamsList(list);
-            YnufeSession.setCache("ynufe_cached_exams", list);
-        } catch (e) {
-            handleLoadError("考试安排", e);
-        } finally {
-            if (!silent) showLoading(false);
-        }
+            CacheService.set(StorageKeys.EXAMS_CACHE, list);
+        });
     }
 
     /**
@@ -57,7 +58,7 @@ export class ExamView {
         container.innerHTML = "";
 
         if (!Array.isArray(list) || list.length === 0) {
-            container.innerHTML = `<div class="empty-state"><p>本学期该类型考试暂无排考数据</p></div>`;
+            renderEmptyState(container, "本学期该类型考试暂无排考数据");
             return;
         }
 
@@ -161,9 +162,12 @@ export class ExamView {
      *     silent (boolean): 是否静默拉取。
      */
     static async loadClassroomTestsData(silent: boolean = false): Promise<void> {
-        if (!silent) showLoading(true, "正在拉取随堂考试...");
-        const container = document.getElementById("exams-class-list");
-        try {
+        await withViewLoading({
+            silent,
+            loadingText: "正在拉取随堂考试...",
+            moduleName: "随堂考试"
+        }, async () => {
+            const container = document.getElementById("exams-class-list");
             const semester = (document.getElementById("select-exam-semester") as HTMLSelectElement | null)?.value
                 || localStorage.getItem(this.KEY_CURRENT_SEMESTER)
                 || AppConfig.getDefaultSemesterId();
@@ -173,9 +177,11 @@ export class ExamView {
                 xqlbmc: ""
             });
             const list = ExamParser.parseClassroomTests(html);
+            CacheService.set(StorageKeys.CLASSROOM_TESTS_CACHE, list);
+
             if (container) {
                 if (list.length === 0) {
-                    container.innerHTML = `<div class="empty-state"><p>暂无随堂考试记录</p></div>`;
+                    renderEmptyState(container, "暂无随堂考试记录");
                 } else {
                     container.innerHTML = "";
                     list.forEach(t => {
@@ -202,10 +208,6 @@ export class ExamView {
                     playEntrance(container);
                 }
             }
-        } catch (e) {
-            handleLoadError("随堂考试", e);
-        } finally {
-            if (!silent) showLoading(false);
-        }
+        });
     }
 }

@@ -1,9 +1,11 @@
 import { YnufeClient, SessionExpiredError } from '../api/client';
 import { ServiceParser } from '../parsers/serviceParser';
-import { AppConfig } from '../config';
+import { AppConfig, StorageKeys } from '../config';
+import { CacheService } from '../services/cacheService';
 import { escapeHtml } from '../utils/escapeHtml';
 import { ParseError } from '../utils/tableUtils';
-import { playEntrance, showToast, showLoading, handleLoadError } from '../utils/uiFeedback';
+import { playEntrance, showToast } from '../utils/uiFeedback';
+import { withViewLoading, renderEmptyState } from '../utils/viewHelper';
 
 /**
  * 选课中心、毕业设计与自习室查询视图控制器
@@ -18,14 +20,17 @@ export class ServiceView {
      *     silent (boolean): 是否静默拉取。
      */
     static async loadXkCenterData(silent: boolean = false): Promise<void> {
-        if (!silent) showLoading(true, "正在拉取选课活动...");
-        const container = document.getElementById("xk-activities-list");
-        try {
+        await withViewLoading({
+            silent,
+            loadingText: "正在拉取选课活动...",
+            moduleName: "选课活动"
+        }, async () => {
+            const container = document.getElementById("xk-activities-list");
             const html = await YnufeClient.getHtml("/jsxsd/xsxk/xklc_list");
             const list = ServiceParser.parseXkCenter(html);
             if (container) {
                 if (list.length === 0) {
-                    container.innerHTML = `<div class="empty-state"><p>当前无开放的选课选教活动</p></div>`;
+                    renderEmptyState(container, "当前无开放的选课选教活动");
                 } else {
                     container.innerHTML = "";
                     list.forEach(act => {
@@ -53,11 +58,7 @@ export class ServiceView {
                     playEntrance(container);
                 }
             }
-        } catch (e) {
-            handleLoadError("选课活动", e);
-        } finally {
-            if (!silent) showLoading(false);
-        }
+        });
     }
 
     /**
@@ -67,10 +68,14 @@ export class ServiceView {
      *     silent (boolean): 是否静默拉取。
      */
     static async loadPracticeThesisData(silent: boolean = false): Promise<void> {
-        if (!silent) showLoading(true, "正在查询毕业设计信息...");
-        try {
+        await withViewLoading({
+            silent,
+            loadingText: "正在查询毕业设计信息...",
+            moduleName: "毕业设计"
+        }, async () => {
             const html = await YnufeClient.getHtml("/jsxsd/bysj/xsyxxt.do");
             const info = ServiceParser.parsePractice(html);
+            CacheService.set(StorageKeys.PRACTICE_THESIS_CACHE, info);
 
             const titleEl = document.getElementById("thesis-title");
             const reportEl = document.getElementById("thesis-report");
@@ -91,16 +96,7 @@ export class ServiceView {
                 if (countEl) countEl.innerText = info.guidanceCount || "0次";
                 if (gradeEl) gradeEl.innerText = info.grade || "-";
             }
-        } catch (e) {
-            handleLoadError("毕业设计", e);
-            const titleEl = document.getElementById("thesis-title");
-            if (titleEl) {
-                titleEl.innerText = "暂无毕业环节任务";
-                titleEl.style.color = "var(--text-secondary)";
-            }
-        } finally {
-            if (!silent) showLoading(false);
-        }
+        });
     }
 
     /**
@@ -123,14 +119,17 @@ export class ServiceView {
             return;
         }
 
-        showLoading(true, "正在智能筛选自习室...");
         const container = document.getElementById("classrooms-result-list");
         const countDom = document.getElementById("classroom-count");
         const currentSemester = (document.getElementById("select-semester") as HTMLSelectElement | null)?.value
             || localStorage.getItem(this.KEY_CURRENT_SEMESTER)
             || AppConfig.getDefaultSemesterId();
 
-        try {
+        await withViewLoading({
+            silent: false,
+            loadingText: "正在智能筛选自习室...",
+            moduleName: "空教室"
+        }, async () => {
             const responseText = await YnufeClient.postForm("/jsxsd/kbxx/jsjy_query2", {
                 typewhere: "jszq",
                 xnxqh: currentSemester,
@@ -150,11 +149,7 @@ export class ServiceView {
 
             if (container) {
                 if (rooms.length === 0) {
-                    container.innerHTML = `
-                        <div class="empty-state">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect></svg>
-                            <p>该时段无空闲教室，换个条件查询吧</p>
-                        </div>`;
+                    renderEmptyState(container, "该时段无空闲教室，换个条件查询吧");
                 } else {
                     container.innerHTML = "";
                     rooms.forEach(roomName => {
@@ -166,15 +161,6 @@ export class ServiceView {
                     playEntrance(container);
                 }
             }
-        } catch (err) {
-            if (err instanceof ParseError) {
-                handleLoadError("空教室", err);
-            } else if (!(err instanceof SessionExpiredError)) {
-                console.error("[YnufeUI] Query classrooms error:", err);
-                showToast("空教室查询网络超时，请检查校园网连接！", "error");
-            }
-        } finally {
-            showLoading(false);
-        }
+        });
     }
 }
