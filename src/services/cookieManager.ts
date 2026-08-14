@@ -71,11 +71,14 @@ export class SessionCookieManager {
         if (!jsessionid && cap?.Plugins?.CapacitorCookies?.getCookies) {
             try {
                 let res = await cap.Plugins.CapacitorCookies.getCookies({ url: targetJsxsdUrl });
-                if (!res || !res.JSESSIONID) {
+                if (!res || Object.keys(res).length === 0) {
                     res = await cap.Plugins.CapacitorCookies.getCookies({ url: targetHost });
                 }
-                if (res && res.JSESSIONID) {
-                    jsessionid = res.JSESSIONID;
+                if (res) {
+                    const key = Object.keys(res).find(k => k.toUpperCase() === "JSESSIONID");
+                    if (key && res[key]) {
+                        jsessionid = res[key];
+                    }
                 }
             } catch (e) {
                 console.warn("[CookieManager] CapacitorCookies.getCookies error:", e);
@@ -84,7 +87,6 @@ export class SessionCookieManager {
 
         if (jsessionid) {
             const currentSaved = this.getSavedJsessionId();
-            // 如果开启了 safe 验证且本地已有已验证 Cookie，且捕获到的新 Cookie 与本地不一致，谨慎保存
             if (onlyIfVerified || !currentSaved) {
                 this.saveJsessionId(jsessionid);
             }
