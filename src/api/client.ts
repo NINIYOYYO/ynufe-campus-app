@@ -114,6 +114,45 @@ export class YnufeClient {
         };
     }
 
+    private static readonly DEFAULT_TIMEOUT_MS = 15000;
+
+    /**
+     * 执行带超时中断与取消信号控制的 fetch 网络请求。
+     *
+     * Args:
+     *     url (string): 目标完整 URL。
+     *     init (RequestInit): fetch 请求配置对象。
+     *     timeoutMs (number): 超时时间（毫秒），默认 15000ms。
+     *
+     * Returns:
+     *     Promise<Response>: HTTP 响应实体。
+     *
+     * Raises:
+     *     Error: 当网络超时被 AbortController 熔断时抛出明确超时提示。
+     */
+    private static async fetchWithTimeout(
+        url: string,
+        init: RequestInit,
+        timeoutMs: number = this.DEFAULT_TIMEOUT_MS
+    ): Promise<Response> {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+            const resp = await fetch(url, {
+                ...init,
+                signal: controller.signal
+            });
+            return resp;
+        } catch (err: any) {
+            if (err?.name === "AbortError") {
+                throw new Error(`请求教务系统超时 (${Math.round(timeoutMs / 1000)}秒)，服务器可能负载过高或网络连接中断`);
+            }
+            throw err;
+        } finally {
+            clearTimeout(timeoutId);
+        }
+    }
+
     /**
      * 发起 GET 请求并获取 HTML 页面源码。
      *
@@ -127,7 +166,7 @@ export class YnufeClient {
         const cookieHeader = SessionCookieManager.getCookieHeader();
 
         try {
-            const resp = await fetch(url, {
+            const resp = await this.fetchWithTimeout(url, {
                 method: "GET",
                 credentials: "include",
                 headers: {
@@ -166,7 +205,7 @@ export class YnufeClient {
         }
 
         try {
-            const resp = await fetch(url, {
+            const resp = await this.fetchWithTimeout(url, {
                 method: "POST",
                 credentials: "include",
                 headers: {
@@ -190,18 +229,29 @@ export class YnufeClient {
     }
 
     /**
-     * 拉取任意教务网资源的二进制流（用于公告附件等文件下载）。
+     * 拉取任意教务网资源的二进制流（用于公告附件等文件下载），支持 Cookie 恢复与超时熔断。
      *
      * Args:
      *     endpoint (string): 以 / 开头的相对路径。
      *
      * Returns:
      *     Promise<{ blob: Blob; contentType: string }>: 响应体与其 Content-Type。
+     *
+     * Raises:
+     *     Error: 下载失败或网络超时。
      */
     static async getBlob(endpoint: string): Promise<{ blob: Blob; contentType: string }> {
-        const resp = await fetch(`${this.BASE_URL}${endpoint}`, {
+        const url = `${this.BASE_URL}${endpoint}`;
+        await SessionCookieManager.restoreCookies();
+        const cookieHeader = SessionCookieManager.getCookieHeader();
+
+        const resp = await this.fetchWithTimeout(url, {
             method: "GET",
             credentials: "include",
+            headers: {
+                ...this.COMMON_HEADERS,
+                ...cookieHeader
+            }
         });
         if (!resp.ok) {
             throw new Error(`Download failed with status ${resp.status}`);
@@ -222,7 +272,7 @@ export class YnufeClient {
         const cookieHeader = SessionCookieManager.getCookieHeader();
 
         try {
-            const resp = await fetch(url, {
+            const resp = await this.fetchWithTimeout(url, {
                 method: "GET",
                 credentials: "include",
                 headers: {
@@ -230,7 +280,7 @@ export class YnufeClient {
                     "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
                     ...cookieHeader
                 }
-            });
+            }, 8000);
             if (!resp.ok) {
                 throw new Error(`Captcha request failed with status ${resp.status}`);
             }
