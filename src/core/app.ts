@@ -14,29 +14,25 @@ import { ServiceView } from '../views/serviceView';
 import { SettingsView } from '../views/settingsView';
 import { LoginView } from '../views/loginView';
 import { AppRouter } from './router';
-import { SyncStatusState } from '../components/syncStatusTag';
+import { AppLifecycleManager } from './lifecycle';
+import { HeartbeatService } from '../services/heartbeatService';
 import { BottomSheet } from '../components/bottomSheet';
 import { WallpaperManager } from '../components/wallpaperManager';
 import { CustomSelect } from '../components/customSelect';
 import { ThemeCustomizer } from '../components/themeCustomizer';
-import { AutoLogin } from '../services/autoLogin';
-import { NotificationManager } from '../services/notificationManager';
 import { SessionCookieManager } from '../services/cookieManager';
-import { AppConfig } from '../config';
+import { AppConfig, StorageKeys } from '../config';
+import { CacheService } from '../services/cacheService';
 import { encodeInp } from '../utils/crypto';
 import { showToast, showLoading, toggleModal, updateSyncStatus, resetRenderFingerprints, handleLoadError } from '../utils/uiFeedback';
 
 /**
  * YnufeApp: App 应用业务总指挥控制引擎
- * 职责：调度网络通信、数据解析、界面渲染、Tab 路由、后台心跳保活、
- * 会话自动续期（持久化登录）、上课提醒排程与用户交互控制。
+ * 职责：调度网络通信、数据解析、界面渲染、Tab 路由、
+ * 上课提醒排程与用户交互控制。
  */
 export class YnufeApp {
     public static isSilentSync = false;
-    private static heartbeatIntervalId: any = null;
-    private static recovering = false;
-    private static lastRecoverAt = 0;
-    private static KEY_CURRENT_WEEK = "ynufe_current_teaching_week";
     private static currentTeachingWeek: number | undefined = undefined;
     private static sessionInvalid = false;
     private static lastCaptchaUrl: string | null = null;
@@ -47,7 +43,7 @@ export class YnufeApp {
     }
 
     /**
-     * 初始化全局业务引擎、界面事件绑定、心跳保活及各管理组件。
+     * 初始化全局业务引擎、界面事件绑定、生命周期及各管理组件。
      */
     static init(): void {
         YnufeSession.migratePlaintextCredentials();
@@ -62,90 +58,22 @@ export class YnufeApp {
         ThemeCustomizer.init();
         SettingsView.initTheme();
 
-        if (YnufeSession.getHasSession()) {
-            this.startHeartbeat();
-        }
-
-        document.addEventListener("visibilitychange", () => {
-            if (document.hidden) {
-                this.stopHeartbeat();
-                SessionCookieManager.captureAndPersist().catch(() => {});
-                const cap = (window as any).Capacitor;
-                if (cap?.Plugins?.CapacitorCookies?.flushCookies) {
-                    cap.Plugins.CapacitorCookies.flushCookies().catch(() => {});
-                }
-            } else if (YnufeSession.getHasSession()) {
-                this.startHeartbeat();
-            }
-        });
-
-        window.addEventListener("ynufe-session-expired", () => this.onSessionExpired());
-
-        window.addEventListener("ynufe-theme-preset-applied", (e: any) => {
-            const mode = e?.detail?.mode || "dark";
-            WallpaperManager.applyAdaptiveWallpaperColor(mode);
-        });
+        AppLifecycleManager.setRefreshHandler(() => this.loadHomeBusinessData());
+        AppLifecycleManager.init();
     }
 
     /**
-     * 会话过期统一恢复入口：先尝试静默自动续期。
-     */
-    static onSessionExpired(): void {
-        if (this.recovering) return;
-        const now = Date.now();
-        if (now - this.lastRecoverAt < 30000) return;
-        this.recovering = true;
-        this.lastRecoverAt = now;
-        this.stopHeartbeat();
-        updateSyncStatus("syncing", "会话续期中...");
-
-        AutoLogin.attempt().then(async (ok) => {
-            this.recovering = false;
-            if (ok) {
-                this.startHeartbeat();
-                showToast("登录已自动续期", "success");
-                const success = await this.loadHomeBusinessData();
-                updateSyncStatus(success ? "online" : "offline", success ? "数据已最新" : "未同步 · 点击刷新");
-            } else {
-                updateSyncStatus("offline", "登录已过期");
-                if (!this.isSilentSync) {
-                    showToast("自动续期未成功，请输入验证码完成登录", "warn");
-                    LoginView.prefillLoginForm();
-                    toggleModal("login-overlay", true);
-                    LoginView.refreshCaptchaImg();
-                }
-            }
-        });
-    }
-
-    /**
-     * 启动后台心跳保活请求，维持教务网 Tomcat 会话活跃状态。
+     * 启动后台心跳保活（代理至 HeartbeatService）。
      */
     static startHeartbeat(): void {
-        if (this.heartbeatIntervalId) {
-            clearInterval(this.heartbeatIntervalId);
-        }
-
-        this.heartbeatIntervalId = setInterval(async () => {
-            if (!YnufeSession.getHasSession() || document.hidden) {
-                return;
-            }
-            try {
-                await YnufeClient.getHtml("/jsxsd/framework/xsMain.jsp");
-            } catch (err) {
-                console.warn("[Keep-Alive] 心跳保活检测失败:", err);
-            }
-        }, AppConfig.HEARTBEAT_INTERVAL_MS);
+        HeartbeatService.start();
     }
 
     /**
-     * 停止后台心跳定时器。
+     * 停止后台心跳保活（代理至 HeartbeatService）。
      */
     static stopHeartbeat(): void {
-        if (this.heartbeatIntervalId) {
-            clearInterval(this.heartbeatIntervalId);
-            this.heartbeatIntervalId = null;
-        }
+        HeartbeatService.stop();
     }
 
     /**
@@ -195,30 +123,30 @@ export class YnufeApp {
     static loadCachedData(): boolean {
         let hasData = false;
         try {
-            const cachedProfile = YnufeSession.getCache<UserProfile>("ynufe_cached_profile");
+            const cachedProfile = CacheService.get<UserProfile>(StorageKeys.USER_PROFILE);
             if (cachedProfile && cachedProfile.name && cachedProfile.name !== "未登录") {
                 this.renderProfile(cachedProfile);
                 hasData = true;
             }
 
-            const cachedTimetable = YnufeSession.getCache<TimetableData>("ynufe_cached_timetable_data");
+            const cachedTimetable = CacheService.get<TimetableData>(StorageKeys.TIMETABLE_CACHE);
             if (cachedTimetable && Array.isArray(cachedTimetable.courses) && cachedTimetable.courses.length > 0) {
                 TimetableView.renderTimetableData(cachedTimetable);
                 hasData = true;
             }
 
-            const cachedGrades = YnufeSession.getCache<GradeSummary>("ynufe_cached_grades_data");
+            const cachedGrades = CacheService.get<GradeSummary>(StorageKeys.GRADES_CACHE);
             if (cachedGrades && Array.isArray(cachedGrades.gradesList) && cachedGrades.gradesList.length > 0) {
                 GradeView.renderGradesData(cachedGrades);
                 hasData = true;
             }
 
-            const cachedExams = YnufeSession.getCache<ExamItem[]>("ynufe_cached_exams");
+            const cachedExams = CacheService.get<ExamItem[]>(StorageKeys.EXAMS_CACHE);
             if (Array.isArray(cachedExams) && cachedExams.length > 0) {
                 ExamView.renderExamsList(cachedExams);
             }
 
-            const cachedAnnouncements = YnufeSession.getCache<AnnouncementItem[]>("ynufe_cached_announcements");
+            const cachedAnnouncements = CacheService.get<AnnouncementItem[]>(StorageKeys.ANNOUNCEMENTS_CACHE);
             if (Array.isArray(cachedAnnouncements) && cachedAnnouncements.length > 0) {
                 AnnouncementView.renderAnnouncementsList(cachedAnnouncements);
             }
@@ -275,14 +203,14 @@ export class YnufeApp {
 
             this.sessionInvalid = false;
             this.renderProfile(profile);
-            YnufeSession.setCache("ynufe_cached_profile", profile);
+            CacheService.set(StorageKeys.USER_PROFILE, profile);
 
             this.currentTeachingWeek = ProfileParser.parseCurrentWeek(mainHtml);
             TimetableView.currentTeachingWeek = this.currentTeachingWeek ?? null;
             if (this.currentTeachingWeek) {
-                localStorage.setItem(this.KEY_CURRENT_WEEK, String(this.currentTeachingWeek));
+                CacheService.set(StorageKeys.CURRENT_TEACHING_WEEK, this.currentTeachingWeek);
             } else {
-                localStorage.removeItem(this.KEY_CURRENT_WEEK);
+                CacheService.remove(StorageKeys.CURRENT_TEACHING_WEEK);
             }
 
             const results = await Promise.all([
@@ -321,9 +249,7 @@ export class YnufeApp {
                     LoginView.refreshCaptchaImg();
                 } else {
                     updateSyncStatus("offline", "未同步 · 点击刷新");
-                    if (!this.recovering) {
-                        showToast("同步失败，请检查网络后重试", "warn");
-                    }
+                    showToast("同步失败，请检查网络后重试", "warn");
                 }
             });
         }

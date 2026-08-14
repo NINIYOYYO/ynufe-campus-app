@@ -64,6 +64,7 @@ src_ts_files = [
     "src/main.ts", "src/config/index.ts", "src/config/storageKeys.ts", "src/api/client.ts",
     "src/services/autoLogin.ts", "src/services/notificationManager.ts",
     "src/services/reminderScheduler.ts", "src/services/cacheService.ts",
+    "src/services/heartbeatService.ts",
     "src/stores/sessionStore.ts", "src/config/themePresets.ts",
     "src/types/theme.ts",
     "src/parsers/profileParser.ts", "src/parsers/timetableParser.ts",
@@ -84,6 +85,7 @@ src_ts_files = [
     "src/views/loginView.ts",
     "src/core/app.ts",
     "src/core/router.ts",
+    "src/core/lifecycle.ts",
 ]
 for rel in src_ts_files:
     assert os.path.exists(os.path.join(BASE, rel)), f"ERROR: Missing source file: {rel}"
