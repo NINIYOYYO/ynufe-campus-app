@@ -246,37 +246,29 @@ export class GradeView {
                 return;
             }
 
-            const headerRow = `
-                <div class="score-comp-row header">
-                    <span>构成项目</span>
-                    <span>比例</span>
-                    <span>得分</span>
-                </div>
-            `;
-            const compRows = detail.components.map(c => `
-                <div class="score-comp-row">
-                    <span>${escapeHtml(c.label)}</span>
-                    <span class="score-comp-pct">${escapeHtml(c.ratio)}</span>
-                    <span class="score-comp-val">${escapeHtml(c.score)}</span>
-                </div>
-            `).join("");
-
-            const totalScoreHtml = detail.total
-                ? `<div class="score-comp-total">
-                    <span>综合总评</span>
-                    <b>${escapeHtml(detail.total)}</b>
-                   </div>`
-                : "";
+            const bars = detail.components.map(c => {
+                const pct = Math.max(0, Math.min(100, parseFloat(c.ratio) || 0));
+                const val = Math.max(0, Math.min(100, parseFloat(c.score) || 0));
+                const note = c.ratio ? `按占比折合 ${(val * pct / 100).toFixed(1)} 分` : "";
+                return `
+                    <div class="score-part">
+                        <div class="score-part-head">
+                            <span>${escapeHtml(c.label)}</span>
+                            ${c.ratio ? `<em>占 ${escapeHtml(c.ratio)}</em>` : ""}
+                            <b>${escapeHtml(c.score)}</b>
+                        </div>
+                        <div class="score-bar"><i style="width:${val}%"></i></div>
+                        ${note ? `<div class="score-part-note">${escapeHtml(note)}</div>` : ""}
+                    </div>`;
+            }).join("");
 
             await BottomSheet.morphHeight(() => {
                 slot.innerHTML = `
-                    <div class="score-components-box">
-                        <div class="score-comp-title">平时成绩与构成明细</div>
-                        ${headerRow}
-                        ${compRows}
-                        ${totalScoreHtml}
-                    </div>
-                `;
+                    <div class="sheet-swap-in">
+                        <div class="detail-section-title">平时成绩与构成明细</div>
+                        ${bars}
+                        ${detail.total ? `<div class="score-total"><span>总成绩</span><b>${escapeHtml(detail.total)}</b></div>` : ""}
+                    </div>`;
             });
         } catch (e) {
             await BottomSheet.settled();
