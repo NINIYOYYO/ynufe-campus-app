@@ -66,10 +66,14 @@ export class WallpaperManager {
                 const darkR = Math.round(r * k);
                 const darkG = Math.round(g * k);
                 const darkB = Math.round(b * k);
-                body.style.setProperty("--primary-color-rgb", `${darkR}, ${darkG}, ${darkB}`);
+                const rgbStr = `${darkR}, ${darkG}, ${darkB}`;
+                body.style.setProperty("--primary-color-rgb", rgbStr);
+                document.documentElement.style.setProperty("--primary-color-rgb", rgbStr);
                 body.style.setProperty("--wallpaper-dark-rgb", `240, 243, 250`);
             } else {
-                body.style.setProperty("--primary-color-rgb", `${r}, ${g}, ${b}`);
+                const rgbStr = `${r}, ${g}, ${b}`;
+                body.style.setProperty("--primary-color-rgb", rgbStr);
+                document.documentElement.style.setProperty("--primary-color-rgb", rgbStr);
                 const cardDarkR = Math.round(r * 0.22 + 8);
                 const cardDarkG = Math.round(g * 0.22 + 8);
                 const cardDarkB = Math.round(b * 0.22 + 8);
@@ -86,6 +90,7 @@ export class WallpaperManager {
     static clearAdaptiveWallpaperColor(): void {
         document.body.style.removeProperty("--primary-color-rgb");
         document.body.style.removeProperty("--wallpaper-dark-rgb");
+        document.documentElement.style.removeProperty("--primary-color-rgb");
     }
 
     /**

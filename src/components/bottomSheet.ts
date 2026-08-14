@@ -261,6 +261,7 @@ export class BottomSheet {
 
         window.addEventListener("touchmove", (e: TouchEvent) => {
             if (!this.isDragging) return;
+            e.preventDefault();
             const touchY = e.touches[0].clientY;
             const dt = e.timeStamp - this.lastT;
             if (dt > 0) this.velocity = (touchY - this.lastY) / dt; // px/ms，向下为正
@@ -271,7 +272,7 @@ export class BottomSheet {
             // 向下 1:1 跟手；向上做橡皮筋阻尼——能拉动但拉不远，传达"到头了"
             this.currentY = deltaY >= 0 ? deltaY : -Math.pow(-deltaY, 0.72);
             content.style.transform = `translateY(${this.currentY.toFixed(2)}px)`;
-        }, { passive: true });
+        }, { passive: false });
 
         window.addEventListener("touchend", () => {
             if (!this.isDragging) return;

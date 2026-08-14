@@ -958,6 +958,7 @@ select option {
 /* === 课表页面与网格 === */
 .section-header {
     margin-bottom: 20px;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 6px);
 }
 
 .section-header h1 {

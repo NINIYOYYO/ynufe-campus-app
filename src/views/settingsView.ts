@@ -40,27 +40,21 @@ export class SettingsView {
      */
     static toggleSheetById(sheetId: string, overlayId: string, show: boolean): void {
         const sheet = document.getElementById(sheetId);
-        const overlay = document.getElementById(overlayId);
+        if (!sheet) return;
 
-        if (sheet) {
-            if (show) {
-                sheet.style.transform = "translateY(0)";
-                sheet.style.display = "flex";
-                sheet.classList.add("active");
-            } else {
-                sheet.style.transform = "translateY(100%)";
-                sheet.classList.remove("active");
-                setTimeout(() => { sheet.style.display = "none"; }, 300);
-            }
-        }
-        if (overlay) {
-            if (show) {
-                overlay.style.display = "block";
-                overlay.classList.add("active");
-            } else {
-                overlay.classList.remove("active");
-                setTimeout(() => { overlay.style.display = "none"; }, 300);
-            }
+        if (show) {
+            sheet.style.display = "block";
+            sheet.style.transform = "";
+            void sheet.offsetHeight; // 触发回流重绘
+            sheet.classList.add("active");
+        } else {
+            sheet.classList.remove("active");
+            window.setTimeout(() => {
+                if (!sheet.classList.contains("active")) {
+                    sheet.style.display = "none";
+                    sheet.style.transform = "";
+                }
+            }, 300);
         }
     }
 

@@ -40,6 +40,8 @@ export class AppRouter {
             await GradeView.loadFinalGradesData(true);
         } else if (tabId === "tab-exams-xk") {
             await ExamView.loadExamsData(true);
+        } else if (tabId === "tab-practice-services") {
+            await ServiceView.loadPracticeThesisData(true);
         }
     }
 
