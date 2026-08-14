@@ -62,7 +62,7 @@ export class AnnouncementParser {
                         const jsMatch = href.match(/openWindow\(\s*['"]([^'"]+)['"]/);
                         if (jsMatch) {
                             url = jsMatch[1];
-                        } else if (href && !href.startsWith("javascript:")) {
+                        } else if (href && !href.trim().toLowerCase().startsWith("javascript:") && !href.trim().toLowerCase().startsWith("data:")) {
                             url = href;
                         }
                     }

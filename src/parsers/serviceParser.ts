@@ -95,15 +95,15 @@ export class ServiceParser {
 
         if (table) {
             const textContent = table.textContent || "";
-            const titleMatch = textContent.match(/课题名称[:：]\s*([^\n]+)/);
-            const reportMatch = textContent.match(/开题报告[:：]\s*([^\n]+)/);
+            const titleMatch = textContent.match(/课题名称[:：]\s*(.*?)(?=\s*(?:指导教师|开题报告|过程指导|最终成绩|[\r\n]|$))/);
+            const reportMatch = textContent.match(/开题报告[:：]\s*(.*?)(?=\s*(?:过程指导|指导教师|最终成绩|[\r\n]|$))/);
             const countMatch = textContent.match(/过程指导[:：]\s*(\d+次)/);
-            const gradeMatch = textContent.match(/最终成绩[:：]\s*([^\n]+)/);
+            const gradeMatch = textContent.match(/最终成绩[:：]\s*(.*?)(?=\s*(?:[\r\n]|$))/);
 
-            if (titleMatch) title = titleMatch[1].trim();
-            if (reportMatch) report = reportMatch[1].trim();
-            if (countMatch) count = countMatch[1].trim();
-            if (gradeMatch) grade = gradeMatch[1].trim();
+            if (titleMatch && titleMatch[1]) title = titleMatch[1].trim();
+            if (reportMatch && reportMatch[1]) report = reportMatch[1].trim();
+            if (countMatch && countMatch[1]) count = countMatch[1].trim();
+            if (gradeMatch && gradeMatch[1]) grade = gradeMatch[1].trim();
         }
 
         return {

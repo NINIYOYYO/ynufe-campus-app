@@ -52,9 +52,12 @@ export function buildHeaderIndex(table: Element): Record<string, number> {
         const ths = rows[i].querySelectorAll("th");
         if (ths.length === 0) continue;
 
+        let colIndex = 0;
         for (let c = 0; c < ths.length; c++) {
             const key = ths[c].textContent?.trim() || "";
-            if (key && map[key] === undefined) map[key] = c;
+            const span = parseInt(ths[c].getAttribute("colspan") || "1", 10) || 1;
+            if (key && map[key] === undefined) map[key] = colIndex;
+            colIndex += span;
         }
         break; // 只取第一行表头（等级考试那类合并双表头由调用方自行按位处理）
     }

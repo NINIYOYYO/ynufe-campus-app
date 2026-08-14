@@ -4,6 +4,15 @@ import { UserProfile } from '../types/profile';
  * 云南财经大学教务网个人学籍 DOM 解析器 (.middletopdwxxcont)
  */
 export class ProfileParser {
+    /**
+     * 从教务网首页框架页 HTML 解析用户个人学籍信息。
+     *
+     * Args:
+     *     htmlStr (string): /jsxsd/framework/xsMain_new.jsp 响应的 HTML。
+     *
+     * Returns:
+     *     UserProfile: 结构化个人学籍实体。
+     */
     static parseProfile(htmlStr: string): UserProfile {
         const profile: UserProfile = {
             name: "未登录",
@@ -28,20 +37,20 @@ export class ProfileParser {
         }
 
         // 备用兼容正则解析
-        const nameMatch = htmlStr.match(/姓名[：:]\s*([^<&\s]+)/);
-        if (nameMatch) profile.name = nameMatch[1];
+        const nameMatch = htmlStr.match(/姓名[：:]\s*([^<&\r\n]+)/);
+        if (nameMatch) profile.name = nameMatch[1].trim();
 
-        const idMatch = htmlStr.match(/学号[：:]\s*([^<&\s]+)/);
-        if (idMatch) profile.studentId = idMatch[1];
+        const idMatch = htmlStr.match(/学号[：:]\s*([^<&\r\n]+)/);
+        if (idMatch) profile.studentId = idMatch[1].trim();
 
-        const deptMatch = htmlStr.match(/院系[：:]\s*([^<&\s]+)/);
-        if (deptMatch) profile.dept = deptMatch[1];
+        const deptMatch = htmlStr.match(/院系[：:]\s*([^<&\r\n]+)/);
+        if (deptMatch) profile.dept = deptMatch[1].trim();
 
-        const majorMatch = htmlStr.match(/专业[：:]\s*([^<&\s]+)/);
-        if (majorMatch) profile.major = majorMatch[1];
+        const majorMatch = htmlStr.match(/专业[：:]\s*([^<&\r\n]+)/);
+        if (majorMatch) profile.major = majorMatch[1].trim();
 
-        const classMatch = htmlStr.match(/班级[：:]\s*([^<&\s]+)/);
-        if (classMatch) profile.className = classMatch[1];
+        const classMatch = htmlStr.match(/班级[：:]\s*([^<&\r\n]+)/);
+        if (classMatch) profile.className = classMatch[1].trim();
 
         return profile;
     }
@@ -61,18 +70,16 @@ export class ProfileParser {
      */
     static parseCurrentWeek(htmlStr: string): number | undefined {
         const doc = new DOMParser().parseFromString(htmlStr, "text/html");
-        const box = doc.querySelector("#li_showWeek") || doc.querySelector(".middletopleftzc");
+        const box = doc.querySelector("#li_showWeek") || doc.querySelector(".middletopleftzc") || doc.querySelector(".zc_title");
 
-        const scopes = [box?.textContent || "", htmlStr];
-        for (const text of scopes) {
-            if (!text) continue;
-            if (text.includes("不在教学周历内")) return undefined;
+        const text = box?.textContent?.trim() || "";
+        if (!text) return undefined;
+        if (text.includes("不在教学周历内")) return undefined;
 
-            const m = text.match(/第\s*(\d+)\s*周/);
-            if (m) {
-                const week = parseInt(m[1], 10);
-                if (!isNaN(week) && week > 0 && week <= 30) return week;
-            }
+        const m = text.match(/第\s*(\d+)\s*周/);
+        if (m) {
+            const week = parseInt(m[1], 10);
+            if (!isNaN(week) && week > 0 && week <= 30) return week;
         }
         return undefined;
     }

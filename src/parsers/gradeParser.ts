@@ -34,8 +34,8 @@ export class GradeParser {
         // 该接口返回的是不带 <body> 的 HTML 片段，浏览器会自动补全，
         // 但在非浏览器 DOM 实现下 body 可能为空，故回退到原始文本兜底。
         const headerText = doc.body?.textContent || htmlStr;
-        const gpaMatch = headerText.match(/平均学分绩点:([\d.]+)/);
-        const creditMatch = headerText.match(/所修总学分:([\d.]+)/);
+        const gpaMatch = headerText.match(/平均学分绩点[:：]\s*([\d.]+)/);
+        const creditMatch = headerText.match(/所修总学分[:：]\s*([\d.]+)/);
 
         const gpa = gpaMatch ? parseFloat(gpaMatch[1]).toFixed(2) : "0.00";
         const totalCredits = creditMatch ? parseFloat(creditMatch[1]).toFixed(1) : "0.0";

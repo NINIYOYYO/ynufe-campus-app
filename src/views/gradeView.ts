@@ -169,7 +169,8 @@ export class GradeView {
         container.innerHTML = "";
         filtered.forEach(g => {
             const scoreNum = parseFloat(g.score);
-            const isFail = g.score === "不合格" || (!isNaN(scoreNum) && scoreNum < 60);
+            const FAIL_KEYWORDS = ["不合格", "不及格", "缺考", "作弊", "取消资格", "差"];
+            const isFail = FAIL_KEYWORDS.includes(g.score.trim()) || (!isNaN(scoreNum) && scoreNum < 60);
 
             const card = document.createElement("div");
             card.className = "grade-card glass-card";

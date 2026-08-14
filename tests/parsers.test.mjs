@@ -270,8 +270,22 @@ throwsParseError('等级考试结构异常应抛 ParseError', () => GradeParser.
 throwsParseError('公告结构异常应抛 ParseError', () => AnnouncementParser.parseAnnouncements(GARBAGE));
 throwsParseError('排考结构异常应抛 ParseError', () => ExamParser.parseExams(GARBAGE));
 throwsParseError('空教室结构异常应抛 ParseError', () => ServiceParser.parseClassrooms(GARBAGE));
+throwsParseError('课表结构异常应抛 ParseError', () => TimetableParser.parseTimetable(GARBAGE));
 ok('但"未查询到数据"是正常空结果，不应报错',
    ExamParser.parseExams(read('exams_list')).length === 0);
+
+// 单双周与周次清洗回归测试
+section('单双周与多课程槽位切分扩展测试');
+eq('单周课程展开为奇数周', TimetableParser.parseActiveWeeks('1-8(单周)'), [1, 3, 5, 7]);
+eq('双周课程展开为偶数周', TimetableParser.parseActiveWeeks('2-8(双周)'), [2, 4, 6, 8]);
+eq('中文字符周次清洗展开', TimetableParser.parseActiveWeeks('1-3周,5-6周'), [1, 2, 3, 5, 6]);
+
+// 全角冒号与空格 GPA 解析测试
+section('成绩汇总行全角冒号与空格兼容测试');
+const fullWidthGpaHtml = '<table id="dataList"><tr><th>开课学期</th><th>课程编号</th><th>课程名称</th><th>成绩</th></tr><tr><td colspan="4">未查询到数据</td></tr></table><div>平均学分绩点： 3.85 &nbsp; 所修总学分： 145.5</div>';
+const gpaRes = GradeParser.parseGrades(fullWidthGpaHtml);
+eq('全角冒号平均绩点提取准确', gpaRes.gpa, '3.85');
+eq('全角冒号总学分提取准确', gpaRes.totalCredits, '145.5');
 
 rmSync(TMP, { recursive: true, force: true });
 
