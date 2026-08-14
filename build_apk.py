@@ -1,6 +1,5 @@
 import json
 import os
-import re
 import socket
 import shutil
 import subprocess
@@ -57,7 +56,13 @@ def update_capacitor_config(is_dev: bool) -> None:
     with open(config_path, 'w', encoding='utf-8') as f:
         json.dump(config, f, indent=2, ensure_ascii=False)
 
-def main():
+def main() -> None:
+    """
+    一键构建并打包发布版或开发热重载版 Android APK。
+
+    根据命令行参数判断模式，依次执行配置更新、前端编译、Capacitor 资源同步、
+    Gradle 构建及产物归档。
+    """
     is_dev = "--dev" in sys.argv
     mode_name = "开发热重载版" if is_dev else "正式离线独立版"
     print(f"=== 开始构建云财学子 APK [{mode_name}] ===")
