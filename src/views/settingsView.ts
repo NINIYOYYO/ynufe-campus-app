@@ -2,6 +2,8 @@ import { NotificationManager } from '../services/notificationManager';
 import { ThemeCustomizer } from '../components/themeCustomizer';
 import { WallpaperManager } from '../components/wallpaperManager';
 import { YnufeSession } from '../stores/sessionStore';
+import { StorageKeys } from '../config/storageKeys';
+import { CacheService } from '../services/cacheService';
 import { TimetableData } from '../types/timetable';
 import { showToast } from '../utils/uiFeedback';
 
@@ -135,7 +137,7 @@ export class SettingsView {
                     return;
                 }
                 if (wantEnabled) {
-                    const data = YnufeSession.getCache<TimetableData>("ynufe_cached_timetable_data");
+                    const data = CacheService.get<TimetableData>(StorageKeys.TIMETABLE_CACHE);
                     const count = await NotificationManager.rescheduleFromTimetable(data);
                     if (count === -1) {
                         showToast("当前不在教学周内（或未获取到教学周），暂无法排程提醒", "warn");
@@ -156,7 +158,7 @@ export class SettingsView {
                 const minutes = parseInt(leadSelect.value, 10) || 15;
                 NotificationManager.setLeadMinutes(minutes);
                 if (NotificationManager.isEnabled()) {
-                    const data = YnufeSession.getCache<TimetableData>("ynufe_cached_timetable_data");
+                    const data = CacheService.get<TimetableData>(StorageKeys.TIMETABLE_CACHE);
                     const count = await NotificationManager.rescheduleFromTimetable(data);
                     if (count > 0) {
                         showToast(`已改为提前 ${minutes} 分钟提醒（${count} 条已重排）`, "success");
