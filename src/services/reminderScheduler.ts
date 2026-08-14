@@ -61,7 +61,12 @@ export class ReminderScheduler {
         const daysAhead = options.daysAhead ?? 14;
         const maxScheduled = options.maxScheduled ?? 60;
 
-        const week1Monday = this.computeWeek1Monday(now, data.currentWeek);
+        let week1Monday: Date;
+        if (data.week1MondayIso) {
+            week1Monday = new Date(data.week1MondayIso);
+        } else {
+            week1Monday = this.computeWeek1Monday(now, data.currentWeek);
+        }
         const planned: PlannedNotice[] = [];
         const plannedKeys = new Set<string>();
 

@@ -204,9 +204,13 @@ export class NotificationManager {
     static async rescheduleFromTimetable(data: TimetableData | null): Promise<number> {
         if (!this.isEnabled()) return 0;
         if (!data || !Array.isArray(data.courses) || data.courses.length === 0) return 0;
-        if (!data.currentWeek) {
-            console.warn("[NotificationManager] currentWeek missing, cannot map weeks to dates.");
+        if (!data.currentWeek && !data.week1MondayIso) {
+            console.warn("[NotificationManager] currentWeek and week1MondayIso missing, cannot map weeks to dates.");
             return -1;
+        }
+
+        if (!data.week1MondayIso && data.currentWeek) {
+            data.week1MondayIso = ReminderScheduler.computeWeek1Monday(new Date(), data.currentWeek).toISOString();
         }
 
         const leadMin = this.getLeadMinutes();

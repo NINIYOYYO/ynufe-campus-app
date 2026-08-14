@@ -40,5 +40,6 @@ export interface TimetableData {
     weeks?: WeekOption[];
     currentSemesterId?: string;
     currentWeek?: number; // 当前教务系统默认/选中的教学周 (1-20)
+    week1MondayIso?: string; // 固化的第 1 教学周周一 00:00:00 ISO 字符串基准点
 }
 
