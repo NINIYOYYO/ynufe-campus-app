@@ -133,7 +133,7 @@ export class AnnouncementView {
     }
 
     /**
-     * 下载公告附件（带二进制与 HTML 拦截校验）。
+     * 下载公告附件（带二进制与 HTML 拦截校验及 ObjectURL 延迟释放保护）。
      *
      * Args:
      *     url (string): 附件相对路径。
@@ -159,7 +159,9 @@ export class AnnouncementView {
             document.body.appendChild(a);
             a.click();
             a.remove();
-            URL.revokeObjectURL(objectUrl);
+            window.setTimeout(() => {
+                URL.revokeObjectURL(objectUrl);
+            }, 1500);
             showToast(`「${name}」已开始下载`, "success");
         } catch (e) {
             if (e instanceof SessionExpiredError) {
