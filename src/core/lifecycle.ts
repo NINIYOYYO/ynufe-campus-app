@@ -18,6 +18,7 @@ export class AppLifecycleManager {
     private static recovering = false;
     private static lastRecoverAt = 0;
     private static onRefreshNeededCallback: (() => Promise<boolean>) | null = null;
+    private static initialized = false;
 
     /**
      * 注册会话恢复成功后的业务数据同步回调。
@@ -30,9 +31,14 @@ export class AppLifecycleManager {
     }
 
     /**
-     * 初始化全局生命周期事件监听器。
+     * 初始化全局生命周期事件监听器（具备防重入幂等保护）。
      */
     static init(): void {
+        if (this.initialized) {
+            return;
+        }
+        this.initialized = true;
+
         if (YnufeSession.getHasSession()) {
             HeartbeatService.start();
         }
@@ -59,6 +65,13 @@ export class AppLifecycleManager {
         });
 
         this.initBackButtonHandler();
+    }
+
+    /**
+     * 重置生命周期管理器初始化状态（主要用于单元测试）。
+     */
+    static resetForTesting(): void {
+        this.initialized = false;
     }
 
     /**

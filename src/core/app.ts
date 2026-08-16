@@ -36,6 +36,7 @@ export class YnufeApp {
     private static currentTeachingWeek: number | undefined = undefined;
     private static sessionInvalid = false;
     private static lastCaptchaUrl: string | null = null;
+    private static initialized = false;
 
     /** 供模块级启动流程读取的只读视图。 */
     static get isSessionInvalid(): boolean {
@@ -43,9 +44,14 @@ export class YnufeApp {
     }
 
     /**
-     * 初始化全局业务引擎、界面事件绑定、生命周期及各管理组件。
+     * 初始化全局业务引擎、界面事件绑定、生命周期及各管理组件（具备防重入幂等保护）。
      */
     static init(): void {
+        if (this.initialized) {
+            return;
+        }
+        this.initialized = true;
+
         YnufeSession.migratePlaintextCredentials();
         SessionCookieManager.restoreCookies().catch(() => {});
         this.bindEvents();
@@ -60,6 +66,13 @@ export class YnufeApp {
 
         AppLifecycleManager.setRefreshHandler(() => this.loadHomeBusinessData());
         AppLifecycleManager.init();
+    }
+
+    /**
+     * 重置初始化状态标记（主要用于单元测试与隔离测试重跑）。
+     */
+    static resetForTesting(): void {
+        this.initialized = false;
     }
 
     /**
