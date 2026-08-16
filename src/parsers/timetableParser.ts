@@ -19,39 +19,44 @@ export class TimetableParser {
     }
 
     /**
-     * 解析具体生效周次区间（支持单周、双周、连续周次与中文“周”清洗）。
+     * 解析具体生效周次区间（支持单周、双周、非标符号清洗与连续周次展开）。
      *
      * Args:
-     *     weeksStr (string): 周次原始描述文本（如 "1-16(单周)[01-02节]" 或 "1-8周,10-18周"）。
+     *     weeksStr (string): 周次原始描述文本（如 "1-16(单周)[01-02节]"、"第1-8周" 或 "1~8周,10至18周"）。
      *
      * Returns:
      *     number[]: 展开后的生效周次数组。
      */
     static parseActiveWeeks(weeksStr: string): number[] {
         if (!weeksStr || weeksStr === "全周") return [];
-        const isOddOnly = /\(单周?\)|\b单周?\b/.test(weeksStr);
-        const isEvenOnly = /\(双周?\)|\b双周?\b/.test(weeksStr);
+        const isOddOnly = /(?:^|[^\w(])单周?(?:$|[^\w)])/.test(weeksStr) || weeksStr.includes("单周");
+        const isEvenOnly = /(?:^|[^\w(])双周?(?:$|[^\w)])/.test(weeksStr) || weeksStr.includes("双周");
 
-        const cleanWeeks = weeksStr
+        const normalized = weeksStr
             .replace(/\[[^\]]*\]/g, "")
             .replace(/\([^)]*\)/g, "")
-            .replace(/[周次\s]/g, "")
+            .replace(/[，；;、]/g, ",")
+            .replace(/[~～至到]/g, "-")
+            .replace(/[第周次\s单双]/g, "")
             .trim();
 
         const activeWeeks: number[] = [];
-        cleanWeeks.split(",").forEach(part => {
+        normalized.split(",").forEach(part => {
             const trimmed = part.trim();
+            if (!trimmed) return;
             if (trimmed.includes("-")) {
-                const range = trimmed.split("-").map(Number);
-                if (range.length === 2 && !isNaN(range[0]) && !isNaN(range[1])) {
-                    for (let i = range[0]; i <= range[1]; i++) {
+                const parts = trimmed.split("-").map(s => parseInt(s.trim(), 10));
+                if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+                    const start = Math.min(parts[0], parts[1]);
+                    const end = Math.max(parts[0], parts[1]);
+                    for (let i = start; i <= end; i++) {
                         if (isOddOnly && i % 2 === 0) continue;
                         if (isEvenOnly && i % 2 !== 0) continue;
                         activeWeeks.push(i);
                     }
                 }
             } else {
-                const single = Number(trimmed);
+                const single = parseInt(trimmed, 10);
                 if (!isNaN(single) && single > 0) {
                     if (isOddOnly && single % 2 === 0) return;
                     if (isEvenOnly && single % 2 !== 0) return;

@@ -36,20 +36,20 @@ export class ProfileParser {
             return profile;
         }
 
-        // 备用兼容正则解析
-        const nameMatch = htmlStr.match(/姓名[：:]\s*([^<&\r\n]+)/);
+        // 备用兼容正则解析（非贪婪模式并限定终止边界）
+        const nameMatch = htmlStr.match(/姓名[：:]\s*([^\s<>&"']+)/);
         if (nameMatch) profile.name = nameMatch[1].trim();
 
-        const idMatch = htmlStr.match(/学号[：:]\s*([^<&\r\n]+)/);
+        const idMatch = htmlStr.match(/学号[：:]\s*([0-9a-zA-Z]{6,16})/);
         if (idMatch) profile.studentId = idMatch[1].trim();
 
-        const deptMatch = htmlStr.match(/院系[：:]\s*([^<&\r\n]+)/);
+        const deptMatch = htmlStr.match(/(?:院系|学院)[：:]\s*([^\s<>&"']+)/);
         if (deptMatch) profile.dept = deptMatch[1].trim();
 
-        const majorMatch = htmlStr.match(/专业[：:]\s*([^<&\r\n]+)/);
+        const majorMatch = htmlStr.match(/专业[：:]\s*([^\s<>&"']+)/);
         if (majorMatch) profile.major = majorMatch[1].trim();
 
-        const classMatch = htmlStr.match(/班级[：:]\s*([^<&\r\n]+)/);
+        const classMatch = htmlStr.match(/班级[：:]\s*([^\s<>&"']+)/);
         if (classMatch) profile.className = classMatch[1].trim();
 
         return profile;

@@ -279,6 +279,17 @@ section('单双周与多课程槽位切分扩展测试');
 eq('单周课程展开为奇数周', TimetableParser.parseActiveWeeks('1-8(单周)'), [1, 3, 5, 7]);
 eq('双周课程展开为偶数周', TimetableParser.parseActiveWeeks('2-8(双周)'), [2, 4, 6, 8]);
 eq('中文字符周次清洗展开', TimetableParser.parseActiveWeeks('1-3周,5-6周'), [1, 2, 3, 5, 6]);
+eq('无括号单周格式展开', TimetableParser.parseActiveWeeks('1-16单周'), [1, 3, 5, 7, 9, 11, 13, 15]);
+eq('第N周与波浪线/中文至格式展开', TimetableParser.parseActiveWeeks('第1~4周，6至8周'), [1, 2, 3, 4, 6, 7, 8]);
+
+// 单行紧凑 HTML 个人信息解析测试
+section('单行紧凑 HTML 个人信息解析测试');
+const singleProfile = ProfileParser.parseProfile('<div>姓名：王五 学号：202100001111 院系：商学院 专业：国际贸易 班级：国贸21-1</div>');
+eq('单行文本姓名精准提取', singleProfile.name, '王五');
+eq('单行文本学号精准提取', singleProfile.studentId, '202100001111');
+eq('单行文本院系精准提取', singleProfile.dept, '商学院');
+eq('单行文本专业精准提取', singleProfile.major, '国际贸易');
+eq('单行文本班级精准提取', singleProfile.className, '国贸21-1');
 
 // 全角冒号与空格 GPA 解析测试
 section('成绩汇总行全角冒号与空格兼容测试');
