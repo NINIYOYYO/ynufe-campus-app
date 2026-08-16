@@ -106,25 +106,10 @@ export class YnufeApp {
     }
 
     /**
-     * 刷新并加载验证码图片二进制 Blob。
+     * 刷新并加载验证码图片二进制 Blob 并自动识别填入输入框。
      */
     static async refreshCaptchaImg(): Promise<void> {
-        const captchaImg = document.getElementById("captcha-img") as HTMLImageElement | null;
-        if (!captchaImg) return;
-        try {
-            captchaImg.style.opacity = "0.5";
-            const blob = await YnufeClient.getCaptchaBlob();
-            if (this.lastCaptchaUrl) {
-                URL.revokeObjectURL(this.lastCaptchaUrl);
-            }
-            const objectUrl = URL.createObjectURL(blob);
-            this.lastCaptchaUrl = objectUrl;
-            captchaImg.src = objectUrl;
-            captchaImg.style.opacity = "1";
-        } catch (e) {
-            console.error("[YnufeApp] Failed to refresh captcha blob:", e);
-            captchaImg.style.opacity = "1";
-        }
+        await LoginView.refreshCaptchaAndAutoFill();
     }
 
     /**

@@ -91,8 +91,8 @@ function preprocessPixels(rgbaData: Uint8ClampedArray | Uint8Array, width: numbe
     }
   }
 
-  // 2. 迭代式 1-像素对角噪线与毛刺剥离 (3 轮扫描)
-  for (let round = 0; round < 3; round++) {
+  // 2. 迭代式 1-像素对角噪线与孤立毛刺剥离 (2 轮扫描)
+  for (let round = 0; round < 2; round++) {
     const toRemove: [number, number][] = [];
     for (let y = 1; y < height - 1; y++) {
       for (let x = 1; x < width - 1; x++) {
@@ -111,7 +111,7 @@ function preprocessPixels(rgbaData: Uint8ClampedArray | Uint8Array, width: numbe
             }
           }
 
-          if (isDiag1 || isDiag2 || neighbors < 2) {
+          if (isDiag1 || isDiag2 || neighbors < 1) {
             toRemove.push([y, x]);
           }
         }
@@ -418,20 +418,22 @@ export class CaptchaOCR {
       img.onerror = () => reject(new Error('Failed to load captcha image into element'));
     });
 
-    if (blobUrl) {
-      URL.revokeObjectURL(blobUrl);
-    }
-
     const canvas = document.createElement('canvas');
     canvas.width = img.naturalWidth || img.width;
     canvas.height = img.naturalHeight || img.height;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) {
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
       throw new Error('Cannot get 2d context for captcha decoding');
     }
 
     ctx.drawImage(img, 0, 0);
     const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+    if (blobUrl) {
+      URL.revokeObjectURL(blobUrl);
+    }
+
     return recognizeCaptchaRgba(imgData.data, canvas.width, canvas.height);
   }
 }
