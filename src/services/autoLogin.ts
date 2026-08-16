@@ -3,6 +3,7 @@ import { YnufeSession } from '../stores/sessionStore';
 import { encodeInp } from '../utils/crypto';
 import { ProfileParser } from '../parsers/profileParser';
 import { SessionCookieManager } from './cookieManager';
+import { CaptchaOCR } from '../utils/captchaOcr';
 
 /**
  * AutoLogin: 持久化登录 / 会话自动续期服务
@@ -13,6 +14,7 @@ import { SessionCookieManager } from './cookieManager';
 export class AutoLogin {
     /** 防止并发重复续期 */
     private static inFlight: Promise<boolean> | null = null;
+    private static readonly MAX_RETRIES = 3;
 
     /**
      * 尝试静默自动重新登录。
@@ -26,6 +28,12 @@ export class AutoLogin {
         return this.inFlight;
     }
 
+    /**
+     * 执行静默登录核心流程，包含图形验证码本地 OCR 识别与重试机制。
+     *
+     * Returns:
+     *     Promise<boolean>: 登录是否成功。
+     */
     private static async doAttempt(): Promise<boolean> {
         // 0. 先探测现有 Cookie 会话是否其实还活着
         if (await this.verifySession()) {
@@ -41,28 +49,51 @@ export class AutoLogin {
             return false;
         }
 
-        try {
-            console.log("[AutoLogin] Attempting silent relogin...");
-            const encoded = `${encodeInp(user)}%%%${encodeInp(pass)}`;
-            await YnufeClient.postForm("/jsxsd/xk/LoginToXkLdap", {
-                userAccount: user,
-                userPassword: "",
-                RANDOMCODE: "",
-                encoded
-            });
+        for (let attempt = 1; attempt <= this.MAX_RETRIES; attempt++) {
+            try {
+                console.log(`[AutoLogin] Attempting silent relogin (attempt ${attempt}/${this.MAX_RETRIES})...`);
 
-            const verified = await this.verifySession();
-            if (verified) {
-                console.log("[AutoLogin] Silent relogin SUCCESS. Session restored.");
-                YnufeSession.setHasSession(true);
-                return true;
+                let captchaCode = "";
+                try {
+                    const captchaBlob = await YnufeClient.getCaptchaBlob();
+                    captchaCode = await CaptchaOCR.recognize(captchaBlob);
+                } catch (e) {
+                    console.warn("[AutoLogin] Captcha fetch or OCR failed, proceeding with blank code:", e);
+                }
+
+                const encoded = `${encodeInp(user)}%%%${encodeInp(pass)}`;
+                const loginHtml = await YnufeClient.postForm("/jsxsd/xk/LoginToXkLdap", {
+                    userAccount: user,
+                    userPassword: "",
+                    RANDOMCODE: captchaCode,
+                    encoded
+                });
+
+                if (loginHtml.includes("用户名或密码错误") || loginHtml.includes("账号或密码不正确") || loginHtml.includes("密码错误")) {
+                    console.warn("[AutoLogin] Invalid credentials detected, aborting retry.");
+                    return false;
+                }
+
+                if (loginHtml.includes("验证码错误") || loginHtml.includes("验证码已过期")) {
+                    console.warn(`[AutoLogin] Captcha mismatch on attempt ${attempt}, retrying...`);
+                    continue;
+                }
+
+                const verified = await this.verifySession();
+                if (verified) {
+                    console.log("[AutoLogin] Silent relogin SUCCESS. Session restored.");
+                    YnufeSession.setHasSession(true);
+                    return true;
+                }
+
+                console.warn(`[AutoLogin] Session verification failed on attempt ${attempt}.`);
+            } catch (err) {
+                console.warn(`[AutoLogin] Silent relogin attempt ${attempt} encountered error:`, err);
             }
-            console.warn("[AutoLogin] Silent relogin rejected by server.");
-            return false;
-        } catch (err) {
-            console.warn("[AutoLogin] Silent relogin failed:", err);
-            return false;
         }
+
+        console.warn("[AutoLogin] All silent relogin attempts exhausted.");
+        return false;
     }
 
     /**
