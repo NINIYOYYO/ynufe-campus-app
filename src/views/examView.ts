@@ -14,6 +14,8 @@ import { withViewLoading, renderEmptyState } from '../utils/viewHelper';
  */
 export class ExamView {
     private static KEY_CURRENT_SEMESTER = "ynufe_current_semester_id";
+    private static activeExamsSeq = 0;
+    private static activeTestsSeq = 0;
 
     /**
      * 拉取并渲染期末排考列表。
@@ -22,6 +24,7 @@ export class ExamView {
      *     silent (boolean): 是否静默拉取。
      */
     static async loadExamsData(silent: boolean = false): Promise<void> {
+        const currentSeq = ++this.activeExamsSeq;
         const typeSelect = document.getElementById("select-exam-type") as HTMLSelectElement | null;
         const selectSem = (document.getElementById("select-exam-semester") as HTMLSelectElement | null)?.value || "";
         const selectType = typeSelect?.value || "3";
@@ -39,6 +42,10 @@ export class ExamView {
                 xqlb: selectType,
                 xqlbmc: typeLabel
             });
+            if (currentSeq !== this.activeExamsSeq) {
+                console.warn(`[ExamView] 丢弃已过期的慢排考响应 (seq ${currentSeq} vs latest ${this.activeExamsSeq})`);
+                return;
+            }
             const list = ExamParser.parseExams(html, selectSem, typeLabel);
             this.renderExamsList(list);
             CacheService.set(StorageKeys.EXAMS_CACHE, list);
@@ -162,6 +169,7 @@ export class ExamView {
      *     silent (boolean): 是否静默拉取。
      */
     static async loadClassroomTestsData(silent: boolean = false): Promise<void> {
+        const currentSeq = ++this.activeTestsSeq;
         await withViewLoading({
             silent,
             loadingText: "正在拉取随堂考试...",
@@ -176,6 +184,10 @@ export class ExamView {
                 xqlb: "",
                 xqlbmc: ""
             });
+            if (currentSeq !== this.activeTestsSeq) {
+                console.warn(`[ExamView] 丢弃已过期的慢随堂考试响应 (seq ${currentSeq} vs latest ${this.activeTestsSeq})`);
+                return;
+            }
             const list = ExamParser.parseClassroomTests(html);
             CacheService.set(StorageKeys.CLASSROOM_TESTS_CACHE, list);
 

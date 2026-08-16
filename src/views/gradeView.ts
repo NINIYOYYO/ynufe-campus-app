@@ -16,6 +16,7 @@ import { withViewLoading, renderEmptyState } from '../utils/viewHelper';
 export class GradeView {
     public static globalGrades: GradeItem[] = [];
     private static activeGradeDetailKey: string | null = null;
+    private static activeRequestSeq = 0;
 
     /**
      * 拉取并解析期末成绩。
@@ -27,12 +28,17 @@ export class GradeView {
      *     Promise<boolean>: 是否成功。
      */
     static async loadFinalGradesData(silent: boolean = false): Promise<boolean> {
+        const currentSeq = ++this.activeRequestSeq;
         const result = await withViewLoading({
             silent,
             loadingText: "正在获取最新成绩与GPA...",
             moduleName: "成绩"
         }, async () => {
             const html = await YnufeClient.getHtml("/jsxsd/kscj/cjcx_list?xsfs=all");
+            if (currentSeq !== this.activeRequestSeq) {
+                console.warn(`[GradeView] 丢弃已过期的慢请求响应 (seq ${currentSeq} vs latest ${this.activeRequestSeq})`);
+                return false;
+            }
             const summary = GradeParser.parseGrades(html);
             this.detectNewGrades(summary);
             this.renderGradesData(summary);
@@ -299,6 +305,7 @@ export class GradeView {
      *     silent (boolean): 是否静默拉取。
      */
     static async loadLevelGradesData(silent: boolean = false): Promise<void> {
+        const currentSeq = ++this.activeRequestSeq;
         await withViewLoading({
             silent,
             loadingText: "正在查询等级考试成绩...",
@@ -306,6 +313,10 @@ export class GradeView {
         }, async () => {
             const container = document.getElementById("level-grades-list");
             const html = await YnufeClient.getHtml("/jsxsd/kscj/djkscj_list");
+            if (currentSeq !== this.activeRequestSeq) {
+                console.warn(`[GradeView] 丢弃已过期的慢等级考试响应 (seq ${currentSeq} vs latest ${this.activeRequestSeq})`);
+                return;
+            }
             const list = GradeParser.parseLevelGrades(html);
             CacheService.set(StorageKeys.LEVEL_GRADES_CACHE, list);
 

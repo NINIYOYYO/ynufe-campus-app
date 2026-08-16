@@ -12,6 +12,7 @@ import { withViewLoading, renderEmptyState } from '../utils/viewHelper';
  */
 export class ServiceView {
     private static KEY_CURRENT_SEMESTER = "ynufe_current_semester_id";
+    private static activeQuerySeq = 0;
 
     /**
      * 拉取并渲染选课中心活动。
@@ -107,6 +108,7 @@ export class ServiceView {
      */
     static async handleClassroomQuery(e: Event): Promise<void> {
         e.preventDefault();
+        const currentSeq = ++this.activeQuerySeq;
         const xq = (document.getElementById("query-xq") as HTMLSelectElement | null)?.value || "1";
         const jslx = (document.getElementById("query-jslx") as HTMLSelectElement | null)?.value || "";
         const zc = (document.getElementById("query-zc") as HTMLSelectElement | null)?.value || "1";
@@ -143,6 +145,11 @@ export class ServiceView {
                 jc2: jcEnd,
                 kbjcmsid: AppConfig.CLASSROOM_QUERY_KBJCMSID
             });
+
+            if (currentSeq !== this.activeQuerySeq) {
+                console.warn(`[ServiceView] 丢弃已过期的慢空教室查询响应 (seq ${currentSeq} vs latest ${this.activeQuerySeq})`);
+                return;
+            }
 
             const rooms = ServiceParser.parseClassrooms(responseText);
             if (countDom) countDom.innerText = `共${rooms.length}间`;
