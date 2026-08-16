@@ -68,7 +68,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         showLoading(false);
     }
 
-    // 自动登录不可用/失败：弹出登录框
+    // 自动登录不可用/失败：弹出登录框并自动识别填入验证码
     toggleModal("login-overlay", true);
-    LoginView.refreshCaptchaImg();
+    LoginView.prefillLoginForm();
 });

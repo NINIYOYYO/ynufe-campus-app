@@ -135,7 +135,6 @@ export class AppLifecycleManager {
                 showToast("自动续期未成功，请输入验证码完成登录", "warn");
                 LoginView.prefillLoginForm();
                 toggleModal("login-overlay", true);
-                LoginView.refreshCaptchaImg();
             }
         });
     }
