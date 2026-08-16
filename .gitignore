@@ -31,5 +31,17 @@ android/app/src/main/assets/capacitor.plugins.json
 *.jks
 keystore.properties
 
+# 临时测试、多代理审计与本地临时文件
+.agents/
+.ruff_cache/
+tests/.*_tmp/
+tests/.*_build/
+tests/adversarial*.mjs
+tests/challenger*.mjs
+ORIGINAL_REQUEST.md
+PROJECT.md
+TEST_INFRA.md
+TEST_READY.md
+
 .DS_Store
 Thumbs.db

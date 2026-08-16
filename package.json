@@ -2,6 +2,12 @@
   "name": "ynufe-campus-app",
   "version": "1.1.0",
   "description": "YNufe Campus App Enterprise Edition",
+  "author": "NINIYOYYO",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NINIYOYYO/ynufe-campus-app.git"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
