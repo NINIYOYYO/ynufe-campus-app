@@ -20,18 +20,40 @@ import { AppConfig } from '../config';
  */
 export class SessionCookieManager {
     private static KEY_JSESSIONID = "ynufe_saved_jsessionid";
+    private static KEY_JSXSD = "ynufe_saved_jsxsd";
 
     /**
-     * 捕获并保存当前页面与原生 WebView 容器中的 JSESSIONID 会话凭据。
+     * 获取本地持久化保存的 JSESSIONID。
+     *
+     * Returns:
+     *     string: 本地保存的 JSESSIONID 字符串。
+     */
+    static getSavedJsessionId(): string {
+        return localStorage.getItem(this.KEY_JSESSIONID) || "";
+    }
+
+    /**
+     * 获取本地持久化保存的 jsxsd 作用域标记。
+     *
+     * Returns:
+     *     string: 本地保存的 jsxsd 字符串。
+     */
+    static getSavedJsxsd(): string {
+        return localStorage.getItem(this.KEY_JSXSD) || "";
+    }
+
+    /**
+     * 捕获并保存当前页面与原生 WebView 容器中的 JSESSIONID 与 jsxsd 会话凭据。
      *
      * Args:
-     *     onlyIfVerified (boolean): 是否仅在确认已登录状态下覆盖保存。
+     *     force (boolean): 是否强制覆盖已有凭据（在刷新验证码或登录成功时传入 true）。
      *
      * Returns:
      *     Promise<string>: 捕获到的有效 JSESSIONID 字符串；若未能获取则返回空串。
      */
-    static async captureAndPersist(onlyIfVerified: boolean = false): Promise<string> {
+    static async captureAndPersist(force: boolean = false): Promise<string> {
         let jsessionid = "";
+        let jsxsd = "";
         const cap = window.Capacitor;
         const targetHost = AppConfig.TARGET_HOST;
         const targetJsxsdUrl = `${targetHost}/jsxsd`;
@@ -49,9 +71,13 @@ export class SessionCookieManager {
                     res = await cap.Plugins.NativeCookie.getCookie({ url: targetHost });
                 }
                 if (res && res.cookie) {
-                    const match = res.cookie.match(/JSESSIONID=([^;]+)/i);
-                    if (match && match[1]) {
-                        jsessionid = match[1].trim();
+                    const matchJsession = res.cookie.match(/JSESSIONID=([^;]+)/i);
+                    const matchJsxsd = res.cookie.match(/jsxsd=([^;]+)/i);
+                    if (matchJsession && matchJsession[1]) {
+                        jsessionid = matchJsession[1].trim();
+                    }
+                    if (matchJsxsd && matchJsxsd[1]) {
+                        jsxsd = matchJsxsd[1].trim();
                     }
                 }
             } catch (e) {
@@ -59,25 +85,37 @@ export class SessionCookieManager {
             }
         }
 
-        // 2. 尝试从 document.cookie 中解析 JSESSIONID
-        if (!jsessionid && typeof document !== "undefined" && document.cookie) {
-            const match = document.cookie.match(/JSESSIONID=([^;]+)/i);
-            if (match && match[1]) {
-                jsessionid = match[1].trim();
+        // 2. 尝试从 document.cookie 中解析
+        if (typeof document !== "undefined" && document.cookie) {
+            if (!jsessionid) {
+                const matchJsession = document.cookie.match(/JSESSIONID=([^;]+)/i);
+                if (matchJsession && matchJsession[1]) {
+                    jsessionid = matchJsession[1].trim();
+                }
+            }
+            if (!jsxsd) {
+                const matchJsxsd = document.cookie.match(/jsxsd=([^;]+)/i);
+                if (matchJsxsd && matchJsxsd[1]) {
+                    jsxsd = matchJsxsd[1].trim();
+                }
             }
         }
 
         // 3. 在 Capacitor 原生容器中从 CapacitorCookies 插件按全路径读取
-        if (!jsessionid && cap?.Plugins?.CapacitorCookies?.getCookies) {
+        if ((!jsessionid || !jsxsd) && cap?.Plugins?.CapacitorCookies?.getCookies) {
             try {
                 let res = await cap.Plugins.CapacitorCookies.getCookies({ url: targetJsxsdUrl });
                 if (!res || Object.keys(res).length === 0) {
                     res = await cap.Plugins.CapacitorCookies.getCookies({ url: targetHost });
                 }
                 if (res) {
-                    const key = Object.keys(res).find(k => k.toUpperCase() === "JSESSIONID");
-                    if (key && res[key]) {
-                        jsessionid = res[key];
+                    const keyJsession = Object.keys(res).find(k => k.toUpperCase() === "JSESSIONID");
+                    if (!jsessionid && keyJsession && res[keyJsession]) {
+                        jsessionid = res[keyJsession];
+                    }
+                    const keyJsxsd = Object.keys(res).find(k => k.toLowerCase() === "jsxsd");
+                    if (!jsxsd && keyJsxsd && res[keyJsxsd]) {
+                        jsxsd = res[keyJsxsd];
                     }
                 }
             } catch (e) {
@@ -87,25 +125,26 @@ export class SessionCookieManager {
 
         if (jsessionid) {
             const currentSaved = this.getSavedJsessionId();
-            if (onlyIfVerified || !currentSaved) {
-                this.saveJsessionId(jsessionid);
+            if (force || !currentSaved) {
+                this.saveJsessionId(jsessionid, jsxsd || undefined);
             }
         }
         return jsessionid;
     }
 
     /**
-     * 将 JSESSIONID 写入 localStorage，并赋予 2038 远期过期时间重新写回 WebView 并触发磁盘刷盘。
+     * 将 JSESSIONID 与 jsxsd 写入 localStorage，并赋予 2038 远期过期时间重新写回 WebView 并触发磁盘刷盘。
      *
      * Args:
      *     jsessionid (string): 教务网分配的会话 ID。
-     *
-     * Returns:
-     *     void
+     *     jsxsd (string, optional): 教务网分配的子路径标记。
      */
-    static saveJsessionId(jsessionid: string): void {
+    static saveJsessionId(jsessionid: string, jsxsd?: string): void {
         if (!jsessionid) return;
         localStorage.setItem(this.KEY_JSESSIONID, jsessionid);
+        if (jsxsd) {
+            localStorage.setItem(this.KEY_JSXSD, jsxsd);
+        }
 
         const farFuture = "Fri, 31 Dec 2038 23:59:59 GMT";
         const isoFarFuture = "2038-01-01T00:00:00.000Z";
@@ -118,6 +157,10 @@ export class SessionCookieManager {
         if (typeof document !== "undefined") {
             document.cookie = `JSESSIONID=${jsessionid}; expires=${farFuture}; path=/; SameSite=Lax`;
             document.cookie = `JSESSIONID=${jsessionid}; expires=${farFuture}; path=/jsxsd; SameSite=Lax`;
+            if (jsxsd) {
+                document.cookie = `jsxsd=${jsxsd}; expires=${farFuture}; path=/; SameSite=Lax`;
+                document.cookie = `jsxsd=${jsxsd}; expires=${farFuture}; path=/jsxsd; SameSite=Lax`;
+            }
         }
 
         const cap = window.Capacitor;
@@ -131,6 +174,16 @@ export class SessionCookieManager {
                 url: targetJsxsdUrl,
                 cookie: `JSESSIONID=${jsessionid}; Expires=${farFuture}; Path=/jsxsd; SameSite=Lax`
             }).catch(() => {});
+            if (jsxsd) {
+                cap.Plugins.NativeCookie.setCookie({
+                    url: targetHost,
+                    cookie: `jsxsd=${jsxsd}; Expires=${farFuture}; Path=/; SameSite=Lax`
+                }).catch(() => {});
+                cap.Plugins.NativeCookie.setCookie({
+                    url: targetJsxsdUrl,
+                    cookie: `jsxsd=${jsxsd}; Expires=${farFuture}; Path=/jsxsd; SameSite=Lax`
+                }).catch(() => {});
+            }
             if (localOrigin) {
                 cap.Plugins.NativeCookie.setCookie({
                     url: localOrigin,
@@ -162,19 +215,19 @@ export class SessionCookieManager {
                 })
             ];
 
-            if (localOrigin) {
+            if (jsxsd) {
                 setPromises.push(
                     cap.Plugins.CapacitorCookies.setCookie({
-                        url: localOrigin,
-                        key: "JSESSIONID",
-                        value: jsessionid,
+                        url: targetHost,
+                        key: "jsxsd",
+                        value: jsxsd,
                         expires: isoFarFuture,
                         path: "/"
                     }),
                     cap.Plugins.CapacitorCookies.setCookie({
-                        url: localJsxsdUrl,
-                        key: "JSESSIONID",
-                        value: jsessionid,
+                        url: targetJsxsdUrl,
+                        key: "jsxsd",
+                        value: jsxsd,
                         expires: isoFarFuture,
                         path: "/jsxsd"
                     })
@@ -190,23 +243,7 @@ export class SessionCookieManager {
     }
 
     /**
-     * 获取本地持久化保存的 JSESSIONID。
-     *
-     * Args:
-     *     None
-     *
-     * Returns:
-     *     string: 本地保存的 JSESSIONID 字符串。
-     */
-    static getSavedJsessionId(): string {
-        return localStorage.getItem(this.KEY_JSESSIONID) || "";
-    }
-
-    /**
-     * 恢复本地持久化的 JSESSIONID 到当前 Web 环境与原生 WebView 中，并刷入磁盘。
-     *
-     * Args:
-     *     None
+     * 恢复本地持久化的 JSESSIONID 与 jsxsd 到当前 Web 环境与原生 WebView 中，并刷入磁盘。
      *
      * Returns:
      *     Promise<boolean>: 是否成功恢复了有效的 JSESSIONID。
@@ -216,6 +253,7 @@ export class SessionCookieManager {
         if (!jsessionid) {
             return false;
         }
+        const jsxsd = this.getSavedJsxsd();
 
         const farFuture = "Fri, 31 Dec 2038 23:59:59 GMT";
         const isoFarFuture = "2038-01-01T00:00:00.000Z";
@@ -228,6 +266,10 @@ export class SessionCookieManager {
         if (typeof document !== "undefined") {
             document.cookie = `JSESSIONID=${jsessionid}; expires=${farFuture}; path=/; SameSite=Lax`;
             document.cookie = `JSESSIONID=${jsessionid}; expires=${farFuture}; path=/jsxsd; SameSite=Lax`;
+            if (jsxsd) {
+                document.cookie = `jsxsd=${jsxsd}; expires=${farFuture}; path=/; SameSite=Lax`;
+                document.cookie = `jsxsd=${jsxsd}; expires=${farFuture}; path=/jsxsd; SameSite=Lax`;
+            }
         }
 
         const cap = window.Capacitor;
@@ -242,6 +284,16 @@ export class SessionCookieManager {
                     url: targetJsxsdUrl,
                     cookie: `JSESSIONID=${jsessionid}; Expires=${farFuture}; Path=/jsxsd; SameSite=Lax`
                 });
+                if (jsxsd) {
+                    await cap.Plugins.NativeCookie.setCookie({
+                        url: targetHost,
+                        cookie: `jsxsd=${jsxsd}; Expires=${farFuture}; Path=/; SameSite=Lax`
+                    });
+                    await cap.Plugins.NativeCookie.setCookie({
+                        url: targetJsxsdUrl,
+                        cookie: `jsxsd=${jsxsd}; Expires=${farFuture}; Path=/jsxsd; SameSite=Lax`
+                    });
+                }
                 if (localOrigin) {
                     await cap.Plugins.NativeCookie.setCookie({
                         url: localOrigin,
@@ -274,6 +326,22 @@ export class SessionCookieManager {
                     expires: isoFarFuture,
                     path: "/jsxsd"
                 });
+                if (jsxsd) {
+                    await cap.Plugins.CapacitorCookies.setCookie({
+                        url: targetHost,
+                        key: "jsxsd",
+                        value: jsxsd,
+                        expires: isoFarFuture,
+                        path: "/"
+                    });
+                    await cap.Plugins.CapacitorCookies.setCookie({
+                        url: targetJsxsdUrl,
+                        key: "jsxsd",
+                        value: jsxsd,
+                        expires: isoFarFuture,
+                        path: "/jsxsd"
+                    });
+                }
                 if (localOrigin) {
                     await cap.Plugins.CapacitorCookies.setCookie({
                         url: localOrigin,
@@ -302,36 +370,38 @@ export class SessionCookieManager {
     }
 
     /**
-     * 生成供 fetch 请求直接携带的 HTTP Cookie 请求头。
-     *
-     * Args:
-     *     None
+     * 生成供 HTTP 请求直接携带的 Cookie 请求头。
      *
      * Returns:
      *     Record<string, string>: 包含 Cookie 字段的请求头对象。
      */
     static getCookieHeader(): Record<string, string> {
         const jsessionid = this.getSavedJsessionId();
+        const jsxsd = this.getSavedJsxsd();
+        const cookies: string[] = [];
         if (jsessionid) {
-            return { "Cookie": `JSESSIONID=${jsessionid}` };
+            cookies.push(`JSESSIONID=${jsessionid}`);
+        }
+        if (jsxsd) {
+            cookies.push(`jsxsd=${jsxsd}`);
+        }
+        if (cookies.length > 0) {
+            return { "Cookie": cookies.join("; ") };
         }
         return {};
     }
 
     /**
-     * 清理保存的 JSESSIONID（退出登录时调用）。
-     *
-     * Args:
-     *     None
-     *
-     * Returns:
-     *     void
+     * 清理保存的 JSESSIONID 与 jsxsd（退出登录时调用）。
      */
     static clearCookies(): void {
         localStorage.removeItem(this.KEY_JSESSIONID);
+        localStorage.removeItem(this.KEY_JSXSD);
         if (typeof document !== "undefined") {
             document.cookie = "JSESSIONID=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
             document.cookie = "JSESSIONID=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/jsxsd";
+            document.cookie = "jsxsd=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+            document.cookie = "jsxsd=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/jsxsd";
         }
         const cap = window.Capacitor;
         const targetHost = AppConfig.TARGET_HOST;
@@ -345,6 +415,14 @@ export class SessionCookieManager {
             cap.Plugins.NativeCookie.setCookie({
                 url: targetJsxsdUrl,
                 cookie: "JSESSIONID=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/jsxsd"
+            }).catch(() => {});
+            cap.Plugins.NativeCookie.setCookie({
+                url: targetHost,
+                cookie: "jsxsd=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/"
+            }).catch(() => {});
+            cap.Plugins.NativeCookie.setCookie({
+                url: targetJsxsdUrl,
+                cookie: "jsxsd=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/jsxsd"
             }).catch(() => {});
         }
         if (cap?.Plugins?.CapacitorCookies?.clearCookies) {

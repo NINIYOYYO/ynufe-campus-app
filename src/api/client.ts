@@ -49,22 +49,32 @@ export class YnufeClient {
     }
 
     /**
-     * 从 HTTP 响应头中直接提取 Set-Cookie / JSESSIONID 并存入本地。
+     * 从 HTTP 响应头或原生响应对象中直接提取 Set-Cookie (JSESSIONID / jsxsd) 并存入本地。
      */
-    private static extractAndSaveCookieFromHeaders(resp: Response): void {
+    private static extractAndSaveCookieFromHeaders(respOrHeaders: Response | Record<string, string>): void {
         try {
-            let setCookie = resp.headers.get("Set-Cookie") || resp.headers.get("set-cookie");
-            if (!setCookie && typeof resp.headers.forEach === "function") {
-                resp.headers.forEach((v, k) => {
-                    if (k.toLowerCase() === "set-cookie") {
-                        setCookie = v;
-                    }
-                });
+            let setCookie = "";
+            if (respOrHeaders instanceof Response) {
+                setCookie = respOrHeaders.headers.get("Set-Cookie") || respOrHeaders.headers.get("set-cookie") || "";
+                if (!setCookie && typeof respOrHeaders.headers.forEach === "function") {
+                    respOrHeaders.headers.forEach((v, k) => {
+                        if (k.toLowerCase() === "set-cookie") {
+                            setCookie = v;
+                        }
+                    });
+                }
+            } else if (respOrHeaders && typeof respOrHeaders === "object") {
+                setCookie = respOrHeaders["Set-Cookie"] || respOrHeaders["set-cookie"] || "";
             }
+
             if (setCookie) {
-                const match = setCookie.match(/JSESSIONID=([^;]+)/i);
-                if (match && match[1]) {
-                    SessionCookieManager.saveJsessionId(match[1].trim());
+                const jsessionMatch = setCookie.match(/JSESSIONID=([^;]+)/i);
+                const jsxsdMatch = setCookie.match(/jsxsd=([^;]+)/i);
+                if (jsessionMatch && jsessionMatch[1]) {
+                    SessionCookieManager.saveJsessionId(
+                        jsessionMatch[1].trim(),
+                        jsxsdMatch ? jsxsdMatch[1].trim() : undefined
+                    );
                 }
             }
         } catch (e) {
@@ -164,6 +174,31 @@ export class YnufeClient {
         await SessionCookieManager.restoreCookies();
         const cookieHeader = SessionCookieManager.getCookieHeader();
 
+        const cap = window.Capacitor;
+        const isNative = typeof cap?.isNativePlatform === "function" && cap.isNativePlatform() === true;
+
+        if (isNative && cap?.Plugins?.CapacitorHttp?.get) {
+            try {
+                const res = await cap.Plugins.CapacitorHttp.get({
+                    url,
+                    headers: {
+                        ...this.COMMON_HEADERS,
+                        ...cookieHeader
+                    }
+                });
+                if (res.headers) {
+                    this.extractAndSaveCookieFromHeaders(res.headers);
+                }
+                const text = typeof res.data === "string" ? res.data : JSON.stringify(res.data);
+                await SessionCookieManager.captureAndPersist();
+                this.checkSessionTimeout(text, endpoint);
+                return text;
+            } catch (err) {
+                if (err instanceof SessionExpiredError) throw err;
+                console.warn(`[YnufeClient] Native CapacitorHttp.get ${endpoint} failed, falling back to fetch:`, err);
+            }
+        }
+
         try {
             const resp = await this.fetchWithTimeout(url, {
                 method: "GET",
@@ -201,6 +236,33 @@ export class YnufeClient {
         const params = new URLSearchParams();
         for (const key in formDataObj) {
             params.append(key, formDataObj[key]);
+        }
+
+        const cap = window.Capacitor;
+        const isNative = typeof cap?.isNativePlatform === "function" && cap.isNativePlatform() === true;
+
+        if (isNative && cap?.Plugins?.CapacitorHttp?.post) {
+            try {
+                const res = await cap.Plugins.CapacitorHttp.post({
+                    url,
+                    headers: {
+                        ...this.COMMON_HEADERS,
+                        "Content-Type": "application/x-www-form-urlencoded",
+                        ...cookieHeader
+                    },
+                    data: params.toString()
+                });
+                if (res.headers) {
+                    this.extractAndSaveCookieFromHeaders(res.headers);
+                }
+                const text = typeof res.data === "string" ? res.data : JSON.stringify(res.data);
+                await SessionCookieManager.captureAndPersist();
+                this.checkSessionTimeout(text, endpoint);
+                return text;
+            } catch (err) {
+                if (err instanceof SessionExpiredError) throw err;
+                console.warn(`[YnufeClient] Native CapacitorHttp.post ${endpoint} failed, falling back to fetch:`, err);
+            }
         }
 
         try {
@@ -270,6 +332,43 @@ export class YnufeClient {
         await SessionCookieManager.restoreCookies();
         const cookieHeader = SessionCookieManager.getCookieHeader();
 
+        const cap = window.Capacitor;
+        const isNative = typeof cap?.isNativePlatform === "function" && cap.isNativePlatform() === true;
+
+        if (isNative && cap?.Plugins?.CapacitorHttp?.get) {
+            try {
+                const res = await cap.Plugins.CapacitorHttp.get({
+                    url,
+                    headers: {
+                        ...this.COMMON_HEADERS,
+                        "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+                        ...cookieHeader
+                    },
+                    responseType: "blob"
+                });
+
+                if (res.headers) {
+                    this.extractAndSaveCookieFromHeaders(res.headers);
+                }
+
+                const contentType = res.headers?.["Content-Type"] || res.headers?.["content-type"] || "image/jpeg";
+                if (typeof res.data === "string") {
+                    const byteChars = atob(res.data);
+                    const byteNumbers = new Array(byteChars.length);
+                    for (let i = 0; i < byteChars.length; i++) {
+                        byteNumbers[i] = byteChars.charCodeAt(i);
+                    }
+                    await SessionCookieManager.captureAndPersist(true);
+                    return new Blob([new Uint8Array(byteNumbers)], { type: contentType });
+                } else if (res.data instanceof Blob) {
+                    await SessionCookieManager.captureAndPersist(true);
+                    return res.data;
+                }
+            } catch (err) {
+                console.warn("[YnufeClient] Native CapacitorHttp.get captcha failed, falling back to fetch:", err);
+            }
+        }
+
         try {
             const resp = await this.fetchWithTimeout(url, {
                 method: "GET",
@@ -284,7 +383,7 @@ export class YnufeClient {
                 throw new Error(`Captcha request failed with status ${resp.status}`);
             }
             this.extractAndSaveCookieFromHeaders(resp);
-            await SessionCookieManager.captureAndPersist();
+            await SessionCookieManager.captureAndPersist(true);
             return await resp.blob();
         } catch (err) {
             console.error("[YnufeClient] Fetch captcha blob error:", err);

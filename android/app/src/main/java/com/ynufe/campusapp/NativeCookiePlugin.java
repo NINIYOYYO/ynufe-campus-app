@@ -25,7 +25,10 @@ public class NativeCookiePlugin extends Plugin {
                 baseUrl + "/jsxsd",
                 baseUrl + "/jsxsd/",
                 baseUrl + "/jsxsd/xk/LoginToXkLdap",
+                baseUrl + "/jsxsd/verifycode.servlet",
+                baseUrl + "/jsxsd/framework/xsMain.jsp",
                 baseUrl + "/jsxsd/framework/xsMain_new.jsp",
+                baseUrl + "/",
                 baseUrl
             };
 
@@ -56,11 +59,14 @@ public class NativeCookiePlugin extends Plugin {
             CookieManager cookieManager = CookieManager.getInstance();
             String baseUrl = "https://xjwis.ynufe.edu.cn";
 
-            // 同时将 Cookie 写入根路径与 /jsxsd 作用域，确保所有请求均能携带
+            // 同时将 Cookie 写入根路径与 /jsxsd 各子作用域，确保所有原生及 WebView 请求均能携带
             cookieManager.setCookie(baseUrl, cookieStr);
             cookieManager.setCookie(baseUrl + "/", cookieStr);
             cookieManager.setCookie(baseUrl + "/jsxsd", cookieStr);
             cookieManager.setCookie(baseUrl + "/jsxsd/", cookieStr);
+            cookieManager.setCookie(baseUrl + "/jsxsd/xk/LoginToXkLdap", cookieStr);
+            cookieManager.setCookie(baseUrl + "/jsxsd/verifycode.servlet", cookieStr);
+            cookieManager.setCookie(baseUrl + "/jsxsd/framework/xsMain.jsp", cookieStr);
             cookieManager.flush();
             call.resolve();
         } catch (Exception e) {

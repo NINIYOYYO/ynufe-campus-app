@@ -13,6 +13,12 @@ export interface CapacitorCookiesPluginType {
     flushCookies(): Promise<void>;
 }
 
+export interface CapacitorHttpPluginType {
+    get(options: { url: string; headers?: Record<string, string>; params?: Record<string, string>; responseType?: string }): Promise<{ data: any; status: number; headers: Record<string, string>; url: string }>;
+    post(options: { url: string; headers?: Record<string, string>; data?: any; params?: Record<string, string>; responseType?: string }): Promise<{ data: any; status: number; headers: Record<string, string>; url: string }>;
+    request(options: { url: string; method?: string; headers?: Record<string, string>; data?: any; params?: Record<string, string>; responseType?: string }): Promise<{ data: any; status: number; headers: Record<string, string>; url: string }>;
+}
+
 export interface CapacitorAppPluginType {
     addListener(eventName: 'backButton', listenerFunc: (info: { canGoBack?: boolean }) => void): Promise<{ remove: () => void }> | void;
     exitApp(): Promise<void> | void;
@@ -24,6 +30,7 @@ export interface CapacitorGlobal {
     Plugins?: {
         NativeCookie?: NativeCookiePluginType;
         CapacitorCookies?: CapacitorCookiesPluginType;
+        CapacitorHttp?: CapacitorHttpPluginType;
         App?: CapacitorAppPluginType;
         [pluginName: string]: any;
     };
