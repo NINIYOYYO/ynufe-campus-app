@@ -14,9 +14,9 @@ export interface CapacitorCookiesPluginType {
 }
 
 export interface CapacitorHttpPluginType {
-    get(options: { url: string; headers?: Record<string, string>; params?: Record<string, string>; responseType?: string }): Promise<{ data: any; status: number; headers: Record<string, string>; url: string }>;
-    post(options: { url: string; headers?: Record<string, string>; data?: any; params?: Record<string, string>; responseType?: string }): Promise<{ data: any; status: number; headers: Record<string, string>; url: string }>;
-    request(options: { url: string; method?: string; headers?: Record<string, string>; data?: any; params?: Record<string, string>; responseType?: string }): Promise<{ data: any; status: number; headers: Record<string, string>; url: string }>;
+    get(options: { url: string; headers?: Record<string, string>; params?: Record<string, string>; responseType?: string }): Promise<{ data: unknown; status: number; headers: Record<string, string>; url: string }>;
+    post(options: { url: string; headers?: Record<string, string>; data?: unknown; params?: Record<string, string>; responseType?: string }): Promise<{ data: unknown; status: number; headers: Record<string, string>; url: string }>;
+    request(options: { url: string; method?: string; headers?: Record<string, string>; data?: unknown; params?: Record<string, string>; responseType?: string }): Promise<{ data: unknown; status: number; headers: Record<string, string>; url: string }>;
 }
 
 export interface CapacitorAppPluginType {
@@ -32,7 +32,7 @@ export interface CapacitorGlobal {
         CapacitorCookies?: CapacitorCookiesPluginType;
         CapacitorHttp?: CapacitorHttpPluginType;
         App?: CapacitorAppPluginType;
-        [pluginName: string]: any;
+        [pluginName: string]: unknown;
     };
     [key: string]: unknown;
 }

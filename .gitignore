@@ -42,6 +42,10 @@ ORIGINAL_REQUEST.md
 PROJECT.md
 TEST_INFRA.md
 TEST_READY.md
+# Python
+__pycache__/
+*.pyc
 
 .DS_Store
 Thumbs.db
+

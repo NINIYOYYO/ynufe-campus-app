@@ -152,8 +152,8 @@ export class YnufeClient {
                 signal: controller.signal
             });
             return resp;
-        } catch (err: any) {
-            if (err?.name === "AbortError") {
+        } catch (err: unknown) {
+            if (err instanceof Error && err.name === "AbortError") {
                 throw new Error(`请求教务系统超时 (${Math.round(timeoutMs / 1000)}秒)，服务器可能负载过高或网络连接中断`);
             }
             throw err;
