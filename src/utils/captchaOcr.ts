@@ -326,9 +326,11 @@ function classifyBlock(mat: number[][]): [string, number] {
     }
   }
 
-  // 强智验证码字符集规范化：垂直竖线统一定义为数字 '1'
+  // 强智验证码字符集规范化：垂直竖线统一定义为数字 '1'，拱形笔画统一定义为字母 'n'
   if (bestChar === 'l') {
     bestChar = '1';
+  } else if (bestChar === 'h') {
+    bestChar = 'n';
   }
 
   return [bestChar, bestScore];
