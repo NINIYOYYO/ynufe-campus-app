@@ -1,3 +1,4 @@
+import os
 import ssl
 import sys
 import urllib.parse
@@ -7,7 +8,10 @@ if sys.platform.startswith('win'):
     sys.stdout.reconfigure(encoding='utf-8')
     sys.stderr.reconfigure(encoding='utf-8')
 
-COOKIE = "jsxsd=24411319; JSESSIONID=151E526E8C07F61985AE043A584ECE18"
+COOKIE = os.environ.get(
+    "YNUFE_COOKIE",
+    "JSESSIONID=0295127059F1B61F55BB9E0BC334E9F2; jsxsd=29430648; JSESSIONID=CB4A1850F6464E32B04CC16D8F3F1015"
+)
 BASE_URL = "https://xjwis.ynufe.edu.cn"
 
 

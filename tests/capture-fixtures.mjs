@@ -9,7 +9,7 @@
  *
  * 脚本会把姓名与学号替换为占位值后再落盘。会话很快过期，重跑一次即可。
  */
-import { writeFileSync, mkdirSync } from 'fs';
+import { writeFileSync, readFileSync, mkdirSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -29,10 +29,18 @@ const TERM = process.env.YNUFE_TERM || '2025-2026-2';
 const KBJCMSID = process.env.YNUFE_KBJCMSID || 'C8B3C60AE20444B499A15ABFA3ECFF9D';
 
 /** 脱敏规则：真实姓名与学号 → 占位值。按需追加。 */
-const REDACTIONS = [
+const rawRedactions = [
     [process.env.YNUFE_REAL_NAME, '张三'],
     [process.env.YNUFE_REAL_ID, '200000000000'],
-].filter(([from]) => !!from);
+    ['张三', '张三'],
+    ['200000000000', '200000000000'],
+];
+const seenKeys = new Set();
+const REDACTIONS = rawRedactions.filter(([from]) => {
+    if (!from || seenKeys.has(from)) return false;
+    seenKeys.add(from);
+    return true;
+});
 
 /**
  * 请求单个教务网页面。
@@ -102,10 +110,11 @@ for (const [name, endpoint, body] of TARGETS) {
     }
 }
 
-// 公告详情页地址带 ggid，需从公告列表里现取一条，无法写死在 TARGETS 中
+// 公告详情页地址带 ggid，优先匹配含多附件与富文本样式的典型公告（如 6BD6B96CBFF94CE6A97E2B2E5B5EEB2C），否则取首条
 try {
     const listHtml = readFileSync(join(OUT, 'announcements.html'), 'utf-8');
-    const m = listHtml.match(/openWindow\(\s*['"]([^'"]*ggly_show[^'"]*)['"]/);
+    const specificMatch = listHtml.match(/openWindow\(\s*['"]([^'"]*ggly_show[^'"]*6BD6B96CBFF94CE6A97E2B2E5B5EEB2C[^'"]*)['"]/);
+    const m = specificMatch || listHtml.match(/openWindow\(\s*['"]([^'"]*ggly_show[^'"]*)['"]/);
     if (m) {
         let html = await fetchPage(m[1]);
         for (const [from, to] of REDACTIONS) html = html.split(from).join(to);
