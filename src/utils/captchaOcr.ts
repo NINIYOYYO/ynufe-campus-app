@@ -80,9 +80,10 @@ function getTemplates(): Record<string, number[][]> {
 function preprocessPixels(rgbaData: Uint8ClampedArray | Uint8Array, width: number, height: number): number[][] {
   const grid: number[][] = Array.from({ length: height }, () => new Array(width).fill(0));
 
-  // 1. 灰度阈值二值化（忽略最外侧 2 像素边框）
+  // 1. 灰度阈值二值化（忽略最外侧 2 像素边框与上下 y<10, y>31 纯噪点区）
   for (let y = 2; y < height - 2; y++) {
     for (let x = 2; x < width - 2; x++) {
+      if (y < 10 || y > 31) continue;
       const idx = (y * width + x) * 4;
       const gray = 0.299 * rgbaData[idx] + 0.587 * rgbaData[idx + 1] + 0.114 * rgbaData[idx + 2];
       if (gray < 170) {
@@ -144,7 +145,7 @@ function extractTypographyBlocks(grid: number[][], width: number, height: number
     const searchSx = Math.max(0, slotSx - 3);
     const searchEx = Math.min(width - 1, slotEx + 3);
 
-    // 寻找搜索区间内的所有连续有效列簇 (Column clusters)
+    // 寻找搜索区间内的所有有效列簇
     const clusters: [number, number][] = [];
     let inCluster = false;
     let curSx = 0;
@@ -154,10 +155,10 @@ function extractTypographyBlocks(grid: number[][], width: number, height: number
       for (let y = 0; y < height; y++) {
         if (grid[y][x] === 1) colCount++;
       }
-      if (colCount >= 2 && !inCluster) {
+      if (colCount >= 1 && !inCluster) {
         inCluster = true;
         curSx = x;
-      } else if (colCount < 2 && inCluster) {
+      } else if (colCount < 1 && inCluster) {
         inCluster = false;
         clusters.push([curSx, x - 1]);
       }
@@ -169,11 +170,26 @@ function extractTypographyBlocks(grid: number[][], width: number, height: number
     if (clusters.length === 0) {
       intervals.push([slotSx, slotEx]);
     } else {
+      // 合并微小间隙 (<=2 像素细微断笔)
+      const merged: [number, number][] = [];
+      let [curCsx, curCex] = clusters[0];
+      for (let cIdx = 1; cIdx < clusters.length; cIdx++) {
+        const [csx, cex] = clusters[cIdx];
+        if (csx - curCex <= 2) {
+          curCex = cex;
+        } else {
+          merged.push([curCsx, curCex]);
+          curCsx = csx;
+          curCex = cex;
+        }
+      }
+      merged.push([curCsx, curCex]);
+
       const slotCenter = (slotSx + slotEx) / 2.0;
-      let bestCluster: [number, number] = clusters[0];
+      let bestCluster: [number, number] = merged[0];
       let bestScore = -9999;
 
-      for (const [csx, cex] of clusters) {
+      for (const [csx, cex] of merged) {
         const cCenter = (csx + cex) / 2.0;
         let cMass = 0;
         for (let cx = csx; cx <= cex; cx++) {
@@ -182,7 +198,7 @@ function extractTypographyBlocks(grid: number[][], width: number, height: number
           }
         }
         const cDist = Math.abs(cCenter - slotCenter);
-        const score = cMass - cDist * 8;
+        const score = cMass - cDist * 6;
         if (score > bestScore) {
           bestScore = score;
           bestCluster = [csx, cex];
