@@ -3,9 +3,9 @@
  * 
  * 核心架构与特性：
  * 1. 模块化字模解耦：字模知识库与 OCR 算法引擎分离，保持代码高可读性与精简度；
- * 2. 槽位引导自适应切分（Slot-guided adaptive slicing）：彻底解决窄字符（i, 1, l, j）粘连问题；
+ * 2. 槽位列簇智能切分 (Smart Cluster Slicing)：自适应聚类列质量，彻底根除跨字符噪线牵引与切分漂移；
  * 3. 14x36 排版基线画布：保留字母升部、降部与 x-height 物理拓扑；
- * 4. 连通分量分析 (CCA)：自适应过滤浮动噪线与离散噪点；
+ * 4. 连通分量分析 (CCA)：精准保留字符主干与 i/j 居中圆点，剔除边缘粘连残差；
  * 5. 零外部依赖：单张识别耗时 < 0.8ms，内存占用极低。
  */
 
@@ -18,7 +18,7 @@ export interface OcrResult {
   confidence: number;
   /** 每个字符的单字置信度数组 */
   charConfidences: number[];
-  /** 是否达到高可靠置信度阈值 (单字均 >= 0.65 且均值 >= 0.80) */
+  /** 是否达到高可靠置信度阈值 (单字均 >= 0.55 且均值 >= 0.70) */
   isReliable: boolean;
 }
 
@@ -70,11 +70,11 @@ function getTemplates(): Record<string, number[][]> {
 }
 
 /**
- * 对图像像素进行灰度二值化与 1-像素噪线剥离。
+ * 对图像像素进行灰度二值化与 3 轮 1-像素噪线剥离。
  *
  * @param rgbaData 图像 RGBA 像素数组
  * @param width 图像宽度
- * @param height 图像高度
+ * @param height 高度
  * @returns 预处理后的二维二值矩阵 [y][x]
  */
 function preprocessPixels(rgbaData: Uint8ClampedArray | Uint8Array, width: number, height: number): number[][] {
@@ -91,8 +91,8 @@ function preprocessPixels(rgbaData: Uint8ClampedArray | Uint8Array, width: numbe
     }
   }
 
-  // 2. 迭代式 1-像素对角噪线与毛刺剥离 (2 轮扫描)
-  for (let round = 0; round < 2; round++) {
+  // 2. 迭代式 1-像素对角噪线与毛刺剥离 (3 轮扫描)
+  for (let round = 0; round < 3; round++) {
     const toRemove: [number, number][] = [];
     for (let y = 1; y < height - 1; y++) {
       for (let x = 1; x < width - 1; x++) {
@@ -126,7 +126,7 @@ function preprocessPixels(rgbaData: Uint8ClampedArray | Uint8Array, width: numbe
 }
 
 /**
- * 槽位引导自适应切分 4 个字符区间并映射至 14x36 画布。
+ * 槽位列簇智能切分 4 个字符区间并映射至 14x36 画布。
  *
  * @param grid 二值像素矩阵
  * @param width 宽度
@@ -144,23 +144,53 @@ function extractTypographyBlocks(grid: number[][], width: number, height: number
     const searchSx = Math.max(0, slotSx - 3);
     const searchEx = Math.min(width - 1, slotEx + 3);
 
-    let minX: number | null = null;
-    let maxX: number | null = null;
+    // 寻找搜索区间内的所有连续有效列簇 (Column clusters)
+    const clusters: [number, number][] = [];
+    let inCluster = false;
+    let curSx = 0;
 
     for (let x = searchSx; x <= searchEx; x++) {
       let colCount = 0;
       for (let y = 0; y < height; y++) {
         if (grid[y][x] === 1) colCount++;
       }
-      if (colCount > 0) {
-        if (minX === null) minX = x;
-        maxX = x;
+      if (colCount >= 2 && !inCluster) {
+        inCluster = true;
+        curSx = x;
+      } else if (colCount < 2 && inCluster) {
+        inCluster = false;
+        clusters.push([curSx, x - 1]);
       }
     }
+    if (inCluster) {
+      clusters.push([curSx, searchEx]);
+    }
 
-    if (minX === null || maxX === null) {
+    if (clusters.length === 0) {
       intervals.push([slotSx, slotEx]);
     } else {
+      const slotCenter = (slotSx + slotEx) / 2.0;
+      let bestCluster: [number, number] = clusters[0];
+      let bestScore = -9999;
+
+      for (const [csx, cex] of clusters) {
+        const cCenter = (csx + cex) / 2.0;
+        let cMass = 0;
+        for (let cx = csx; cx <= cex; cx++) {
+          for (let cy = 0; cy < height; cy++) {
+            if (grid[cy][cx] === 1) cMass++;
+          }
+        }
+        const cDist = Math.abs(cCenter - slotCenter);
+        const score = cMass - cDist * 8;
+        if (score > bestScore) {
+          bestScore = score;
+          bestCluster = [csx, cex];
+        }
+      }
+
+      let minX = bestCluster[0];
+      let maxX = bestCluster[1];
       if (maxX - minX < 5) {
         const padNeeded = 6 - (maxX - minX + 1);
         minX = Math.max(0, minX - Math.floor(padNeeded / 2));
@@ -185,7 +215,7 @@ function extractTypographyBlocks(grid: number[][], width: number, height: number
       }
     }
 
-    // 连通分量 (CCA) 剥离顶部悬浮横线与孤立噪点
+    // 连通分量 (CCA) 保留主体 + 垂直对齐圆点 (i/j)
     const visited: boolean[][] = Array.from({ length: CANVAS_HEIGHT }, () => new Array(CANVAS_WIDTH).fill(false));
     const components: [number, number][][] = [];
 
@@ -219,16 +249,21 @@ function extractTypographyBlocks(grid: number[][], width: number, height: number
     if (components.length > 1) {
       components.sort((a, b) => b.length - a.length);
       const maxComp = components[0];
+      const maxCompCenterX = maxComp.reduce((acc, p) => acc + p[1], 0) / maxComp.length;
 
       for (let i = 1; i < components.length; i++) {
         const comp = components[i];
-        if (comp !== maxComp && comp.length < 14) {
-          const minY = Math.min(...comp.map((p) => p[0]));
-          const maxY = Math.max(...comp.map((p) => p[0]));
-          if (minY < 7 && maxY < 8) {
-            for (const [py, px] of comp) {
-              norm[py][px] = 0;
-            }
+        const compCenterX = comp.reduce((acc, p) => acc + p[1], 0) / comp.length;
+        const compSize = comp.length;
+
+        // 仅保留属于 i/j 上方的居中附属圆点
+        const isDot = compSize <= 12 &&
+          Math.abs(compCenterX - maxCompCenterX) <= 3 &&
+          comp.some((p) => p[0] < 12);
+
+        if (!isDot) {
+          for (const [py, px] of comp) {
+            norm[py][px] = 0;
           }
         }
       }
@@ -276,43 +311,26 @@ function calculateSimilarity(mat: number[][], templateRows: number[]): number {
 }
 
 /**
- * 匹配分类单个 14x36 字符矩阵并施加排版拓扑约束。
+ * 匹配分类单个 14x36 字符矩阵。
  */
 function classifyBlock(mat: number[][]): [string, number] {
-  let topPixels = 0;
-  let botPixels = 0;
-
-  for (let y = 0; y < CANVAS_HEIGHT; y++) {
-    for (let x = 0; x < CANVAS_WIDTH; x++) {
-      if (mat[y][x] === 1) {
-        if (y < 8) topPixels++;
-        if (y > 26) botPixels++;
-      }
-    }
-  }
-
   let bestChar = '?';
   let bestScore = -1;
   const allTemplates = getTemplates();
 
   for (const [ch, tList] of Object.entries(allTemplates)) {
     for (const tRows of tList) {
-      let s = calculateSimilarity(mat, tRows);
-
-      // 物理排版几何硬约束 (升部与降部)
-      if (['h', 'b', 'd', 'k', 'l', '1', 't'].includes(ch) && botPixels > 12) {
-        s *= 0.2;
-      } else if (['g', 'j', 'p', 'q', 'y'].includes(ch) && botPixels < 5) {
-        s *= 0.2;
-      } else if (['a', 'c', 'e', 'm', 'n', 'o', 'r', 's', 'u', 'v', 'w', 'x', 'z'].includes(ch) && (topPixels > 12 || botPixels > 8)) {
-        s *= 0.2;
-      }
-
+      const s = calculateSimilarity(mat, tRows);
       if (s > bestScore) {
         bestScore = s;
         bestChar = ch;
       }
     }
+  }
+
+  // 强智验证码字符集规范化：垂直竖线统一定义为数字 '1'
+  if (bestChar === 'l') {
+    bestChar = '1';
   }
 
   return [bestChar, bestScore];
@@ -347,7 +365,7 @@ export function recognizeCaptchaRgba(
     ? charConfidences.reduce((a, b) => a + b, 0) / charConfidences.length
     : 0;
 
-  const isReliable = charConfidences.every((s) => s >= 0.65) && avgConfidence >= 0.80;
+  const isReliable = charConfidences.every((s) => s >= 0.55) && avgConfidence >= 0.70;
 
   return {
     text,
