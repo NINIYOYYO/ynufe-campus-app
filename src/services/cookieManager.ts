@@ -32,7 +32,7 @@ export class SessionCookieManager {
      */
     static async captureAndPersist(onlyIfVerified: boolean = false): Promise<string> {
         let jsessionid = "";
-        const cap = (window as any).Capacitor;
+        const cap = window.Capacitor;
         const targetHost = AppConfig.TARGET_HOST;
         const targetJsxsdUrl = `${targetHost}/jsxsd`;
         const localOrigin = typeof window !== "undefined" ? window.location.origin : "";
@@ -120,7 +120,7 @@ export class SessionCookieManager {
             document.cookie = `JSESSIONID=${jsessionid}; expires=${farFuture}; path=/jsxsd; SameSite=Lax`;
         }
 
-        const cap = (window as any).Capacitor;
+        const cap = window.Capacitor;
         // 2. 写回 NativeCookie 原生插件（覆盖域名与 /jsxsd 路径）
         if (cap?.Plugins?.NativeCookie?.setCookie) {
             cap.Plugins.NativeCookie.setCookie({
@@ -230,7 +230,7 @@ export class SessionCookieManager {
             document.cookie = `JSESSIONID=${jsessionid}; expires=${farFuture}; path=/jsxsd; SameSite=Lax`;
         }
 
-        const cap = (window as any).Capacitor;
+        const cap = window.Capacitor;
         // 2. 恢复到 NativeCookie 插件
         if (cap?.Plugins?.NativeCookie?.setCookie) {
             try {
@@ -333,7 +333,7 @@ export class SessionCookieManager {
             document.cookie = "JSESSIONID=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
             document.cookie = "JSESSIONID=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/jsxsd";
         }
-        const cap = (window as any).Capacitor;
+        const cap = window.Capacitor;
         const targetHost = AppConfig.TARGET_HOST;
         const targetJsxsdUrl = `${targetHost}/jsxsd`;
 

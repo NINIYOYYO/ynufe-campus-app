@@ -41,7 +41,7 @@ export function resetRenderFingerprints(): void {
 export function playEntrance(container: HTMLElement | null): void {
     if (!container) return;
 
-    (container as any)._staggerCleanup?.();
+    container._staggerCleanup?.();
     void container.offsetWidth;
     container.classList.add("stagger-in");
 
@@ -50,13 +50,13 @@ export function playEntrance(container: HTMLElement | null): void {
         if (timer !== undefined) window.clearTimeout(timer);
         container.removeEventListener("animationend", onEnd);
         container.classList.remove("stagger-in");
-        delete (container as any)._staggerCleanup;
+        delete container._staggerCleanup;
     };
     const onEnd = () => {
         if (timer !== undefined) window.clearTimeout(timer);
         timer = window.setTimeout(cleanup, 150);
     };
-    (container as any)._staggerCleanup = cleanup;
+    container._staggerCleanup = cleanup;
     container.addEventListener("animationend", onEnd);
 }
 

@@ -1,5 +1,6 @@
 import { AppConfig } from '../config';
 import { CourseItem, TimetableData } from '../types/timetable';
+import { ExamItem } from '../types/exam';
 
 export interface PlannedNotice {
     fireAt: Date;
@@ -130,14 +131,14 @@ export class ReminderScheduler {
      * 计算考试提醒（考前一天 21:00 + 考前 1 小时）。
      *
      * Args:
-     *     exams (Array): 考试项列表。
+     *     exams (ExamItem[]): 考试项列表。
      *     options (Object): 可选 now 与 maxScheduled 参数。
      *
      * Returns:
      *     PlannedExamNotice[]: 计算好的考试提醒计划列表。
      */
     static computeExamReminders(
-        exams: any[],
+        exams: ExamItem[],
         options?: { now?: Date; maxScheduled?: number }
     ): PlannedExamNotice[] {
         if (!Array.isArray(exams) || exams.length === 0) return [];

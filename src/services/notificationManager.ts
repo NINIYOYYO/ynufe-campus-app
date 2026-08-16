@@ -1,6 +1,7 @@
 import { registerPlugin } from '@capacitor/core';
 import { ReminderScheduler } from './reminderScheduler';
 import { TimetableData } from '../types/timetable';
+import { ExamItem } from '../types/exam';
 
 /* ---- @capacitor/local-notifications 的最小类型与运行时绑定 ----
  * 通过 registerPlugin 直接绑定原生插件（原生实现由 package.json 中的
@@ -45,9 +46,11 @@ export class NotificationManager {
     private static DAYS_AHEAD = 14;
     /** 单次最多排程条数（Android 单应用 alarm 数量有限制，留足余量） */
     private static MAX_SCHEDULED = 60;
+    /** Web 降级环境活跃定时器句柄集合 */
+    private static activeWebTimers: number[] = [];
 
     private static get isNative(): boolean {
-        const cap = (window as any).Capacitor;
+        const cap = window.Capacitor;
         return !!cap && typeof cap.isNativePlatform === "function" && cap.isNativePlatform();
     }
 
@@ -95,9 +98,11 @@ export class NotificationManager {
     }
 
     /**
-     * 取消本 App 之前排程的全部课程提醒。
+     * 取消本 App 之前排程的全部课程与考试提醒（含 Web 降级定时器）。
      */
     static async cancelAll(): Promise<void> {
+        this.activeWebTimers.forEach(id => clearTimeout(id));
+        this.activeWebTimers = [];
         if (!this.isNative) return;
         try {
             const pending = await LocalNotifications.getPending();
@@ -153,12 +158,12 @@ export class NotificationManager {
      * 与上课提醒使用独立 ID 段位，互不覆盖；仅在提醒总开关开启时生效。
      *
      * Args:
-     *     exams (Array): 至少包含 name/courseName、date/time、room/location、seatNo/seat 的考试项。
+     *     exams (ExamItem[]): 至少包含 name/courseName、date/time、room/location、seatNo/seat 的考试项。
      *
      * Returns:
      *     Promise<number>: 实际排程的考试提醒条数。
      */
-    static async rescheduleExamReminders(exams: any[]): Promise<number> {
+    static async rescheduleExamReminders(exams: ExamItem[]): Promise<number> {
         if (!this.isEnabled() || !this.isNative) return 0;
 
         // 先清掉旧的考试提醒
@@ -243,15 +248,18 @@ export class NotificationManager {
         }
 
         // 浏览器降级：仅在页面存活期间用 setTimeout + Web Notification 提醒最近几条
+        this.activeWebTimers.forEach(id => clearTimeout(id));
+        this.activeWebTimers = [];
         let webCount = 0;
         for (const p of capped.slice(0, 10)) {
             const delay = p.fireAt.getTime() - Date.now();
             if (delay > 0 && delay < 12 * 3600000) {
-                setTimeout(() => {
+                const timerId = window.setTimeout(() => {
                     if ("Notification" in window && Notification.permission === "granted") {
                         new Notification(p.title, { body: p.body });
                     }
                 }, delay);
+                this.activeWebTimers.push(timerId);
                 webCount++;
             }
         }

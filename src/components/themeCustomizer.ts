@@ -129,8 +129,8 @@ export class ThemeCustomizer {
      * 使用全局事件委托绑定控制面板内的颜色按钮与自由 Color Picker 事件。
      */
     static bindEvents(): void {
-        if ((window as any)._themeCustomizerBound) return;
-        (window as any)._themeCustomizerBound = true;
+        if (window._themeCustomizerBound) return;
+        window._themeCustomizerBound = true;
 
         // 全局事件委托
         document.body.addEventListener("click", (e: MouseEvent) => {

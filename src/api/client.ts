@@ -25,7 +25,7 @@ export class YnufeClient {
      *     Capacitor 原生手机应用下返回教务系统域名。
      */
     private static get BASE_URL(): string {
-        const cap = (window as any).Capacitor;
+        const cap = window.Capacitor;
         const isNative = typeof cap?.isNativePlatform === "function" && cap.isNativePlatform() === true;
         // 仅当端口为 Vite 开发端口 8000 时走本地开发代理；在手机原生离线版（localhost）下精准返回教务网域名
         const isViteDev = typeof window !== "undefined" && (window.location.port === "8000" || (!isNative && window.location.hostname !== "xjwis.ynufe.edu.cn"));
@@ -54,13 +54,12 @@ export class YnufeClient {
     private static extractAndSaveCookieFromHeaders(resp: Response): void {
         try {
             let setCookie = resp.headers.get("Set-Cookie") || resp.headers.get("set-cookie");
-            if (!setCookie && (resp.headers as any).entries) {
-                for (const [k, v] of (resp.headers as any).entries()) {
+            if (!setCookie && typeof resp.headers.forEach === "function") {
+                resp.headers.forEach((v, k) => {
                     if (k.toLowerCase() === "set-cookie") {
                         setCookie = v;
-                        break;
                     }
-                }
+                });
             }
             if (setCookie) {
                 const match = setCookie.match(/JSESSIONID=([^;]+)/i);

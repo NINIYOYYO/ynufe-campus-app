@@ -41,7 +41,7 @@ export class AppLifecycleManager {
             if (document.hidden) {
                 HeartbeatService.stop();
                 SessionCookieManager.captureAndPersist().catch(() => {});
-                const cap = (window as any).Capacitor;
+                const cap = window.Capacitor;
                 if (cap?.Plugins?.CapacitorCookies?.flushCookies) {
                     cap.Plugins.CapacitorCookies.flushCookies().catch(() => {});
                 }
@@ -52,8 +52,9 @@ export class AppLifecycleManager {
 
         window.addEventListener("ynufe-session-expired", () => this.handleSessionExpired());
 
-        window.addEventListener("ynufe-theme-preset-applied", (e: any) => {
-            const mode = e?.detail?.mode || "dark";
+        window.addEventListener("ynufe-theme-preset-applied", (e: Event) => {
+            const customEvt = e as CustomEvent<{ mode?: string }>;
+            const mode = customEvt?.detail?.mode || "dark";
             WallpaperManager.applyAdaptiveWallpaperColor(mode);
         });
 
@@ -64,7 +65,7 @@ export class AppLifecycleManager {
      * 注册 Android 物理/手势返回键监听：当有展开的抽屉或浮层时优先关闭，否则退回后台/退出。
      */
     private static initBackButtonHandler(): void {
-        const cap = (window as any).Capacitor;
+        const cap = window.Capacitor;
         if (!cap?.Plugins?.App?.addListener) return;
 
         cap.Plugins.App.addListener('backButton', () => {

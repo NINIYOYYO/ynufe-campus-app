@@ -197,8 +197,8 @@ export class CustomSelect {
         });
 
         // 监听全局点击与滚动事件，点击空白处或滚动页面时自动收起浮层
-        if (!(window as any)._customSelectGlobalClickBound) {
-            (window as any)._customSelectGlobalClickBound = true;
+        if (!window._customSelectGlobalClickBound) {
+            window._customSelectGlobalClickBound = true;
             document.addEventListener("click", () => {
                 CustomSelect.closeAll();
             });
