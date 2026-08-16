@@ -53,7 +53,7 @@ for (const p of PARSERS) {
 }
 const { ProfileParser, TimetableParser, GradeParser, ExamParser,
         AnnouncementParser, ServiceParser } = mod;
-const { ParseError } = await import(`file://${join(TMP, 'utils', 'tableUtils.mjs')}`);
+const { ParseError, buildMultiRowHeaderColumns } = await import(`file://${join(TMP, 'utils', 'tableUtils.mjs')}`);
 
 const read = n => readFileSync(join(FIXTURES, `${n}.html`), 'utf-8');
 
@@ -297,6 +297,55 @@ const fullWidthGpaHtml = '<table id="dataList"><tr><th>开课学期</th><th>课�
 const gpaRes = GradeParser.parseGrades(fullWidthGpaHtml);
 eq('全角冒号平均绩点提取准确', gpaRes.gpa, '3.85');
 eq('全角冒号总学分提取准确', gpaRes.totalCredits, '145.5');
+
+// 课表多行换行与长课程名解析测试 (PARSER-03)
+section('课表多行换行与长课程名解析测试');
+const multilineDoc = new DOMParser().parseFromString('<div></div>', 'text/html');
+const singleLineExtract = TimetableParser.extractCourseName('大学英语<br/><font title="老师">张老师</font>', multilineDoc);
+eq('单行课程名精准提取', singleLineExtract, '大学英语');
+
+const wrappedExtract = TimetableParser.extractCourseName(
+    '形式与政策（四）<br/>（当代世界经济与政治）<br/><font title="老师">李教授</font>',
+    multilineDoc
+);
+eq('换行副标题课程名完整提取', wrappedExtract, '形式与政策（四）（当代世界经济与政治）');
+
+const styledExtract = TimetableParser.extractCourseName(
+    '<font color="red">[调课]</font>大学物理实验<br/><font title="老师">王老师</font>',
+    multilineDoc
+);
+eq('内联修饰标签课程名完整提取', styledExtract, '[调课]大学物理实验');
+
+const englishExtract = TimetableParser.extractCourseName(
+    'Advanced<br/>Mathematics<br/><font title="老师">Smith</font>',
+    multilineDoc
+);
+eq('英文换行课程名空格拼接提取', englishExtract, 'Advanced Mathematics');
+
+const multilineBlockHtml = '<table id="kbtable"><tr><th>小节</th><th>星期一</th></tr><tr><th>第1节</th><td><div id="1_1_1" class="kbcontent">毛泽东思想和中国特色社会主义理论体系概论<br/>(含“习近平新时代中国特色社会主义思想概论”)<br/><font title="老师">李教授</font><br/><font title="教室">汇新502</font><br/><font title="周次(节次)">1-16(周)[01-02节]</font></div></td></tr></table>';
+const parsedTt = TimetableParser.parseTimetable(multilineBlockHtml);
+eq('完整课表解析换行长课程名', parsedTt.courses[0].name, '毛泽东思想和中国特色社会主义理论体系概论(含“习近平新时代中国特色社会主义思想概论”)');
+eq('换行长课程名后教师提取准确', parsedTt.courses[0].teacher, '李教授');
+eq('换行长课程名后教室提取准确', parsedTt.courses[0].room, '汇新502');
+
+// 等级考试双行复合表头与动态列重排测试 (PARSER-04)
+section('等级考试双行复合表头与动态列重排测试');
+const sampleHeaderTable = new DOMParser().parseFromString(
+    '<table id="dataList"><tr><th rowspan="2">序号</th><th rowspan="2">课程</th><th colspan="3">分数类</th><th colspan="3">等级类</th><th rowspan="2">时间</th></tr><tr><th>笔试</th><th>机试</th><th>总分</th><th>笔试</th><th>机试</th><th>总评</th></tr></table>',
+    'text/html'
+).querySelector('table');
+const generatedHeaders = buildMultiRowHeaderColumns(sampleHeaderTable);
+eq('2D多行表头网格展平列数', generatedHeaders.length, 9);
+eq('2D多行表头第0列展平名称', generatedHeaders[0], '序号');
+eq('2D多行表头复合子列展平名称', generatedHeaders[2], '分数类_笔试');
+eq('2D多行表头第8列展平名称', generatedHeaders[8], '时间');
+
+const reorderedLevelHtml = '<table id="dataList"><tr><th rowspan="2">序号</th><th rowspan="2">考级时间</th><th rowspan="2">考级课程(等级)</th><th colspan="3">分数类成绩</th><th colspan="3">等级类成绩</th></tr><tr><th>笔试</th><th>机试</th><th>总成绩</th><th>笔试</th><th>机试</th><th>总成绩</th></tr><tr><td>1</td><td>2025-06-15</td><td>大学英语六级</td><td>425</td><td>0</td><td>0</td><td></td><td></td><td></td></tr></table>';
+const parsedLv = GradeParser.parseLevelGrades(reorderedLevelHtml);
+eq('动态列重排后课程名解析准确', parsedLv[0].name, '大学英语六级');
+eq('动态列重排后考级时间解析准确', parsedLv[0].date, '2025-06-15');
+eq('动态列重排后分数解析准确', parsedLv[0].score, '425');
+eq('动态列重排后笔试成绩解析准确', parsedLv[0].written, '425');
 
 rmSync(TMP, { recursive: true, force: true });
 

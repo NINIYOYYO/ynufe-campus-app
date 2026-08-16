@@ -68,6 +68,76 @@ export class TimetableParser {
     }
 
     /**
+     * 从课程单元 HTML 块中提取完整的课程名称（兼容多行换行、<br/> 截断与内联修饰标签）。
+     *
+     * Args:
+     *     blockHtml (string): 单门课程的 HTML 源码片段。
+     *     doc (Document): DOM 文档上下文。
+     *
+     * Returns:
+     *     string: 提取并清洗后的完整课程名称。
+     */
+    static extractCourseName(blockHtml: string, doc: Document): string {
+        if (!blockHtml || !blockHtml.trim()) return "";
+
+        const tempDiv = doc.createElement("div");
+        tempDiv.innerHTML = blockHtml;
+
+        const nameParts: string[] = [];
+        for (let i = 0; i < tempDiv.childNodes.length; i++) {
+            const node = tempDiv.childNodes[i];
+
+            if (node.nodeType === 1) {
+                const el = node as HTMLElement;
+                const tagName = el.tagName.toLowerCase();
+
+                // 遇到强智教务系统元数据标签，终止名称收集
+                if (el.hasAttribute("title") ||
+                    (el.id && (el.id.startsWith("jc_") || el.id.startsWith("kc_"))) ||
+                    tagName === "input" ||
+                    tagName === "select") {
+                    break;
+                }
+
+                if (tagName === "br") {
+                    continue;
+                }
+
+                const txt = el.textContent?.trim() || "";
+                if (txt && txt !== "&nbsp;") {
+                    nameParts.push(txt);
+                }
+            } else if (node.nodeType === 3) {
+                const txt = node.textContent?.trim() || "";
+                if (txt && txt !== "&nbsp;") {
+                    nameParts.push(txt);
+                }
+            }
+        }
+
+        if (nameParts.length === 0) return "";
+
+        let combined = "";
+        for (const part of nameParts) {
+            if (!combined) {
+                combined = part;
+            } else {
+                const lastChar = combined.slice(-1);
+                const firstChar = part.slice(0, 1);
+                const isLatinLast = /[a-zA-Z0-9]/.test(lastChar);
+                const isLatinFirst = /[a-zA-Z0-9]/.test(firstChar);
+                if (isLatinLast && isLatinFirst) {
+                    combined += " " + part;
+                } else {
+                    combined += part;
+                }
+            }
+        }
+
+        return combined.replace(/\s+/g, " ").trim();
+    }
+
+    /**
      * 深度解析课程表 HTML 提取学期列表、周次筛选列表及结构化课程实体。
      *
      * Args:
@@ -135,10 +205,8 @@ export class TimetableParser {
                     for (const blockHtml of courseBlocks) {
                         if (!blockHtml || blockHtml.trim().length === 0) continue;
 
-                        // 提取课程名称：取标签前的纯文本或首段非空白文字
-                        const tempDiv = doc.createElement("div");
-                        tempDiv.innerHTML = blockHtml;
-                        const rawName = tempDiv.childNodes[0]?.textContent?.trim() || "";
+                        // 提取课程名称：取元数据标签前的完整文本并清洗
+                        const rawName = this.extractCourseName(blockHtml, doc);
                         if (!rawName || rawName === "&nbsp;" || rawName.length < 2) continue;
 
                         const teacherMatch = blockHtml.match(/老师['"]?>([^<]+)/);

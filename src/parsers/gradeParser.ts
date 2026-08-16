@@ -1,5 +1,5 @@
 import { GradeItem, GradeSummary, LevelGradeItem, ScoreComponent, ScoreDetail } from '../types/grade';
-import { ParseError, buildHeaderIndex, cellText, hasEmptyMarker, pickIndex } from '../utils/tableUtils';
+import { ParseError, buildHeaderIndex, buildMultiRowHeaderColumns, cellText, hasEmptyMarker, pickIndex } from '../utils/tableUtils';
 
 /**
  * 云南财经大学期末成绩与社会等级考试 DOM 解析器
@@ -184,6 +184,9 @@ export class GradeParser {
      *
      * Returns:
      *     LevelGradeItem[]: 等级考试成绩明细列表。
+     *
+     * Raises:
+     *     ParseError: 当未找到等级考试表格或解析结构异常时抛出。
      */
     static parseLevelGrades(htmlStr: string): LevelGradeItem[] {
         const doc = this.getDoc(htmlStr);
@@ -193,27 +196,45 @@ export class GradeParser {
             throw new ParseError("GradeParser.parseLevelGrades", "未找到等级考试表格 (table#dataList)");
         }
 
+        const headerCols = buildMultiRowHeaderColumns(dataTable);
+
+        const findCol = (pattern: RegExp, fallback: number): number => {
+            const found = headerCols.findIndex(h => pattern.test(h));
+            return found !== -1 ? found : fallback;
+        };
+
+        const nameIdx = findCol(/课程|科目|项目|考试名称/i, 1);
+        const writtenIdx = findCol(/分数.*笔试|笔试.*分数/i, 2);
+        const machineIdx = findCol(/分数.*机试|机试.*分数/i, 3);
+        const totalIdx = findCol(/分数.*总(?:成绩|分)|(?:总成绩|总分).*分数|^总成绩$|^(?:分数类成绩|分数成绩|分数)$/i, 4);
+        const lvWrittenIdx = findCol(/等级.*笔试|笔试.*等级/i, 5);
+        const lvMachineIdx = findCol(/等级.*机试|机试.*等级/i, 6);
+        const lvTotalIdx = findCol(/等级.*总(?:成绩|分|评)|(?:总成绩|总分|总评).*等级|^总评$|^(?:等级类成绩|等级成绩|等级)$/i, 7);
+        const dateIdx = findCol(/时间|日期/i, 8);
+
+        const minCols = Math.max(nameIdx, dateIdx) + 1;
+
         /** 判断成绩单元格是否为有效成绩（教务网用 "0" / 空串表示该项无成绩）。 */
         const isMeaningful = (v: string): boolean => !!v && v !== "0" && v !== "0.0" && v !== "-";
 
         const rows = dataTable.querySelectorAll("tr");
-        for (let i = 0; i < rows.length; i++) {
+        const hasThHeaders = dataTable.querySelectorAll("th").length > 0;
+        const startRow = hasThHeaders ? 0 : 1;
+        for (let i = startRow; i < rows.length; i++) {
+            if (rows[i].querySelectorAll("th").length > 0) continue;
             const tds = rows[i].querySelectorAll("td");
+            if (tds.length < minCols) continue;
 
-            // 该表为双行表头（第二行是"笔试/机试/总成绩"子表头，且由 th 构成），
-            // 数据行固定 9 列：[序号, 考级课程(等级), 笔试, 机试, 总成绩, 笔试, 机试, 总成绩, 考级时间]
-            if (tds.length < 9) continue;
-
-            const name = tds[1].textContent?.trim() || "";
+            const name = tds[nameIdx]?.textContent?.trim() || "";
             if (!name || name === "未查询到数据" || name === "暂无数据") continue;
 
-            const written = tds[2].textContent?.trim() || "";
-            const machine = tds[3].textContent?.trim() || "";
-            const total = tds[4].textContent?.trim() || "";
-            const lvWritten = tds[5].textContent?.trim() || "";
-            const lvMachine = tds[6].textContent?.trim() || "";
-            const lvTotal = tds[7].textContent?.trim() || "";
-            const date = tds[8].textContent?.trim() || "-";
+            const written = tds[writtenIdx]?.textContent?.trim() || "";
+            const machine = tds[machineIdx]?.textContent?.trim() || "";
+            const total = tds[totalIdx]?.textContent?.trim() || "";
+            const lvWritten = tds[lvWrittenIdx]?.textContent?.trim() || "";
+            const lvMachine = tds[lvMachineIdx]?.textContent?.trim() || "";
+            const lvTotal = tds[lvTotalIdx]?.textContent?.trim() || "";
+            const date = tds[dateIdx]?.textContent?.trim() || "-";
 
             // 展示用主成绩：优先分数类（总成绩→笔试→机试），再退化到等级类
             const levelResult = [lvTotal, lvWritten, lvMachine].find(isMeaningful) || "";

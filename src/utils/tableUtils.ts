@@ -65,6 +65,71 @@ export function buildHeaderIndex(table: Element): Record<string, number> {
 }
 
 /**
+ * 解析复合多行表头（支持 rowspan 与 colspan 网格展开），
+ * 生成每个数据列的复合表头全路径名称数组。
+ *
+ * Args:
+ *     table (Element): 包含 thead/tr/th 的表格元素。
+ *
+ * Returns:
+ *     string[]: 每个数据列对应展平后的表头组合名称列表。
+ */
+export function buildMultiRowHeaderColumns(table: Element): string[] {
+    const rows = table.querySelectorAll("tr");
+    const headerRows: Element[] = [];
+
+    for (let i = 0; i < rows.length; i++) {
+        if (rows[i].querySelectorAll("th").length > 0) {
+            headerRows.push(rows[i]);
+        }
+    }
+
+    if (headerRows.length === 0) return [];
+
+    const grid: string[][] = [];
+    for (let r = 0; r < headerRows.length; r++) {
+        const ths = headerRows[r].querySelectorAll("th");
+        let col = 0;
+
+        for (let c = 0; c < ths.length; c++) {
+            while (grid[r] && grid[r][col] !== undefined) {
+                col++;
+            }
+
+            const text = ths[c].textContent?.trim() || "";
+            const rowspan = parseInt(ths[c].getAttribute("rowspan") || "1", 10) || 1;
+            const colspan = parseInt(ths[c].getAttribute("colspan") || "1", 10) || 1;
+
+            for (let dr = 0; dr < rowspan; dr++) {
+                const targetRow = r + dr;
+                if (!grid[targetRow]) grid[targetRow] = [];
+                for (let dc = 0; dc < colspan; dc++) {
+                    const targetCol = col + dc;
+                    grid[targetRow][targetCol] = text;
+                }
+            }
+            col += colspan;
+        }
+    }
+
+    const maxCols = Math.max(...grid.map(row => row.length), 0);
+    const result: string[] = [];
+
+    for (let c = 0; c < maxCols; c++) {
+        const parts: string[] = [];
+        for (let r = 0; r < grid.length; r++) {
+            const cell = grid[r] ? grid[r][c] : undefined;
+            if (cell && !parts.includes(cell)) {
+                parts.push(cell);
+            }
+        }
+        result.push(parts.join("_"));
+    }
+
+    return result;
+}
+
+/**
  * 按表头名解析列下标，全部匹配不到时回退到硬编码下标。
  *
  * Args:
