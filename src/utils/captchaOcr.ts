@@ -249,19 +249,17 @@ function extractTypographyBlocks(grid: number[][], width: number, height: number
     if (components.length > 1) {
       components.sort((a, b) => b.length - a.length);
       const maxComp = components[0];
-      const maxCompCenterX = maxComp.reduce((acc, p) => acc + p[1], 0) / maxComp.length;
+      const maxCompMinX = Math.min(...maxComp.map((p) => p[1]));
+      const maxCompMaxX = Math.max(...maxComp.map((p) => p[1]));
 
       for (let i = 1; i < components.length; i++) {
         const comp = components[i];
-        const compCenterX = comp.reduce((acc, p) => acc + p[1], 0) / comp.length;
-        const compSize = comp.length;
+        const compMinX = Math.min(...comp.map((p) => p[1]));
+        const compMaxX = Math.max(...comp.map((p) => p[1]));
 
-        // 仅保留属于 i/j 上方的居中附属圆点
-        const isDot = compSize <= 12 &&
-          Math.abs(compCenterX - maxCompCenterX) <= 3 &&
-          comp.some((p) => p[0] < 12);
-
-        if (!isDot) {
+        // 如果连通体与主体的水平投影区间重叠（属于字符上方的竖线、横梁或圆点），则保留；若为侧边孤立噪点，则清理
+        const isOverlap = !(compMaxX < maxCompMinX - 1 || compMinX > maxCompMaxX + 1);
+        if (!isOverlap) {
           for (const [py, px] of comp) {
             norm[py][px] = 0;
           }
