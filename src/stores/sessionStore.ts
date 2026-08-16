@@ -94,17 +94,19 @@ export class YnufeSession {
     }
 
     /**
-     * 清理保存的登录凭据。
+     * 清理保存的登录凭据（学号、密码与记住密码标记）。
      */
     static clearCredentials(): void {
         localStorage.removeItem(StorageKeys.USERNAME);
         localStorage.removeItem(StorageKeys.PASSWORD);
+        localStorage.removeItem(StorageKeys.REMEMBER);
     }
 
     /**
-     * 退出登录并清空全部会话与离线业务数据缓存。
+     * 退出登录并清空全部会话、登录凭据与离线业务数据缓存。
      */
     static clearSession(): void {
+        this.clearCredentials();
         localStorage.removeItem(StorageKeys.HAS_SESSION);
         SessionCookieManager.clearCookies();
         const keysToRemove = [

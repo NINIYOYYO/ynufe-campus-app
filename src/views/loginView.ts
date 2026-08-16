@@ -157,6 +157,7 @@ export class LoginView {
     static handleLogout(onLogout?: () => void): void {
         if (confirm("确定要退出登录并清除会话与缓存吗？")) {
             NotificationManager.cancelAll();
+            YnufeSession.clearCredentials();
             YnufeSession.clearSession();
             if (onLogout) onLogout();
             window.location.reload();
