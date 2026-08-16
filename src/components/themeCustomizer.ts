@@ -1,9 +1,11 @@
 import { ACCENT_COLORS, TEXT_COLOR_PRESETS, BG_COLOR_PRESETS, STYLE_PRESETS } from '../config/themePresets';
 import { AccentColor, TextColorPreset, BgColorPreset, StylePreset } from '../types/theme';
+import { StorageKeys } from '../config/storageKeys';
+import { CacheService } from '../services/cacheService';
 
 /**
  * ThemeCustomizer: 多种主题配色、自定义文字颜色与全局背景颜色管理器
- * 职责：提供主题强调色 Preset 切换、自定义文字颜色 Picker、自定义背景颜色 Picker、实时 CSS 变量注入及 LocalStorage 持久化存储。
+ * 职责：提供主题强调色 Preset 切换、自定义文字颜色 Picker、自定义背景颜色 Picker、实时 CSS 变量注入及 CacheService 持久化存储。
  */
 export class ThemeCustomizer {
     public static accentColors: AccentColor[] = ACCENT_COLORS;
@@ -18,7 +20,7 @@ export class ThemeCustomizer {
         this.renderStylePresets();
         this.loadSavedCustomizations();
         this.bindEvents();
-        this.updateActiveStyleUI(localStorage.getItem("ynufe_style_preset") || "");
+        this.updateActiveStyleUI(CacheService.get<string>(StorageKeys.STYLE_PRESET) || "");
     }
 
     /**
@@ -48,7 +50,7 @@ export class ThemeCustomizer {
      *
      * Args:
      *     name (string): 预设名称。
-     *     save (boolean): 是否持久化。
+     *     save (boolean, optional): 是否持久化。
      */
     static applyStylePreset(name: string, save: boolean = true): void {
         const preset = this.stylePresets.find(p => p.name === name);
@@ -63,7 +65,7 @@ export class ThemeCustomizer {
             body.classList.remove("theme-light");
             body.classList.add("theme-dark");
         }
-        localStorage.setItem("ynufe_theme", preset.mode);
+        CacheService.set(StorageKeys.THEME_MODE, preset.mode);
         document.querySelectorAll(".theme-btn").forEach(b => {
             b.classList.toggle("active", b.getAttribute("data-theme") === preset.mode);
         });
@@ -76,7 +78,7 @@ export class ThemeCustomizer {
         this.updateActiveBgUI(preset.bg || "");
         this.updateActiveTextUI("");
 
-        if (save) localStorage.setItem("ynufe_style_preset", name);
+        if (save) CacheService.set(StorageKeys.STYLE_PRESET, name);
         this.updateActiveStyleUI(name);
 
         // 3. 让壁纸自适应色重新按新模式计算
@@ -85,6 +87,9 @@ export class ThemeCustomizer {
 
     /**
      * 更新预设风格主题卡片的选中高亮。
+     *
+     * Args:
+     *     activeName (string): 当前激活的主题预设名称。
      */
     private static updateActiveStyleUI(activeName: string): void {
         document.querySelectorAll(".style-preset-btn").forEach(btn => {
@@ -96,7 +101,7 @@ export class ThemeCustomizer {
      * 当用户手动微调单项颜色时，清除"整套预设"的选中标记（已进入自定义状态）。
      */
     private static clearStylePreset(): void {
-        localStorage.removeItem("ynufe_style_preset");
+        CacheService.remove(StorageKeys.STYLE_PRESET);
         this.updateActiveStyleUI("");
     }
 
@@ -104,10 +109,10 @@ export class ThemeCustomizer {
      * 读取并应用本地存储的个性化主题色、文字颜色与背景颜色设置。
      */
     static loadSavedCustomizations(): void {
-        const savedAccent = localStorage.getItem("ynufe_accent_hex");
-        const savedAccentRgb = localStorage.getItem("ynufe_accent_rgb");
-        const savedTextColor = localStorage.getItem("ynufe_text_color");
-        const savedBgColor = localStorage.getItem("ynufe_bg_color");
+        const savedAccent = CacheService.get<string>(StorageKeys.ACCENT_HEX);
+        const savedAccentRgb = CacheService.get<string>(StorageKeys.ACCENT_RGB);
+        const savedTextColor = CacheService.get<string>(StorageKeys.TEXT_COLOR);
+        const savedBgColor = CacheService.get<string>(StorageKeys.BG_COLOR);
 
         if (savedAccent && savedAccentRgb) {
             this.setAccentColor(savedAccent, savedAccentRgb, false);
@@ -129,8 +134,9 @@ export class ThemeCustomizer {
      * 使用全局事件委托绑定控制面板内的颜色按钮与自由 Color Picker 事件。
      */
     static bindEvents(): void {
-        if (window._themeCustomizerBound) return;
-        window._themeCustomizerBound = true;
+        const win = window as unknown as { _themeCustomizerBound?: boolean };
+        if (win._themeCustomizerBound) return;
+        win._themeCustomizerBound = true;
 
         // 全局事件委托
         document.body.addEventListener("click", (e: MouseEvent) => {
@@ -217,14 +223,6 @@ export class ThemeCustomizer {
     }
 
     /**
-     * 设置全站主题强调色（--primary-color 与 --primary-color-rgb）。
-     *
-     * Args:
-     *     hex (string): 十六进制颜色代码。
-     *     rgb (string): RGB 颜色代码。
-     *     save (boolean): 是否保存到 LocalStorage。
-     */
-    /**
      * 估算颜色的相对亮度（0=纯黑，1=纯白）。
      *
      * Args:
@@ -258,7 +256,7 @@ export class ThemeCustomizer {
      *     mode ("dark" | "light"): 即将生效的模式。
      */
     static dropConflictingColors(mode: "dark" | "light"): void {
-        const bg = localStorage.getItem("ynufe_bg_color") || "";
+        const bg = CacheService.get<string>(StorageKeys.BG_COLOR) || "";
         const bgLum = this.luminanceOf(bg);
         if (bgLum !== null) {
             const conflicts = mode === "dark" ? bgLum > 0.5 : bgLum < 0.5;
@@ -269,12 +267,20 @@ export class ThemeCustomizer {
                 this.setTextColor("", true);
                 this.updateActiveTextUI("");
                 // 该配色来自某个风格预设时，同时取消其选中态，避免 UI 与实际不符
-                localStorage.removeItem("ynufe_style_preset");
+                CacheService.remove(StorageKeys.STYLE_PRESET);
                 this.updateActiveStyleUI("");
             }
         }
     }
 
+    /**
+     * 设置全站主题强调色（--primary-color 与 --primary-color-rgb）。
+     *
+     * Args:
+     *     hex (string): 十六进制颜色代码。
+     *     rgb (string): RGB 颜色代码。
+     *     save (boolean, optional): 是否保存到 LocalStorage。
+     */
     static setAccentColor(hex: string, rgb: string, save: boolean = true): void {
         document.body.style.setProperty("--primary-color", hex, "important");
         document.body.style.setProperty("--primary-color-rgb", rgb, "important");
@@ -282,8 +288,8 @@ export class ThemeCustomizer {
         document.documentElement.style.setProperty("--primary-color-rgb", rgb, "important");
 
         if (save) {
-            localStorage.setItem("ynufe_accent_hex", hex);
-            localStorage.setItem("ynufe_accent_rgb", rgb);
+            CacheService.set(StorageKeys.ACCENT_HEX, hex);
+            CacheService.set(StorageKeys.ACCENT_RGB, rgb);
         }
     }
 
@@ -292,17 +298,17 @@ export class ThemeCustomizer {
      *
      * Args:
      *     hex (string): 十六进制颜色代码，为空则恢复自适应默认字色。
-     *     save (boolean): 是否保存到 LocalStorage。
+     *     save (boolean, optional): 是否保存到 LocalStorage。
      */
     static setTextColor(hex: string, save: boolean = true): void {
         if (!hex) {
             document.body.style.removeProperty("--text-primary");
             document.documentElement.style.removeProperty("--text-primary");
-            if (save) localStorage.removeItem("ynufe_text_color");
+            if (save) CacheService.remove(StorageKeys.TEXT_COLOR);
         } else {
             document.body.style.setProperty("--text-primary", hex, "important");
             document.documentElement.style.setProperty("--text-primary", hex, "important");
-            if (save) localStorage.setItem("ynufe_text_color", hex);
+            if (save) CacheService.set(StorageKeys.TEXT_COLOR, hex);
         }
     }
 
@@ -311,7 +317,7 @@ export class ThemeCustomizer {
      *
      * Args:
      *     hex (string): 十六进制颜色代码，为空则恢复系统默认自适应背景。
-     *     save (boolean): 是否保存到 LocalStorage。
+     *     save (boolean, optional): 是否保存到 LocalStorage。
      */
     static setBgColor(hex: string, save: boolean = true): void {
         if (!hex) {
@@ -319,13 +325,13 @@ export class ThemeCustomizer {
             document.body.style.removeProperty("--bg-gradient");
             document.documentElement.style.removeProperty("--bg-color");
             document.documentElement.style.removeProperty("--bg-gradient");
-            if (save) localStorage.removeItem("ynufe_bg_color");
+            if (save) CacheService.remove(StorageKeys.BG_COLOR);
         } else {
             document.body.style.setProperty("--bg-color", hex, "important");
             document.body.style.setProperty("--bg-gradient", "none", "important");
             document.documentElement.style.setProperty("--bg-color", hex, "important");
             document.documentElement.style.setProperty("--bg-gradient", "none", "important");
-            if (save) localStorage.setItem("ynufe_bg_color", hex);
+            if (save) CacheService.set(StorageKeys.BG_COLOR, hex);
         }
     }
 
@@ -344,10 +350,10 @@ export class ThemeCustomizer {
         document.documentElement.style.removeProperty("--bg-color");
         document.documentElement.style.removeProperty("--bg-gradient");
 
-        localStorage.removeItem("ynufe_accent_hex");
-        localStorage.removeItem("ynufe_accent_rgb");
-        localStorage.removeItem("ynufe_text_color");
-        localStorage.removeItem("ynufe_bg_color");
+        CacheService.remove(StorageKeys.ACCENT_HEX);
+        CacheService.remove(StorageKeys.ACCENT_RGB);
+        CacheService.remove(StorageKeys.TEXT_COLOR);
+        CacheService.remove(StorageKeys.BG_COLOR);
 
         this.updateActiveAccentUI("#3b82f6");
         this.updateActiveTextUI("");
@@ -356,6 +362,9 @@ export class ThemeCustomizer {
 
     /**
      * 更新强调色按钮 UI 的选中状态。
+     *
+     * Args:
+     *     activeHex (string): 当前激活的十六进制强调色。
      */
     private static updateActiveAccentUI(activeHex: string): void {
         document.querySelectorAll(".accent-color-btn").forEach(btn => {
@@ -370,6 +379,9 @@ export class ThemeCustomizer {
 
     /**
      * 更新字色按钮 UI 的选中状态。
+     *
+     * Args:
+     *     activeHex (string): 当前激活的十六进制字色。
      */
     private static updateActiveTextUI(activeHex: string): void {
         document.querySelectorAll(".text-color-btn").forEach(btn => {
@@ -389,6 +401,9 @@ export class ThemeCustomizer {
 
     /**
      * 更新背景色按钮 UI 的选中状态。
+     *
+     * Args:
+     *     activeHex (string): 当前激活的十六进制背景色。
      */
     private static updateActiveBgUI(activeHex: string): void {
         document.querySelectorAll(".bg-color-btn").forEach(btn => {

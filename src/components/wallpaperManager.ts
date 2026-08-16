@@ -1,5 +1,7 @@
 import { ColorExtractor, RGBColor } from '../utils/colorExtractor';
 import { WallpaperGesture, WallpaperTransformState } from './wallpaperGesture';
+import { StorageKeys } from '../config/storageKeys';
+import { CacheService } from '../services/cacheService';
 
 export type { WallpaperTransformState };
 
@@ -44,14 +46,13 @@ export class WallpaperManager {
      *     themeName (string, optional): 当前主题模式 "dark" | "light"。
      */
     static applyAdaptiveWallpaperColor(themeName?: string): void {
-        const savedPreset = localStorage.getItem("ynufe_wallpaper_preset") || "obsidian";
+        const savedPreset = CacheService.get<string>(StorageKeys.WALLPAPER_PRESET) || "obsidian";
         if (savedPreset !== "custom") return;
 
-        const savedColorStr = localStorage.getItem("ynufe_wallpaper_color");
-        if (!savedColorStr) return;
+        const rgb = CacheService.get<RGBColor>(StorageKeys.WALLPAPER_COLOR);
+        if (!rgb) return;
 
         try {
-            const rgb: RGBColor = JSON.parse(savedColorStr);
             const r = rgb.r;
             const g = rgb.g;
             const b = rgb.b;
@@ -133,10 +134,10 @@ export class WallpaperManager {
      * 读取并恢复本地存储的壁纸预设、自定义 Base64、高斯模糊及遮罩浓度。
      */
     static loadSavedWallpaper(): void {
-        const savedPreset = localStorage.getItem("ynufe_wallpaper_preset") || "obsidian";
-        const savedCustomData = localStorage.getItem("ynufe_custom_wallpaper");
-        const savedBlur = localStorage.getItem("ynufe_wallpaper_blur") || "0";
-        const savedMaskOpacity = localStorage.getItem("ynufe_wallpaper_mask_opacity") || "0.32";
+        const savedPreset = CacheService.get<string>(StorageKeys.WALLPAPER_PRESET) || "obsidian";
+        const savedCustomData = CacheService.get<string>(StorageKeys.CUSTOM_WALLPAPER);
+        const savedBlur = CacheService.get<string>(StorageKeys.WALLPAPER_BLUR) || "0";
+        const savedMaskOpacity = CacheService.get<string>(StorageKeys.WALLPAPER_MASK_OPACITY) || "0.32";
 
         document.body.style.setProperty("--wallpaper-blur", `${savedBlur}px`);
         document.body.style.setProperty("--wallpaper-mask-opacity", savedMaskOpacity);
@@ -213,9 +214,9 @@ export class WallpaperManager {
                 const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7);
 
                 try {
-                    localStorage.setItem("ynufe_custom_wallpaper", compressedBase64);
-                    localStorage.setItem("ynufe_wallpaper_preset", "custom");
-                    localStorage.setItem("ynufe_wallpaper_color", JSON.stringify(bestColor));
+                    CacheService.set(StorageKeys.CUSTOM_WALLPAPER, compressedBase64);
+                    CacheService.set(StorageKeys.WALLPAPER_PRESET, "custom");
+                    CacheService.set(StorageKeys.WALLPAPER_COLOR, bestColor);
 
                     this.applyWallpaper("custom", compressedBase64);
 
@@ -258,10 +259,10 @@ export class WallpaperManager {
         const btnResetWallpaper = document.getElementById("btn-reset-wallpaper");
         if (btnResetWallpaper) {
             btnResetWallpaper.addEventListener("click", () => {
-                localStorage.setItem("ynufe_wallpaper_preset", "obsidian");
-                localStorage.removeItem("ynufe_custom_wallpaper");
-                localStorage.removeItem("ynufe_wallpaper_color");
-                localStorage.removeItem("ynufe_wallpaper_transform");
+                CacheService.set(StorageKeys.WALLPAPER_PRESET, "obsidian");
+                CacheService.remove(StorageKeys.CUSTOM_WALLPAPER);
+                CacheService.remove(StorageKeys.WALLPAPER_COLOR);
+                CacheService.remove(StorageKeys.WALLPAPER_TRANSFORM);
                 const adjustSec = document.getElementById("wallpaper-adjust-section");
                 const tuneSec = document.getElementById("wallpaper-tune-section");
                 if (adjustSec) adjustSec.style.display = "none";
@@ -277,7 +278,7 @@ export class WallpaperManager {
             blurInput.addEventListener("input", (e) => {
                 const val = (e.target as HTMLInputElement).value;
                 document.body.style.setProperty("--wallpaper-blur", `${val}px`);
-                localStorage.setItem("ynufe_wallpaper_blur", val);
+                CacheService.set(StorageKeys.WALLPAPER_BLUR, val);
                 const text = document.getElementById("val-wallpaper-blur");
                 if (text) text.innerText = `${val}px`;
             });
@@ -289,7 +290,7 @@ export class WallpaperManager {
                 const val = (e.target as HTMLInputElement).value;
                 const opacity = (parseFloat(val) / 100).toFixed(2);
                 document.body.style.setProperty("--wallpaper-mask-opacity", opacity);
-                localStorage.setItem("ynufe_wallpaper_mask_opacity", opacity);
+                CacheService.set(StorageKeys.WALLPAPER_MASK_OPACITY, opacity);
                 const text = document.getElementById("val-wallpaper-mask");
                 if (text) text.innerText = `${val}%`;
             });

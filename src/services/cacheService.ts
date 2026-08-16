@@ -46,7 +46,7 @@ export class CacheService {
      *
      * Args:
      *     key (StorageKey | string): 存储键名。
-     *     maxAgeMs (number): 可选的最大允许缓存存活毫秒数，超过则返回 null。
+     *     maxAgeMs (number, optional): 可选的最大允许缓存存活毫秒数，超过则返回 null。
      *
      * Returns:
      *     T | null: 缓存存在且未过期时返回实体，否则返回 null。
@@ -56,7 +56,18 @@ export class CacheService {
             const raw = localStorage.getItem(key);
             if (!raw) return null;
 
-            const parsed = JSON.parse(raw);
+            let parsed: unknown;
+            try {
+                parsed = JSON.parse(raw);
+            } catch (jsonErr) {
+                // 若以 '{' 或 '[' 开头却无法解析，则判定为损坏的 JSON 结构，交由外层 catch 清理
+                const trimmed = raw.trim();
+                if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+                    throw jsonErr;
+                }
+                // 否则平滑向后兼容旧版未包装的裸字符串数据 (例如 "dark", "#3b82f6", "custom")
+                return raw as unknown as T;
+            }
 
             // 1. 判断是否为新版 CacheEnvelope 信封包装
             if (parsed && typeof parsed === "object" && "cachedAt" in parsed && "data" in parsed) {

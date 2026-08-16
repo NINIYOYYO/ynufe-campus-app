@@ -64,7 +64,7 @@ export class SettingsView {
      * 初始化主题模式 (深色/浅色) 及按钮高亮。
      */
     static initTheme(): void {
-        const savedTheme = localStorage.getItem("ynufe_theme") || "dark";
+        const savedTheme = CacheService.get<string>(StorageKeys.THEME_MODE) || "dark";
         this.setThemeMode(savedTheme as "dark" | "light");
     }
 
@@ -83,7 +83,7 @@ export class SettingsView {
             body.classList.remove("theme-light");
             body.classList.add("theme-dark");
         }
-        localStorage.setItem("ynufe_theme", mode);
+        CacheService.set(StorageKeys.THEME_MODE, mode);
         ThemeCustomizer.dropConflictingColors(mode);
         WallpaperManager.applyAdaptiveWallpaperColor(mode);
 

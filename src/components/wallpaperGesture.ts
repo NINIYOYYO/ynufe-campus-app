@@ -1,3 +1,6 @@
+import { StorageKeys } from '../config/storageKeys';
+import { CacheService } from '../services/cacheService';
+
 export interface WallpaperTransformState {
     scale: number;
     x: number;
@@ -22,17 +25,13 @@ export class WallpaperGesture {
     }
 
     /**
-     * 从 LocalStorage 读取并恢复之前保存的壁纸手势参数。
+     * 从 CacheService 读取并恢复之前保存的壁纸手势参数。
      */
     static loadSavedTransform(): void {
-        const savedStateStr = localStorage.getItem("ynufe_wallpaper_transform");
-        if (savedStateStr) {
-            try {
-                this.transformState = JSON.parse(savedStateStr);
-                this.applyTransform();
-            } catch (e) {
-                console.error("[WallpaperGesture] Failed to parse saved transform:", e);
-            }
+        const savedState = CacheService.get<WallpaperTransformState>(StorageKeys.WALLPAPER_TRANSFORM);
+        if (savedState && typeof savedState.scale === "number" && typeof savedState.x === "number" && typeof savedState.y === "number") {
+            this.transformState = savedState;
+            this.applyTransform();
         } else {
             this.transformState = { scale: 1.0, x: 0, y: 0 };
             this.applyTransform();
@@ -45,7 +44,7 @@ export class WallpaperGesture {
     static resetTransform(): void {
         this.transformState = { scale: 1.0, x: 0, y: 0 };
         this.applyTransform();
-        localStorage.removeItem("ynufe_wallpaper_transform");
+        CacheService.remove(StorageKeys.WALLPAPER_TRANSFORM);
     }
 
     /**
@@ -192,7 +191,7 @@ export class WallpaperGesture {
         }, { passive: false });
 
         btnSaveAdjust.addEventListener("click", () => {
-            localStorage.setItem("ynufe_wallpaper_transform", JSON.stringify(this.transformState));
+            CacheService.set(StorageKeys.WALLPAPER_TRANSFORM, this.transformState);
             adjustOverlay.style.display = "none";
             const settingsSheet = document.getElementById("settings-sheet");
             const settingsOverlay = document.getElementById("settings-overlay");
