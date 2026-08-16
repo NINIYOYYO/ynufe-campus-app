@@ -6,6 +6,9 @@ import { escapeHtml } from '../utils/escapeHtml';
  * 渲染带纯实心防透背景、优雅圆角、暗光阴影与打勾高亮徽章的自适应浮层，并保持原生 change 事件无缝触发。
  */
 export class CustomSelect {
+    private static menuMap = new WeakMap<HTMLSelectElement, HTMLElement>();
+    private static observerMap = new WeakMap<HTMLSelectElement, MutationObserver>();
+
     /**
      * 将指定的原生 <select> 节点增强包装为 iOS 风格毛玻璃自定义下拉菜单。
      *
@@ -13,7 +16,8 @@ export class CustomSelect {
      *     selectEl (HTMLSelectElement): 需要增强的原生 HTMLSelectElement 节点。
      */
     static enhance(selectEl: HTMLSelectElement): void {
-        if (!selectEl || selectEl.dataset.customEnhanced === "true") {
+        if (!selectEl) return;
+        if (selectEl.dataset.customEnhanced === "true") {
             this.updateMenuOptions(selectEl);
             return;
         }
@@ -46,9 +50,13 @@ export class CustomSelect {
         trigger.appendChild(arrowSvg);
         wrapper.appendChild(trigger);
 
-        // 创建浮层菜单 (Dropdown Menu)
+        // 创建浮层菜单并挂载至 body，通过 WeakMap 维护持久引用避免 DOM 丢失
         const menu = document.createElement("div");
         menu.className = "custom-select-menu";
+        if (selectEl.id) menu.dataset.selectId = selectEl.id;
+        document.body.appendChild(menu);
+
+        this.menuMap.set(selectEl, menu);
 
         // 构建下拉选项列表
         this.buildMenuOptions(selectEl, wrapper, trigger, menu, textSpan);
@@ -69,9 +77,6 @@ export class CustomSelect {
                 menu.style.width = `${rect.width}px`;
                 menu.style.zIndex = "999999";
 
-                document.body.appendChild(menu);
-
-                // 强制触发一次重绘后添加 active
                 requestAnimationFrame(() => {
                     menu.classList.add("active");
                     trigger.classList.add("active");
@@ -93,6 +98,7 @@ export class CustomSelect {
             this.updateMenuOptions(selectEl);
         });
         observer.observe(selectEl, { childList: true, subtree: true });
+        this.observerMap.set(selectEl, observer);
     }
 
     /**
@@ -102,12 +108,13 @@ export class CustomSelect {
      *     selectEl (HTMLSelectElement): 目标 select 节点。
      */
     static updateMenuOptions(selectEl: HTMLSelectElement): void {
+        if (!selectEl) return;
         const wrapper = selectEl.closest(".custom-select-wrapper") as HTMLElement | null;
         if (!wrapper) return;
 
         const trigger = wrapper.querySelector(".custom-select-trigger") as HTMLElement | null;
         const textSpan = wrapper.querySelector(".custom-select-text") as HTMLElement | null;
-        const menu = (wrapper.querySelector(".custom-select-menu") || document.querySelector(`.custom-select-menu[data-select-id="${selectEl.id}"]`)) as HTMLElement | null;
+        const menu = this.menuMap.get(selectEl) || (wrapper.querySelector(".custom-select-menu") as HTMLElement | null) || (document.querySelector(`.custom-select-menu[data-select-id="${selectEl.id}"]`) as HTMLElement | null);
 
         if (trigger && textSpan) {
             const selectedOpt = selectEl.options[selectEl.selectedIndex];
@@ -172,14 +179,11 @@ export class CustomSelect {
     }
 
     /**
-     * 关闭页面上所有当前打开的自定义下拉菜单浮层。
+     * 关闭页面上所有当前打开的自定义下拉菜单浮层（仅移除 active 类，不销毁 DOM 节点）。
      */
     static closeAll(): void {
         document.querySelectorAll(".custom-select-menu.active").forEach(m => {
             m.classList.remove("active");
-            if (m.parentNode === document.body) {
-                document.body.removeChild(m);
-            }
         });
         document.querySelectorAll(".custom-select-trigger.active").forEach(t => t.classList.remove("active"));
         document.querySelectorAll(".custom-select-wrapper.active-wrapper").forEach(w => w.classList.remove("active-wrapper"));
@@ -197,8 +201,9 @@ export class CustomSelect {
         });
 
         // 监听全局点击与滚动事件，点击空白处或滚动页面时自动收起浮层
-        if (!window._customSelectGlobalClickBound) {
-            window._customSelectGlobalClickBound = true;
+        const win = window as unknown as { _customSelectGlobalClickBound?: boolean };
+        if (!win._customSelectGlobalClickBound) {
+            win._customSelectGlobalClickBound = true;
             document.addEventListener("click", () => {
                 CustomSelect.closeAll();
             });
