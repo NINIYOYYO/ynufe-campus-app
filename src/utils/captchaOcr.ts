@@ -358,6 +358,24 @@ function classifyBlock(mat: number[][]): [string, number] {
     bestChar = topPixels >= 3 ? 'h' : 'n';
   }
 
+  // 几何特征判决 2: 1 与 i
+  // 字符 'i' 在 y=12..15 区间存在完全空白行 (用于分隔上方圆点与下方身躯)
+  // 字符 '1' 是从 y=11 连贯延伸至 y=25 的连续垂直主干
+  if (bestChar === '1' || bestChar === 'i') {
+    let hasGap = false;
+    for (let y = 12; y <= 15; y++) {
+      let rowSum = 0;
+      for (let x = 0; x < CANVAS_WIDTH; x++) {
+        if (mat[y][x] === 1) rowSum++;
+      }
+      if (rowSum === 0) {
+        hasGap = true;
+        break;
+      }
+    }
+    bestChar = hasGap ? 'i' : '1';
+  }
+
   return [bestChar, bestScore];
 }
 
