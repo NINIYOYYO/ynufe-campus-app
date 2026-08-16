@@ -326,11 +326,20 @@ function classifyBlock(mat: number[][]): [string, number] {
     }
   }
 
-  // 强智验证码字符集规范化：垂直竖线统一定义为数字 '1'，拱形笔画统一定义为字母 'n'
+  // 强智验证码字符集规范化：垂直竖线统一定义为数字 '1'
   if (bestChar === 'l') {
     bestChar = '1';
-  } else if (bestChar === 'h') {
-    bestChar = 'n';
+  }
+
+  // 升部几何特征判决：精准分离 h（含顶部竖直升部）与 n（无升部矮字符）
+  if (bestChar === 'h' || bestChar === 'n') {
+    let topPixels = 0;
+    for (let y = 0; y < 14; y++) {
+      for (let x = 0; x < CANVAS_WIDTH; x++) {
+        if (mat[y][x] === 1) topPixels++;
+      }
+    }
+    bestChar = topPixels >= 3 ? 'h' : 'n';
   }
 
   return [bestChar, bestScore];
