@@ -1,39 +1,75 @@
 package com.ynufe.campusapp;
 
+import android.net.Uri;
 import android.webkit.CookieManager;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 /**
- * NativeCookiePlugin: 直通 Android 原生 CookieManager 的桥接插件
+ * NativeCookiePlugin: 直通 Android 原生 CookieManager 的桥接插件。
  * 解决前端 JS 因浏览器 Header 安全规范及子路径 Path=/jsxsd 作用域隔离无法读取 Cookie 的问题。
  */
 @CapacitorPlugin(name = "NativeCookie")
 public class NativeCookiePlugin extends Plugin {
 
+    private static final String DEFAULT_BASE_URL = "https://xjwis.ynufe.edu.cn";
+
+    /**
+     * 规范化并清洗输入的 URL 字符串，若为空或非法则返回默认教务域名。
+     *
+     * @param inputUrl 输入的原始 URL
+     * @return 规范化后的基础 URL 域名
+     */
+    private String resolveBaseUrl(String inputUrl) {
+        if (inputUrl == null || inputUrl.trim().isEmpty()) {
+            return DEFAULT_BASE_URL;
+        }
+        String trimmed = inputUrl.trim();
+        try {
+            Uri uri = Uri.parse(trimmed);
+            if (uri.getScheme() != null && uri.getHost() != null) {
+                int port = uri.getPort();
+                String portPart = (port != -1 && port != 80 && port != 443) ? (":" + port) : "";
+                return uri.getScheme() + "://" + uri.getHost() + portPart;
+            }
+        } catch (Exception ignored) {
+        }
+        return trimmed.replaceAll("/+$", "");
+    }
+
     @PluginMethod
     public void getCookie(PluginCall call) {
         try {
             CookieManager cookieManager = CookieManager.getInstance();
-            String baseUrl = "https://xjwis.ynufe.edu.cn";
-            
-            // 依次检索根目录、/jsxsd 子目录及关键入口的 Cookie
-            String[] testUrls = new String[] {
-                baseUrl + "/jsxsd",
-                baseUrl + "/jsxsd/",
-                baseUrl + "/jsxsd/xk/LoginToXkLdap",
-                baseUrl + "/jsxsd/verifycode.servlet",
-                baseUrl + "/jsxsd/framework/xsMain.jsp",
-                baseUrl + "/jsxsd/framework/xsMain_new.jsp",
-                baseUrl + "/",
-                baseUrl
-            };
+            String rawUrl = call.getString("url", "");
+            String baseUrl = resolveBaseUrl(rawUrl);
+
+            Set<String> probeUrls = new LinkedHashSet<>();
+            if (rawUrl != null && !rawUrl.trim().isEmpty()) {
+                probeUrls.add(rawUrl.trim());
+            }
+            probeUrls.add(baseUrl + "/jsxsd");
+            probeUrls.add(baseUrl + "/jsxsd/");
+            probeUrls.add(baseUrl + "/jsxsd/xk/LoginToXkLdap");
+            probeUrls.add(baseUrl + "/jsxsd/verifycode.servlet");
+            probeUrls.add(baseUrl + "/jsxsd/framework/xsMain.jsp");
+            probeUrls.add(baseUrl + "/jsxsd/framework/xsMain_new.jsp");
+            probeUrls.add(baseUrl + "/");
+            probeUrls.add(baseUrl);
+
+            if (!DEFAULT_BASE_URL.equals(baseUrl)) {
+                probeUrls.add(DEFAULT_BASE_URL + "/jsxsd");
+                probeUrls.add(DEFAULT_BASE_URL + "/");
+                probeUrls.add(DEFAULT_BASE_URL);
+            }
 
             String foundCookie = "";
-            for (String url : testUrls) {
+            for (String url : probeUrls) {
                 String c = cookieManager.getCookie(url);
                 if (c != null && c.contains("JSESSIONID")) {
                     foundCookie = c;
@@ -56,17 +92,29 @@ public class NativeCookiePlugin extends Plugin {
     public void setCookie(PluginCall call) {
         try {
             String cookieStr = call.getString("cookie", "");
-            CookieManager cookieManager = CookieManager.getInstance();
-            String baseUrl = "https://xjwis.ynufe.edu.cn";
+            if (cookieStr == null) {
+                cookieStr = "";
+            }
 
-            // 同时将 Cookie 写入根路径与 /jsxsd 各子作用域，确保所有原生及 WebView 请求均能携带
-            cookieManager.setCookie(baseUrl, cookieStr);
-            cookieManager.setCookie(baseUrl + "/", cookieStr);
-            cookieManager.setCookie(baseUrl + "/jsxsd", cookieStr);
-            cookieManager.setCookie(baseUrl + "/jsxsd/", cookieStr);
-            cookieManager.setCookie(baseUrl + "/jsxsd/xk/LoginToXkLdap", cookieStr);
-            cookieManager.setCookie(baseUrl + "/jsxsd/verifycode.servlet", cookieStr);
-            cookieManager.setCookie(baseUrl + "/jsxsd/framework/xsMain.jsp", cookieStr);
+            String rawUrl = call.getString("url", "");
+            String baseUrl = resolveBaseUrl(rawUrl);
+            CookieManager cookieManager = CookieManager.getInstance();
+
+            Set<String> writeUrls = new LinkedHashSet<>();
+            if (rawUrl != null && !rawUrl.trim().isEmpty()) {
+                writeUrls.add(rawUrl.trim());
+            }
+            writeUrls.add(baseUrl);
+            writeUrls.add(baseUrl + "/");
+            writeUrls.add(baseUrl + "/jsxsd");
+            writeUrls.add(baseUrl + "/jsxsd/");
+            writeUrls.add(baseUrl + "/jsxsd/xk/LoginToXkLdap");
+            writeUrls.add(baseUrl + "/jsxsd/verifycode.servlet");
+            writeUrls.add(baseUrl + "/jsxsd/framework/xsMain.jsp");
+
+            for (String url : writeUrls) {
+                cookieManager.setCookie(url, cookieStr);
+            }
             cookieManager.flush();
             call.resolve();
         } catch (Exception e) {
