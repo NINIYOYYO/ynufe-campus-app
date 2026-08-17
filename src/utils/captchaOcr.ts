@@ -347,8 +347,8 @@ function classifyBlock(mat: number[][]): [string, number] {
     bestChar = '1';
   }
 
-  // 几何特征判决 1: 降部几何判决分离 p 与 n/h（p 在左下 y>=26 区间有坚实降部立柱）
-  if (bestChar === 'n' || bestChar === 'h' || bestChar === 'p') {
+  // 几何特征判决 1: 降部几何判决分离 p 与 n/h/u（p 在左下 y>=26 区间有坚实降部立柱）
+  if (bestChar === 'n' || bestChar === 'h' || bestChar === 'p' || bestChar === 'u') {
     let botLeftDescender = 0;
     for (let y = 26; y < CANVAS_HEIGHT; y++) {
       for (let x = 0; x <= 6; x++) {
