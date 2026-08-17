@@ -4,6 +4,7 @@
 export interface NativeCookiePluginType {
     getCookie(options: { url: string }): Promise<{ cookie?: string }>;
     setCookie(options: { url: string; cookie: string }): Promise<void>;
+    saveAndOpenFile?(options: { fileName: string; base64Data: string; mimeType?: string }): Promise<{ success: boolean; filePath?: string; fileName?: string }>;
 }
 
 export interface CapacitorCookiesPluginType {

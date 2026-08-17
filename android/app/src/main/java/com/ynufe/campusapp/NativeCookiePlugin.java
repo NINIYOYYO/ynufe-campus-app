@@ -1,18 +1,26 @@
 package com.ynufe.campusapp;
 
+import android.content.Context;
+import android.content.Intent;
+import android.media.MediaScannerConnection;
 import android.net.Uri;
+import android.os.Environment;
+import android.util.Base64;
 import android.webkit.CookieManager;
+import androidx.core.content.FileProvider;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
- * NativeCookiePlugin: 直通 Android 原生 CookieManager 的桥接插件。
- * 解决前端 JS 因浏览器 Header 安全规范及子路径 Path=/jsxsd 作用域隔离无法读取 Cookie 的问题。
+ * NativeCookiePlugin: 直通 Android 原生 CookieManager 与原生文件保存/打开的桥接插件。
+ * 解决前端 JS 因浏览器 Header 安全规范无法读取 Cookie 以及 WebView 内无法直接保存/打开附件的问题。
  */
 @CapacitorPlugin(name = "NativeCookie")
 public class NativeCookiePlugin extends Plugin {
@@ -121,4 +129,93 @@ public class NativeCookiePlugin extends Plugin {
             call.reject("Failed to set cookie", e);
         }
     }
+
+    /**
+     * 将二进制文件保存至手机下载目录，并直接调用系统应用选择器打开。
+     *
+     * @param call 包含 fileName, base64Data, mimeType 的调用对象
+     */
+    @PluginMethod
+    public void saveAndOpenFile(PluginCall call) {
+        try {
+            String fileName = call.getString("fileName", "attachment");
+            String base64Data = call.getString("base64Data", "");
+            String mimeType = call.getString("mimeType", "*/*");
+
+            if (base64Data == null || base64Data.trim().isEmpty()) {
+                call.reject("Base64 data is empty");
+                return;
+            }
+
+            byte[] fileBytes = Base64.decode(base64Data, Base64.DEFAULT);
+            Context context = getContext();
+
+            // 优先存储至系统公共 Download 目录，若不可写则使用应用专属外部 Download 目录
+            File targetDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+            if (targetDir == null || (!targetDir.exists() && !targetDir.mkdirs()) || !targetDir.canWrite()) {
+                targetDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+            }
+            if (targetDir == null) {
+                targetDir = context.getFilesDir();
+            }
+
+            File targetFile = new File(targetDir, fileName);
+            int count = 1;
+            String nameWithoutExt = fileName;
+            String ext = "";
+            int dotIdx = fileName.lastIndexOf('.');
+            if (dotIdx != -1) {
+                nameWithoutExt = fileName.substring(0, dotIdx);
+                ext = fileName.substring(dotIdx);
+            }
+            while (targetFile.exists()) {
+                targetFile = new File(targetDir, nameWithoutExt + " (" + count + ")" + ext);
+                count++;
+            }
+
+            try (FileOutputStream fos = new FileOutputStream(targetFile)) {
+                fos.write(fileBytes);
+                fos.flush();
+            }
+
+            // 通知系统媒体库与下载管理器刷新
+            try {
+                MediaScannerConnection.scanFile(
+                    context,
+                    new String[]{ targetFile.getAbsolutePath() },
+                    new String[]{ mimeType },
+                    null
+                );
+            } catch (Exception ignored) {
+            }
+
+            // 唤起系统应用选择器
+            try {
+                Uri contentUri = FileProvider.getUriForFile(
+                    context,
+                    context.getPackageName() + ".fileprovider",
+                    targetFile
+                );
+                Intent viewIntent = new Intent(Intent.ACTION_VIEW);
+                viewIntent.setDataAndType(contentUri, mimeType != null && !mimeType.isEmpty() ? mimeType : "*/*");
+                viewIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                viewIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+                Intent chooser = Intent.createChooser(viewIntent, "打开文件: " + fileName);
+                chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                context.startActivity(chooser);
+            } catch (Exception launchErr) {
+                launchErr.printStackTrace();
+            }
+
+            JSObject ret = new JSObject();
+            ret.put("success", true);
+            ret.put("filePath", targetFile.getAbsolutePath());
+            ret.put("fileName", targetFile.getName());
+            call.resolve(ret);
+        } catch (Exception e) {
+            call.reject("Failed to save or open file: " + e.getMessage(), e);
+        }
+    }
 }
+

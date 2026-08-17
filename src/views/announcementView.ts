@@ -166,7 +166,57 @@ export class AnnouncementView {
     }
 
     /**
-     * 下载公告附件（带二进制与 HTML 拦截校验、多候选路径容错与 ObjectURL 延迟释放保护）。
+     * 将 Blob 二进制流转换为 Base64 编码字符串。
+     *
+     * Args:
+     *     blob (Blob): 二进制数据。
+     *
+     * Returns:
+     *     Promise<string>: Base64 字符串。
+     */
+    private static async blobToBase64(blob: Blob): Promise<string> {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const res = reader.result as string;
+                const base64 = res.split(",")[1] || "";
+                resolve(base64);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    }
+
+    /**
+     * 根据文件名后缀推导标准 MIME 类型。
+     *
+     * Args:
+     *     fileName (string): 文件名称。
+     *     defaultType (string): 默认类型。
+     *
+     * Returns:
+     *     string: MIME 类型。
+     */
+    private static getMimeType(fileName: string, defaultType: string = "application/octet-stream"): string {
+        const ext = fileName.split(".").pop()?.toLowerCase();
+        switch (ext) {
+            case "doc": return "application/msword";
+            case "docx": return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+            case "xls": return "application/vnd.ms-excel";
+            case "xlsx": return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            case "ppt": return "application/vnd.ms-powerpoint";
+            case "pptx": return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+            case "pdf": return "application/pdf";
+            case "zip": return "application/zip";
+            case "rar": return "application/x-rar-compressed";
+            case "7z": return "application/x-7z-compressed";
+            case "txt": return "text/plain";
+            default: return defaultType || "application/octet-stream";
+        }
+    }
+
+    /**
+     * 下载公告附件（带二进制与 HTML 拦截校验、手机原生存储与系统打开选择器及 Web 降级保护）。
      *
      * Args:
      *     url (string): 附件相对路径。
@@ -209,6 +259,27 @@ export class AnnouncementView {
                 return;
             }
 
+            // 1. 移动端原生环境：调用 NativeCookie 插件保存至 Download 目录并唤起系统选择器
+            const cap = window.Capacitor;
+            const isNative = typeof cap?.isNativePlatform === "function" && cap.isNativePlatform() === true;
+
+            if (isNative && cap?.Plugins?.NativeCookie?.saveAndOpenFile) {
+                try {
+                    const base64Data = await this.blobToBase64(successBlob);
+                    const mimeType = this.getMimeType(name, successBlob.type);
+                    await cap.Plugins.NativeCookie.saveAndOpenFile({
+                        fileName: name,
+                        base64Data,
+                        mimeType
+                    });
+                    showToast(`「${name}」已保存至手机「下载」目录`, "success");
+                    return;
+                } catch (nativeErr) {
+                    console.warn("[YnufeUI] Native saveAndOpenFile failed, falling back to Web ObjectURL:", nativeErr);
+                }
+            }
+
+            // 2. 网页端环境：使用 ObjectURL 触发浏览器原生下载流程
             const objectUrl = URL.createObjectURL(successBlob);
             const a = document.createElement("a");
             a.href = objectUrl;
