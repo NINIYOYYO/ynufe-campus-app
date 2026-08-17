@@ -133,7 +133,39 @@ export class AnnouncementView {
     }
 
     /**
-     * 下载公告附件（带二进制与 HTML 拦截校验、Referer 伪装及 ObjectURL 延迟释放保护）。
+     * 生成教务网附件的多候选路径列表（自动适配 /ewebeditor、/jsxsd/ewebeditor、/uploadfile 等历史路径部署差异）。
+     *
+     * Args:
+     *     originalPath (string): 原始相对路径。
+     *
+     * Returns:
+     *     string[]: 候选路径列表。
+     */
+    private static getAttachmentCandidates(originalPath: string): string[] {
+        const candidates: string[] = [originalPath];
+        const trimmed = originalPath.startsWith('/') ? originalPath : `/${originalPath}`;
+
+        if (trimmed.startsWith('/ewebeditor/')) {
+            candidates.push(`/jsxsd${trimmed}`);
+            const filename = trimmed.replace('/ewebeditor/uploadfile/', '');
+            candidates.push(`/jsxsd/uploadfile/${filename}`);
+            candidates.push(`/uploadfiles/${filename}`);
+            candidates.push(`/uploadfile/${filename}`);
+        } else if (!trimmed.startsWith('/jsxsd/')) {
+            candidates.push(`/jsxsd${trimmed}`);
+            if (trimmed.startsWith('/uploadfile/') || trimmed.startsWith('/uploadfiles/')) {
+                candidates.push(`/ewebeditor${trimmed}`);
+                candidates.push(`/jsxsd/ewebeditor${trimmed}`);
+            }
+        } else if (trimmed.startsWith('/jsxsd/ewebeditor/')) {
+            candidates.push(trimmed.replace('/jsxsd', ''));
+        }
+
+        return Array.from(new Set(candidates));
+    }
+
+    /**
+     * 下载公告附件（带二进制与 HTML 拦截校验、多候选路径容错与 ObjectURL 延迟释放保护）。
      *
      * Args:
      *     url (string): 附件相对路径。
@@ -143,24 +175,40 @@ export class AnnouncementView {
     static async downloadAttachment(url: string, name: string, refererUrl?: string): Promise<void> {
         showToast(`正在获取「${name}」…`, "info");
         try {
-            const { blob, contentType } = await YnufeClient.getBlob(url, refererUrl);
+            const candidates = this.getAttachmentCandidates(url);
+            let successBlob: Blob | null = null;
 
-            if (contentType.includes("text/html") || blob.size < 4096) {
-                const head = await blob.slice(0, 4096).text();
-                if (
-                    head.includes("非法访问") ||
-                    head.includes("出错页面") ||
-                    head.includes("404 error") ||
-                    head.includes("404 错误") ||
-                    head.includes("页面不存在") ||
-                    head.includes("未找到文件")
-                ) {
-                    showToast("教务系统限制了该附件的直接下载或文件已下架", "warn");
-                    return;
+            for (const targetUrl of candidates) {
+                try {
+                    const { blob, contentType } = await YnufeClient.getBlob(targetUrl, refererUrl);
+                    if (contentType.includes("text/html") || blob.size < 4096) {
+                        const head = await blob.slice(0, 4096).text();
+                        if (
+                            head.includes("非法访问") ||
+                            head.includes("出错页面") ||
+                            head.includes("404 error") ||
+                            head.includes("404 错误") ||
+                            head.includes("页面不存在") ||
+                            head.includes("未找到文件") ||
+                            head.includes("SYSTEM_LOGIN") ||
+                            head.includes("sys/login.jsp")
+                        ) {
+                            continue;
+                        }
+                    }
+                    successBlob = blob;
+                    break;
+                } catch {
+                    // 尝试下一个候选路径
                 }
             }
 
-            const objectUrl = URL.createObjectURL(blob);
+            if (!successBlob) {
+                showToast("教务系统限制了该附件的直接下载或文件已下架", "warn");
+                return;
+            }
+
+            const objectUrl = URL.createObjectURL(successBlob);
             const a = document.createElement("a");
             a.href = objectUrl;
             a.download = name;
@@ -176,7 +224,7 @@ export class AnnouncementView {
                 showToast("登录已过期，请重新登录后再试", "warn");
             } else {
                 console.error("[YnufeUI] 附件下载失败:", e);
-                showToast("附件下载失败，教务系统暂未开放直接下载", "warn");
+                showToast("附件下载失败，请检查网络", "error");
             }
         }
     }

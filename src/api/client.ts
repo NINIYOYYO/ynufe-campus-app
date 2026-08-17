@@ -348,7 +348,10 @@ export class YnufeClient {
             ...cookieHeader
         };
         if (refererUrl) {
-            customHeaders["Referer"] = refererUrl.startsWith("http") ? refererUrl : `${this.BASE_URL}${refererUrl}`;
+            const fullReferer = refererUrl.startsWith("http")
+                ? refererUrl
+                : `${AppConfig.TARGET_HOST}${refererUrl.startsWith('/') ? refererUrl : '/' + refererUrl}`;
+            customHeaders["Referer"] = fullReferer;
         }
 
         const cap = window.Capacitor;
