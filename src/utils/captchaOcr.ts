@@ -347,16 +347,24 @@ function classifyBlock(mat: number[][]): [string, number] {
     bestChar = '1';
   }
 
-  // 几何特征判决 1: 降部几何判决分离 p 与 n/h/u（p 在左下 y>=26 区间有坚实降部立柱）
+  // 几何特征判决 1: 降部几何判决分离 p 与 n/h/u（p 在低于基准线 y>=28 处有坚实降部立柱）
   if (bestChar === 'n' || bestChar === 'h' || bestChar === 'p' || bestChar === 'u') {
     let botLeftDescender = 0;
-    for (let y = 26; y < CANVAS_HEIGHT; y++) {
+    for (let y = 28; y < CANVAS_HEIGHT; y++) {
       for (let x = 0; x <= 6; x++) {
         if (mat[y][x] === 1) botLeftDescender++;
       }
     }
     if (botLeftDescender >= 3) {
       bestChar = 'p';
+    } else if (bestChar === 'p' && botLeftDescender === 0) {
+      let topArch = 0;
+      for (let y = 15; y <= 17; y++) {
+        for (let x = 0; x < CANVAS_WIDTH; x++) {
+          if (mat[y][x] === 1) topArch++;
+        }
+      }
+      bestChar = topArch >= 8 ? 'n' : 'u';
     }
   }
 
@@ -496,6 +504,9 @@ export class CaptchaOCR {
       URL.revokeObjectURL(blobUrl);
     }
 
-    return recognizeCaptchaRgba(imgData.data, canvas.width, canvas.height);
+    const result = recognizeCaptchaRgba(imgData.data, canvas.width, canvas.height);
+    console.log(`[CaptchaOCR] Output: "${result.text}" (Confidence: ${(result.confidence * 100).toFixed(1)}%, chars: [${result.charConfidences.map(c => (c * 100).toFixed(0) + '%').join(', ')}])`);
+    return result;
   }
 }
+
