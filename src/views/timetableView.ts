@@ -199,10 +199,7 @@ export class TimetableView {
             }
         });
 
-        const gridContainer = document.querySelector<HTMLElement>(".timetable-grid");
-        if (gridContainer) {
-            playEntrance(gridContainer);
-        }
+        // 课表 2D 矩阵网格不使用一维列表级联动效，避免表头与格子异步位移产生翻转抖动
     }
 
     /**
