@@ -33,9 +33,20 @@ export default defineConfig({
           Referer: 'https://xjwis.ynufe.edu.cn/jsxsd/',
           Origin: 'https://xjwis.ynufe.edu.cn',
         },
+        configure: (proxy) => {
+          proxy.on('proxyRes', (proxyRes, req) => {
+            // 404 或非登录错误响应如果带有 Set-Cookie，坚决拦截剔除，防止浏览器底层 Cookie Jar 被污染
+            const isLoginOrVerify = req.url && (req.url.includes('/xk/LoginToXk') || req.url.includes('verifycode.servlet'));
+            if ((proxyRes.statusCode && proxyRes.statusCode >= 400) || (!isLoginOrVerify && proxyRes.statusCode === 200 && proxyRes.headers['set-cookie'] && !req.url?.includes('login.jsp'))) {
+              if (proxyRes.headers['set-cookie']) {
+                delete proxyRes.headers['set-cookie'];
+              }
+            }
+          });
+        },
       },
       // 公告附件由富文本编辑器上传，落在 /ewebeditor/、/uploadfiles/ 等路径下，
-      // 必须开启 cookiePathRewrite: '/' 与 autoRewrite，确保带上会话 Cookie 且防重定向脱节。
+      // 必须开启 cookiePathRewrite: '/' 与 autoRewrite，并且坚决剥离任何 Set-Cookie。
       '/ewebeditor': {
         target: 'https://xjwis.ynufe.edu.cn',
         changeOrigin: true,
@@ -45,6 +56,13 @@ export default defineConfig({
         cookieDomainRewrite: '',
         cookiePathRewrite: '/',
         headers: { Referer: 'https://xjwis.ynufe.edu.cn/jsxsd/' },
+        configure: (proxy) => {
+          proxy.on('proxyRes', (proxyRes) => {
+            if (proxyRes.headers['set-cookie']) {
+              delete proxyRes.headers['set-cookie'];
+            }
+          });
+        },
       },
       '/uploadfiles': {
         target: 'https://xjwis.ynufe.edu.cn',
@@ -55,6 +73,13 @@ export default defineConfig({
         cookieDomainRewrite: '',
         cookiePathRewrite: '/',
         headers: { Referer: 'https://xjwis.ynufe.edu.cn/jsxsd/' },
+        configure: (proxy) => {
+          proxy.on('proxyRes', (proxyRes) => {
+            if (proxyRes.headers['set-cookie']) {
+              delete proxyRes.headers['set-cookie'];
+            }
+          });
+        },
       },
       '/uploadfile': {
         target: 'https://xjwis.ynufe.edu.cn',
@@ -65,6 +90,13 @@ export default defineConfig({
         cookieDomainRewrite: '',
         cookiePathRewrite: '/',
         headers: { Referer: 'https://xjwis.ynufe.edu.cn/jsxsd/' },
+        configure: (proxy) => {
+          proxy.on('proxyRes', (proxyRes) => {
+            if (proxyRes.headers['set-cookie']) {
+              delete proxyRes.headers['set-cookie'];
+            }
+          });
+        },
       },
     },
   },
