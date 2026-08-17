@@ -151,6 +151,7 @@ export class GradeView {
 
     /**
      * 根据当前学期下拉框及搜索输入框过滤并渲染成绩卡片列表。
+     * 当选择全部学期或初始加载时，成绩卡片按学期倒序排列（最新学期排在顶部）。
      */
     static filterGrades(): void {
         const container = document.getElementById("grades-list");
@@ -159,11 +160,15 @@ export class GradeView {
         const selectSem = (document.getElementById("select-grade-semester") as HTMLSelectElement | null)?.value || "";
         const searchText = (document.getElementById("input-grade-search") as HTMLInputElement | null)?.value.toLowerCase().trim() || "";
 
-        const filtered = this.globalGrades.filter(g => {
+        let filtered = this.globalGrades.filter(g => {
             const matchSem = !selectSem || g.semester === selectSem;
             const matchSearch = !searchText || g.courseName.toLowerCase().includes(searchText);
             return matchSem && matchSearch;
         });
+
+        if (!selectSem) {
+            filtered = [...filtered].sort((a, b) => (b.semester || "").localeCompare(a.semester || "", undefined, { numeric: true, sensitivity: 'base' }));
+        }
 
         if (container.childElementCount > 0 &&
             isSameAsRendered("grades", { selectSem, searchText, filtered })) {
