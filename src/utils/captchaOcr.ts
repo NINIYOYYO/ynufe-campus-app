@@ -347,18 +347,32 @@ function classifyBlock(mat: number[][]): [string, number] {
     bestChar = '1';
   }
 
-  // 升部几何特征判决：精准分离 h（含顶部竖直升部）与 n（无升部矮字符）
-  if (bestChar === 'h' || bestChar === 'n') {
-    let topPixels = 0;
-    for (let y = 0; y < 14; y++) {
-      for (let x = 0; x < CANVAS_WIDTH; x++) {
-        if (mat[y][x] === 1) topPixels++;
+  // 几何特征判决 1: 降部几何判决分离 p 与 n/h（p 在左下 y>=26 区间有坚实降部立柱）
+  if (bestChar === 'n' || bestChar === 'h' || bestChar === 'p') {
+    let botLeftDescender = 0;
+    for (let y = 26; y < CANVAS_HEIGHT; y++) {
+      for (let x = 0; x <= 6; x++) {
+        if (mat[y][x] === 1) botLeftDescender++;
       }
     }
-    bestChar = topPixels >= 3 ? 'h' : 'n';
+    if (botLeftDescender >= 3) {
+      bestChar = 'p';
+    }
   }
 
-  // 几何特征判决 2: 1 与 i
+  // 几何特征判决 2: 升部几何特征判决，精准分离 h（含左侧顶部竖直升部）与 n（无升部矮字符）
+  // 排除穿过右侧区域的斜向单像素噪线干扰 (仅检测左侧主立柱 x in [2, 7])
+  if (bestChar === 'h' || bestChar === 'n') {
+    let leftTopPixels = 0;
+    for (let y = 0; y < 14; y++) {
+      for (let x = 2; x <= 7; x++) {
+        if (mat[y][x] === 1) leftTopPixels++;
+      }
+    }
+    bestChar = leftTopPixels >= 4 ? 'h' : 'n';
+  }
+
+  // 几何特征判决 3: 1 与 i
   // 字符 'i' 在 y=12..15 区间存在完全空白行 (用于分隔上方圆点与下方身躯)
   // 字符 '1' 是从 y=11 连贯延伸至 y=25 的连续垂直主干
   if (bestChar === '1' || bestChar === 'i') {
@@ -471,6 +485,9 @@ export class CaptchaOCR {
       if (blobUrl) URL.revokeObjectURL(blobUrl);
       throw new Error('Cannot get 2d context for captcha decoding');
     }
+
+    // 关闭 Canvas 双线性平滑插值滤波，保持高分辨率屏幕与 Webview 下的原始二值化像素精度
+    ctx.imageSmoothingEnabled = false;
 
     ctx.drawImage(img, 0, 0);
     const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
