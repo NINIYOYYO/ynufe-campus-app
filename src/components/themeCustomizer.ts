@@ -217,6 +217,7 @@ export class ThemeCustomizer {
                 const hex = (e.target as HTMLInputElement).value;
                 this.setTextColor(hex, true);
                 this.updateActiveTextUI(hex);
+                this.clearStylePreset();
             });
         }
 
@@ -227,6 +228,7 @@ export class ThemeCustomizer {
                 const hex = (e.target as HTMLInputElement).value;
                 this.setBgColor(hex, true);
                 this.updateActiveBgUI(hex);
+                this.clearStylePreset();
             });
         }
     }
@@ -363,7 +365,10 @@ export class ThemeCustomizer {
         CacheService.remove(StorageKeys.ACCENT_RGB);
         CacheService.remove(StorageKeys.TEXT_COLOR);
         CacheService.remove(StorageKeys.BG_COLOR);
+        CacheService.remove(StorageKeys.STYLE_PRESET);
 
+        const currentMode = CacheService.get<string>(StorageKeys.THEME_MODE) || "light";
+        this.updateActiveStyleUI(currentMode === "light" ? "云瓷白" : "");
         this.updateActiveAccentUI("#0071e3");
         this.updateActiveTextUI("");
         this.updateActiveBgUI("");

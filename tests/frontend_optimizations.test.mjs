@@ -317,7 +317,31 @@ assert.equal(CacheService.get(StorageKeys.BG_COLOR), '#f3e8ff', '自定义背景
 assert.equal(document.body.style.getPropertyValue('--bg-color'), '#f3e8ff', '自定义背景色必须内联注入 body');
 ThemeCustomizer.resetColors();
 assert.equal(CacheService.get(StorageKeys.BG_COLOR), null, '重置后背景色必须从 CacheService 清除');
+assert.equal(CacheService.get(StorageKeys.STYLE_PRESET), null, '重置后风格预设必须从 CacheService 清除');
+const activePresetAfterReset = document.querySelector('.style-preset-btn.active');
+assert.ok(activePresetAfterReset, '浅色模式重置后必须默认选中云瓷白预设');
+assert.equal(activePresetAfterReset.getAttribute('data-preset'), '云瓷白', '浅色模式重置后选中的风格预设必须为云瓷白');
 console.log('[PASS] 用例 1.7 通过: 自定义背景颜色动态注入与重置测试成功');
+
+// 1.8 自由 Color Picker 微调时自动清除整套风格预设选中态
+ThemeCustomizer.applyStylePreset('暖阳米', true);
+assert.equal(document.querySelector('.style-preset-btn.active')?.getAttribute('data-preset'), '暖阳米');
+
+const textPickerEl = document.getElementById('custom-text-color-picker');
+textPickerEl.value = '#123456';
+textPickerEl.dispatchEvent(new window.Event('input'));
+assert.equal(CacheService.get(StorageKeys.STYLE_PRESET), null, '使用文字选色器微调后必须清除风格预设');
+assert.equal(document.querySelector('.style-preset-btn.active'), null, '使用文字选色器微调后必须取消所有预设选中态');
+
+ThemeCustomizer.applyStylePreset('云瓷白', true);
+assert.equal(document.querySelector('.style-preset-btn.active')?.getAttribute('data-preset'), '云瓷白');
+
+const bgPickerEl = document.getElementById('custom-bg-color-picker');
+bgPickerEl.value = '#abcdef';
+bgPickerEl.dispatchEvent(new window.Event('input'));
+assert.equal(CacheService.get(StorageKeys.STYLE_PRESET), null, '使用背景选色器微调后必须清除风格预设');
+assert.equal(document.querySelector('.style-preset-btn.active'), null, '使用背景选色器微调后必须取消所有预设选中态');
+console.log('[PASS] 用例 1.8 通过: 自由 Color Picker 选色与风格预设状态解耦联动测试成功');
 
 // ── R2 测试套件: 成绩全部学期倒序排列 ──────────────────────────────────────────
 console.log('\n--- 测试套件 2: R2 期末成绩全部学期倒序排列测试 ---');
@@ -380,14 +404,22 @@ console.log('[PASS] 用例 2.3 通过: 切换回全部学期后稳定保持倒�
 
 // 2.4 跨学期搜索过滤下的学期倒序
 const searchInput = document.getElementById('input-grade-search');
-searchInput.value = '原理'; // 匹配 '操作系统原理'
+searchInput.value = '系统'; // 匹配 2023-2024-2 '分布式系统' 与 2023-2024-1 '操作系统原理'
 GradeView.filterGrades();
 const searchCards = document.querySelectorAll('#grades-list .grade-card');
-assert.equal(searchCards.length, 1);
-assert.ok(searchCards[0].textContent.includes('操作系统原理'));
+assert.equal(searchCards.length, 2, '搜索 "系统" 必须跨学期匹配出 2 门课程');
+const searchSemesters = Array.from(searchCards).map(card => {
+    const match = card.querySelector('.grade-meta').textContent.match(/学期:\s*([\d-]+)/);
+    return match ? match[1] : '';
+});
+assert.deepEqual(
+    searchSemesters,
+    ['2023-2024-2', '2023-2024-1'],
+    '全部学期下的搜索过滤结果必须同样按学期降序排列'
+);
 searchInput.value = '';
 GradeView.filterGrades();
-console.log('[PASS] 用例 2.4 通过: 搜索过滤交互及恢复验证成功');
+console.log('[PASS] 用例 2.4 通过: 跨学期多条搜索过滤交互及倒序保持验证成功');
 
 // 2.5 复杂与边界学期数据倒序排列（多学期重叠、同届同季、空学期容错）
 const complexSummary = {
