@@ -343,6 +343,54 @@ assert.equal(CacheService.get(StorageKeys.STYLE_PRESET), null, '使用背景选�
 assert.equal(document.querySelector('.style-preset-btn.active'), null, '使用背景选色器微调后必须取消所有预设选中态');
 console.log('[PASS] 用例 1.8 通过: 自由 Color Picker 选色与风格预设状态解耦联动测试成功');
 
+// 1.9 深浅模式切换与预设状态防冲突隔离及云瓷白自动同步
+// 场景 A: 无自定义颜色时，深浅模式切换自适应联动云瓷白
+ThemeCustomizer.resetColors();
+SettingsView.setThemeMode('dark');
+assert.equal(CacheService.get(StorageKeys.STYLE_PRESET), null, '深色无预设模式下 STYLE_PRESET 必须为空');
+assert.equal(document.querySelector('.style-preset-btn.active'), null, '深色无预设模式下严禁高亮云瓷白');
+
+SettingsView.setThemeMode('light');
+assert.equal(CacheService.get(StorageKeys.STYLE_PRESET), null, '浅色无预设模式下 STYLE_PRESET 为空');
+assert.equal(document.querySelector('.style-preset-btn.active')?.getAttribute('data-preset'), '云瓷白', '浅色无自定义模式下必须自动激活云瓷白高亮');
+
+// 场景 B: 激活暗色预设后切换到浅色模式，自动解绑不兼容的暗色预设
+ThemeCustomizer.applyStylePreset('曜石蓝', true);
+assert.equal(CacheService.get(StorageKeys.STYLE_PRESET), '曜石蓝');
+SettingsView.setThemeMode('light');
+assert.equal(CacheService.get(StorageKeys.STYLE_PRESET), null, '暗色预设在切换到浅色模式后必须自动解绑');
+assert.notEqual(document.querySelector('.style-preset-btn.active')?.getAttribute('data-preset'), '曜石蓝', '浅色模式下严禁残留暗色预设高亮');
+
+// 场景 C: 激活浅色预设后切换到深色模式，自动解绑不兼容的浅色预设
+ThemeCustomizer.applyStylePreset('云瓷白', true);
+assert.equal(CacheService.get(StorageKeys.STYLE_PRESET), '云瓷白');
+SettingsView.setThemeMode('dark');
+assert.equal(CacheService.get(StorageKeys.STYLE_PRESET), null, '浅色预设在切换到深色模式后必须自动解绑');
+assert.equal(document.querySelector('.style-preset-btn.active'), null, '深色模式下严禁残留云瓷白预设高亮');
+console.log('[PASS] 用例 1.9 通过: 深浅模式切换与风格预设双向解耦及云瓷白自适应激活测试成功');
+
+// 1.10 恢复默认背景色按钮解绑风格预设
+ThemeCustomizer.applyStylePreset('午夜紫', true);
+assert.equal(CacheService.get(StorageKeys.STYLE_PRESET), '午夜紫');
+const resetBgBtnEl = document.getElementById('btn-reset-bg-color');
+resetBgBtnEl.click();
+assert.equal(CacheService.get(StorageKeys.STYLE_PRESET), null, '点击恢复默认背景色后必须清除风格预设');
+assert.equal(document.querySelector('.style-preset-btn.active'), null, '点击恢复默认背景色后必须取消所有预设高亮');
+console.log('[PASS] 用例 1.10 通过: 恢复默认背景色按钮解绑风格预设测试成功');
+
+// 1.11 深色模式下 resetColors 重置为暗色默认强调色 #3b82f6
+SettingsView.setThemeMode('dark');
+ThemeCustomizer.setAccentColor('#ec4899', '236, 72, 153', true);
+ThemeCustomizer.resetColors();
+const darkAccentBtn = document.querySelector('.accent-color-btn.active');
+assert.ok(darkAccentBtn, '深色模式重置后必须有高亮的强调色按钮');
+assert.equal(darkAccentBtn.getAttribute('data-hex'), '#3b82f6', '深色模式重置后高亮的强调色按钮必须为 #3b82f6 (皇家蓝)');
+
+// 恢复浅色模式供后续测试
+SettingsView.setThemeMode('light');
+ThemeCustomizer.resetColors();
+console.log('[PASS] 用例 1.11 通过: 深色模式与浅色模式 resetColors 强调色差异化重置测试成功');
+
 // ── R2 测试套件: 成绩全部学期倒序排列 ──────────────────────────────────────────
 console.log('\n--- 测试套件 2: R2 期末成绩全部学期倒序排列测试 ---');
 

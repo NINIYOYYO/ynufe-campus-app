@@ -206,6 +206,7 @@ export class ThemeCustomizer {
             if (resetBgBtn) {
                 this.setBgColor("", true);
                 this.updateActiveBgUI("");
+                this.clearStylePreset();
                 return;
             }
         });
@@ -279,6 +280,28 @@ export class ThemeCustomizer {
                 this.updateActiveTextUI("");
                 // 该配色来自某个风格预设时，同时取消其选中态，避免 UI 与实际不符
                 CacheService.remove(StorageKeys.STYLE_PRESET);
+            }
+        }
+
+        // 检查当前保存的风格预设是否与新模式冲突
+        const savedPresetName = CacheService.get<string>(StorageKeys.STYLE_PRESET);
+        if (savedPresetName) {
+            const preset = this.stylePresets.find(p => p.name === savedPresetName);
+            if (preset && preset.mode !== mode) {
+                CacheService.remove(StorageKeys.STYLE_PRESET);
+                this.updateActiveStyleUI("");
+            } else if (preset) {
+                this.updateActiveStyleUI(preset.name);
+            }
+        } else {
+            const hasCustomColor = Boolean(
+                CacheService.get<string>(StorageKeys.ACCENT_HEX) ||
+                CacheService.get<string>(StorageKeys.TEXT_COLOR) ||
+                CacheService.get<string>(StorageKeys.BG_COLOR)
+            );
+            if (!hasCustomColor) {
+                this.updateActiveStyleUI(mode === "light" ? "云瓷白" : "");
+            } else {
                 this.updateActiveStyleUI("");
             }
         }
@@ -369,7 +392,7 @@ export class ThemeCustomizer {
 
         const currentMode = CacheService.get<string>(StorageKeys.THEME_MODE) || "light";
         this.updateActiveStyleUI(currentMode === "light" ? "云瓷白" : "");
-        this.updateActiveAccentUI("#0071e3");
+        this.updateActiveAccentUI(currentMode === "light" ? "#0071e3" : "#3b82f6");
         this.updateActiveTextUI("");
         this.updateActiveBgUI("");
     }
