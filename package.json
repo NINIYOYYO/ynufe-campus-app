@@ -16,7 +16,7 @@
     "cap-sync": "npx cap sync",
     "capture:fixtures": "node tests/capture-fixtures.mjs",
     "test:parsers": "node tests/parsers.test.mjs",
-    "test": "node tests/parsers.test.mjs && node tests/cookieManager.test.mjs && node tests/reminderScheduler.test.mjs && node tests/cacheService.test.mjs && node tests/crypto.test.mjs && node tests/heartbeat.test.mjs && node tests/loginFlow.test.mjs && node tests/ui_architecture.test.mjs"
+    "test": "node tests/parsers.test.mjs && node tests/cookieManager.test.mjs && node tests/reminderScheduler.test.mjs && node tests/cacheService.test.mjs && node tests/crypto.test.mjs && node tests/heartbeat.test.mjs && node tests/loginFlow.test.mjs && node tests/ui_architecture.test.mjs && node tests/frontend_optimizations.test.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^6.0.0",
