@@ -38,8 +38,8 @@ body, body.theme-light {
     --primary-color-rgb: 0, 113, 227; /* 默认苹果皇家蓝 / 云瓷蓝 */
     --primary-color: rgb(var(--primary-color-rgb));
     
-    /* 自适应浅色背景渐变与软糯发光斑 */
-    --bg-gradient: radial-gradient(circle at 50% 50%, #ffffff 0%, #f4f5f8 50%, #e3e6f0 100%);
+    /* 浅色背景默认纯白，支持自定义背景与渐变覆盖 */
+    --bg-gradient: none;
     --blob1-color: rgba(59, 130, 246, 0.07);
     --blob2-color: rgba(147, 51, 234, 0.05);
     --blob3-color: rgba(236, 72, 153, 0.04);
@@ -56,12 +56,6 @@ body, body.theme-light {
     --icon-inactive-color: rgba(var(--primary-color-rgb), 0.78);
     --icon-empty-color: rgba(var(--primary-color-rgb), 0.58);
     --nav-inactive-color: rgba(var(--primary-color-rgb), 0.68);
-}
-
-/* 浅色模式强锁纯白背景 */
-body.theme-light {
-    background-image: none !important;
-    background-color: #ffffff !important;
 }
 
 /* 浅色模式下修正下拉选项样式，防隐形 */

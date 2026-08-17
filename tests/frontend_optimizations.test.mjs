@@ -290,6 +290,35 @@ assert.ok(cssContent.includes('body, body.theme-light'), 'app.css 必须将 body
 assert.ok(cssContent.includes('--bg-color: #ffffff;'), 'app.css theme-light 必须包含 --bg-color: #ffffff');
 console.log('[PASS] 用例 1.5 通过: app.css 默认样式变量正确定义为云瓷白浅色模式');
 
+// 1.6 风格主题预设切换与自适应联动
+ThemeCustomizer.applyStylePreset('暖阳米', true);
+assert.equal(CacheService.get(StorageKeys.STYLE_PRESET), '暖阳米', '切换暖阳米预设必须持久化');
+assert.equal(CacheService.get(StorageKeys.THEME_MODE), 'light', '暖阳米必须属于 light 模式');
+assert.ok(document.body.classList.contains('theme-light'), '暖阳米激活时 body 必须包含 theme-light');
+assert.equal(document.body.style.getPropertyValue('--primary-color'), '#f59e0b', '强调色必须更新为 #f59e0b');
+assert.equal(document.body.style.getPropertyValue('--bg-color'), '#fff7ed', '背景色必须更新为 #fff7ed');
+
+ThemeCustomizer.applyStylePreset('曜石蓝', true);
+assert.equal(CacheService.get(StorageKeys.THEME_MODE), 'dark', '曜石蓝必须切换为 dark 模式');
+assert.ok(document.body.classList.contains('theme-dark'), '曜石蓝激活时 body 必须包含 theme-dark');
+
+// 重新切回云瓷白
+ThemeCustomizer.applyStylePreset('云瓷白', true);
+assert.equal(CacheService.get(StorageKeys.STYLE_PRESET), '云瓷白');
+assert.equal(CacheService.get(StorageKeys.THEME_MODE), 'light');
+assert.ok(document.body.classList.contains('theme-light'));
+assert.equal(document.body.style.getPropertyValue('--primary-color'), '#0071e3');
+assert.equal(document.body.style.getPropertyValue('--bg-color'), '#ffffff');
+console.log('[PASS] 用例 1.6 通过: 风格主题预设切换与深浅模式联动测试成功');
+
+// 1.7 自定义背景颜色注入与重置
+ThemeCustomizer.setBgColor('#f3e8ff', true);
+assert.equal(CacheService.get(StorageKeys.BG_COLOR), '#f3e8ff', '自定义背景色必须存入 CacheService');
+assert.equal(document.body.style.getPropertyValue('--bg-color'), '#f3e8ff', '自定义背景色必须内联注入 body');
+ThemeCustomizer.resetColors();
+assert.equal(CacheService.get(StorageKeys.BG_COLOR), null, '重置后背景色必须从 CacheService 清除');
+console.log('[PASS] 用例 1.7 通过: 自定义背景颜色动态注入与重置测试成功');
+
 // ── R2 测试套件: 成绩全部学期倒序排列 ──────────────────────────────────────────
 console.log('\n--- 测试套件 2: R2 期末成绩全部学期倒序排列测试 ---');
 
@@ -359,6 +388,38 @@ assert.ok(searchCards[0].textContent.includes('操作系统原理'));
 searchInput.value = '';
 GradeView.filterGrades();
 console.log('[PASS] 用例 2.4 通过: 搜索过滤交互及恢复验证成功');
+
+// 2.5 复杂与边界学期数据倒序排列（多学期重叠、同届同季、空学期容错）
+const complexSummary = {
+    gpa: '3.90',
+    totalCredits: '160',
+    coursesCount: 7,
+    semesters: ['2024-2025-1', '2023-2024-2', '2023-2024-1', '2022-2023-2'],
+    gradesList: [
+        { semester: '', courseId: 'E01', courseName: '未知学期补考', score: '70', credit: '2.0', gpa: '2.0' },
+        { semester: '2023-2024-2', courseId: 'A01', courseName: '数据库原理', score: '92', credit: '3.0', gpa: '4.2' },
+        { semester: '2024-2025-1', courseId: 'B01', courseName: '人工智能导论', score: '96', credit: '3.5', gpa: '4.8' },
+        { semester: '2022-2023-2', courseId: 'C01', courseName: '大学物理', score: '85', credit: '4.0', gpa: '3.5' },
+        { semester: '2023-2024-2', courseId: 'A02', courseName: '计算机体系结构', score: '89', credit: '3.5', gpa: '3.9' },
+        { semester: '2023-2024-1', courseId: 'D01', courseName: '离散数学', score: '91', credit: '4.0', gpa: '4.1' }
+    ]
+};
+selectSemEl.value = '';
+GradeView.renderGradesData(complexSummary);
+const complexCards = document.querySelectorAll('#grades-list .grade-card');
+assert.equal(complexCards.length, 6, '必须渲染全部 6 门成绩卡片');
+
+const complexOrderSemesters = Array.from(complexCards).map(card => {
+    const metaText = card.querySelector('.grade-meta').textContent || '';
+    const match = metaText.match(/学期:\s*([\d-]*)/);
+    return match ? match[1] : '';
+});
+assert.deepEqual(
+    complexOrderSemesters,
+    ['2024-2025-1', '2023-2024-2', '2023-2024-2', '2023-2024-1', '2022-2023-2', ''],
+    '复杂多学期降序排序正确且同届同季顺序稳定、空学期安全置底'
+);
+console.log('[PASS] 用例 2.5 通过: 复杂多学期与边界学期倒序排布测试成功');
 
 // ── R3 测试套件: 课表网格纯净均匀边框 ──────────────────────────────────────────
 console.log('\n--- 测试套件 3: R3 课表网格均匀边框与彩条消除测试 ---');
