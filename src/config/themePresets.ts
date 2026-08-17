@@ -4,6 +4,7 @@ import { AccentColor, TextColorPreset, BgColorPreset, StylePreset } from '../typ
  * 强调色配置表
  */
 export const ACCENT_COLORS: AccentColor[] = [
+    { name: "苹果蓝", hex: "#0071e3", rgb: "0, 113, 227" },
     { name: "皇家蓝", hex: "#3b82f6", rgb: "59, 130, 246" },
     { name: "梦幻紫", hex: "#8b5cf6", rgb: "139, 92, 246" },
     { name: "翡翠绿", hex: "#10b981", rgb: "16, 185, 129" },

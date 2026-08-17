@@ -7,15 +7,71 @@
 }
 
 :root {
-    --primary-color: #3b82f6; 
+    --primary-color: #0071e3; 
     --accent-color: #10b981;  
     --warning-color: #f59e0b; 
     --error-color: #ef4444;   
     --glass-blur: none; /* 去除模糊，展示锐利人物壁纸 */
 }
 
+/* ==================== 浅色/日间模式变量 (默认: 云瓷白) ==================== */
+body, body.theme-light {
+    --bg-color: #ffffff; /* 浅色模式背景改为纯白色 */
+    
+    /* 优雅卡片变量 (浅色下极致乳白清透，羽毛般无感投影，白瓷反光边框) */
+    --card-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.82) 0%, rgba(var(--primary-color-rgb), 0.08) 100%);
+    --card-border: rgba(255, 255, 255, 0.55);
+    --card-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.60), 0 8px 24px 0 rgba(142, 142, 147, 0.10);
+    --card-backdrop-filter: brightness(98%);
+    --text-primary: #1d1d1f; /* 苹果标志性黑灰 */
+    --text-secondary: #515156; /* 略微加深辅助文字，保证极致透明度下的卓越可读性 */
+    --input-bg: rgba(255, 255, 255, 0.48);
+    --input-border: rgba(255, 255, 255, 0.35);
+    --nav-bg: rgba(255, 255, 255, 0.50); /* Dock栏浅色高透玻璃 */
+    --nav-border: rgba(255, 255, 255, 0.35);
+    --sub-tab-bg: rgba(255, 255, 255, 0.22);
+    --sub-tab-border: rgba(255, 255, 255, 0.30);
+    --wallpaper-mask: rgba(255, 255, 255, var(--wallpaper-mask-opacity, 0.22)); /* 极薄亮色遮罩，支持滑块无级浓度调节 */
+    --sheet-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.94) 0%, rgba(var(--primary-color-rgb), 0.08) 100%); /* 浅色下自适应羽毛级主题渐变抽屉 */
+    
+    /* 动态强调色：支持提取自适应壁纸主色 */
+    --primary-color-rgb: 0, 113, 227; /* 默认苹果皇家蓝 / 云瓷蓝 */
+    --primary-color: rgb(var(--primary-color-rgb));
+    
+    /* 自适应浅色背景渐变与软糯发光斑 */
+    --bg-gradient: radial-gradient(circle at 50% 50%, #ffffff 0%, #f4f5f8 50%, #e3e6f0 100%);
+    --blob1-color: rgba(59, 130, 246, 0.07);
+    --blob2-color: rgba(147, 51, 234, 0.05);
+    --blob3-color: rgba(236, 72, 153, 0.04);
+    
+    /* 按钮与激活标签变量 */
+    --btn-primary-bg: var(--primary-color); /* 浅色模式下锁死实心强调色，保证100%字迹辨识度 */
+    --btn-primary-text: #ffffff;
+    --btn-primary-border: transparent;
+    --sub-tab-active-bg: rgba(var(--primary-color-rgb), 0.12); /* 浅色下使用主导色半透明 */
+    --sub-tab-active-text: var(--primary-color);
+    --sub-tab-active-border: rgba(var(--primary-color-rgb), 0.25);
+    
+    /* 自适应图标不同层级的不透明度变量 (浅色下加粗变浓，确保白底高可读性) */
+    --icon-inactive-color: rgba(var(--primary-color-rgb), 0.78);
+    --icon-empty-color: rgba(var(--primary-color-rgb), 0.58);
+    --nav-inactive-color: rgba(var(--primary-color-rgb), 0.68);
+}
+
+/* 浅色模式强锁纯白背景 */
+body.theme-light {
+    background-image: none !important;
+    background-color: #ffffff !important;
+}
+
+/* 浅色模式下修正下拉选项样式，防隐形 */
+body, body.theme-light select option {
+    background-color: #ffffff;
+    color: #1d1d1f;
+}
+
 /* ==================== 深色/夜间模式变量 ==================== */
-body, body.theme-dark {
+body.theme-dark {
     --bg-color: #0d0d17;
     --card-bg: linear-gradient(135deg, rgba(var(--primary-color-rgb), 0.16) 0%, rgba(var(--wallpaper-dark-rgb, 10, 11, 17), 0.72) 100%);
     --card-border: rgba(var(--primary-color-rgb), 0.16);
@@ -58,60 +114,9 @@ body, body.theme-dark {
     --nav-inactive-color: rgba(var(--primary-color-rgb), 0.45);
 }
 
-/* ==================== 浅色/日间模式变量 ==================== */
-body.theme-light {
-    --bg-color: #ffffff; /* 浅色模式背景改为纯白色 */
-    
-    /* 优雅卡片变量 (浅色下极致乳白清透，羽毛般无感投影，白瓷反光边框) */
-    --card-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.82) 0%, rgba(var(--primary-color-rgb), 0.08) 100%);
-    --card-border: rgba(255, 255, 255, 0.55);
-    --card-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.60), 0 8px 24px 0 rgba(142, 142, 147, 0.10);
-    --card-backdrop-filter: brightness(98%);
-    --text-primary: #1d1d1f; /* 苹果标志性黑灰 */
-    --text-secondary: #515156; /* 略微加深辅助文字，保证极致透明度下的卓越可读性 */
-    --input-bg: rgba(255, 255, 255, 0.48);
-    --input-border: rgba(255, 255, 255, 0.35);
-    --nav-bg: rgba(255, 255, 255, 0.50); /* Dock栏浅色高透玻璃 */
-    --nav-border: rgba(255, 255, 255, 0.35);
-    --sub-tab-bg: rgba(255, 255, 255, 0.22);
-    --sub-tab-border: rgba(255, 255, 255, 0.30);
-    --wallpaper-mask: rgba(255, 255, 255, var(--wallpaper-mask-opacity, 0.22)); /* 极薄亮色遮罩，支持滑块无级浓度调节 */
-    --sheet-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.94) 0%, rgba(var(--primary-color-rgb), 0.08) 100%); /* 浅色下自适应羽毛级主题渐变抽屉 */
-    
-    /* 动态强调色：支持提取自适应壁纸主色 */
-    --primary-color-rgb: 0, 113, 227; /* 默认苹果皇家蓝 */
-    --primary-color: rgb(var(--primary-color-rgb));
-    
-    /* 自适应浅色背景渐变与软糯发光斑 */
-    --bg-gradient: radial-gradient(circle at 50% 50%, #ffffff 0%, #f4f5f8 50%, #e3e6f0 100%);
-    --blob1-color: rgba(59, 130, 246, 0.07);
-    --blob2-color: rgba(147, 51, 234, 0.05);
-    --blob3-color: rgba(236, 72, 153, 0.04);
-    
-    /* 按钮与激活标签变量 */
-    --btn-primary-bg: var(--primary-color); /* 浅色模式下锁死实心强调色，保证100%字迹辨识度 */
-    --btn-primary-text: #ffffff;
-    --btn-primary-border: transparent;
-    --sub-tab-active-bg: rgba(var(--primary-color-rgb), 0.12); /* 浅色下使用主导色半透明 */
-    --sub-tab-active-text: var(--primary-color);
-    --sub-tab-active-border: rgba(var(--primary-color-rgb), 0.25);
-    
-    /* 自适应图标不同层级的不透明度变量 (浅色下加粗变浓，确保白底高可读性) */
-    --icon-inactive-color: rgba(var(--primary-color-rgb), 0.78);
-    --icon-empty-color: rgba(var(--primary-color-rgb), 0.58);
-    --nav-inactive-color: rgba(var(--primary-color-rgb), 0.68);
-}
-
-/* 浅色模式强锁纯白背景 */
-body.theme-light {
-    background-image: none !important;
-    background-color: #ffffff !important;
-}
-
-/* 浅色模式下修正下拉选项样式，防隐形 */
-body.theme-light select option {
-    background-color: #ffffff;
-    color: #1d1d1f;
+body.theme-dark select option {
+    background-color: #0d0d17;
+    color: #f5f6f9;
 }
 
 body {
@@ -1311,10 +1316,9 @@ body.theme-light .bg-color-btn.active {
     border-right: none;
 }
 
-/* 网格内的课程小卡片 (iOS 日历经典左侧彩条 + 半透明悬浮卡片) */
+/* 网格内的课程小卡片 (纯净均匀边框 + 半透明悬浮卡片) */
 .grid-course-card {
     border: 1px solid var(--card-border); /* 1px 晶莹剔透的全包反光玻璃边框 */
-    border-left-width: 3px; /* iOS 日历式左侧彩条（颜色随卡片色系） */
     border-radius: 9px;
     padding: 6px 7px;
     font-size: 10px;
@@ -1338,10 +1342,9 @@ body.theme-light .bg-color-btn.active {
     filter: brightness(90%);
 }
 
-/* 课程卡片多彩色系定义 (无发光亮条，纯净有色透明玻璃板) */
+/* 课程卡片多彩色系定义 (纯净均匀边框，纯净有色透明玻璃板) */
 .grid-course-card.blue {
     background: rgba(56, 189, 248, 0.14); /* 苹果仙气淡蓝 */
-    border-left-color: rgba(56, 189, 248, 0.75);
 }
 .grid-course-card.blue:active {
     background: rgba(56, 189, 248, 0.24);
@@ -1349,7 +1352,6 @@ body.theme-light .bg-color-btn.active {
 
 .grid-course-card.pink {
     background: rgba(244, 143, 177, 0.14); /* 苹果仙气淡粉 */
-    border-left-color: rgba(244, 143, 177, 0.75);
 }
 .grid-course-card.pink:active {
     background: rgba(244, 143, 177, 0.24);
@@ -1357,7 +1359,6 @@ body.theme-light .bg-color-btn.active {
 
 .grid-course-card.cyan {
     background: rgba(45, 212, 191, 0.14); /* 苹果仙气淡青 */
-    border-left-color: rgba(45, 212, 191, 0.75);
 }
 .grid-course-card.cyan:active {
     background: rgba(45, 212, 191, 0.24);
@@ -1365,7 +1366,6 @@ body.theme-light .bg-color-btn.active {
 
 .grid-course-card.purple {
     background: rgba(192, 132, 252, 0.14); /* 苹果仙气淡紫 */
-    border-left-color: rgba(192, 132, 252, 0.75);
 }
 .grid-course-card.purple:active {
     background: rgba(192, 132, 252, 0.24);

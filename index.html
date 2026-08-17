@@ -4,9 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://xjwis.ynufe.edu.cn; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://xjwis.ynufe.edu.cn; script-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:* ws://localhost:* http://127.0.0.1:* ws://127.0.0.1:* http://192.168.*:* ws://192.168.*:* https://xjwis.ynufe.edu.cn;">
-    <!-- 字体使用系统字体栈（src/styles/app.css 内定义），不再引用 Google Fonts，避免国内网络下阻塞首屏渲染 -->
 </head>
-<body>
+<body class="theme-light">
     <!-- 独立壁纸背景层 (支持手机般手势无缝缩放和拖拽移动) -->
     <div id="wallpaper-bg" class="wallpaper-bg">
         <img id="wallpaper-img" src="" alt="wallpaper" style="display: none;">
@@ -440,8 +439,8 @@
                 <div class="settings-section" style="margin-bottom: 20px;">
                     <h3 style="font-size:14px; margin-bottom:12px; color:var(--text-primary);">主题模式</h3>
                     <div class="theme-toggle-bar">
-                        <button class="theme-btn active" data-theme="dark">深色模式 (Dark)</button>
-                        <button class="theme-btn" data-theme="light">浅色模式 (Light)</button>
+                        <button class="theme-btn" data-theme="dark">深色模式 (Dark)</button>
+                        <button class="theme-btn active" data-theme="light">浅色模式 (Light)</button>
                     </div>
                 </div>
 
@@ -452,7 +451,8 @@
                         主题强调色 (多种配色)
                     </h3>
                     <div class="accent-color-palette" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:6px;">
-                        <button class="accent-color-btn active" data-hex="#3b82f6" data-rgb="59, 130, 246" title="皇家蓝" style="background:#3b82f6;"></button>
+                        <button class="accent-color-btn active" data-hex="#0071e3" data-rgb="0, 113, 227" title="苹果蓝" style="background:#0071e3;"></button>
+                        <button class="accent-color-btn" data-hex="#3b82f6" data-rgb="59, 130, 246" title="皇家蓝" style="background:#3b82f6;"></button>
                         <button class="accent-color-btn" data-hex="#8b5cf6" data-rgb="139, 92, 246" title="梦幻紫" style="background:#8b5cf6;"></button>
                         <button class="accent-color-btn" data-hex="#10b981" data-rgb="16, 185, 129" title="翡翠绿" style="background:#10b981;"></button>
                         <button class="accent-color-btn" data-hex="#ec4899" data-rgb="236, 72, 153" title="迷幻粉" style="background:#ec4899;"></button>

@@ -20,7 +20,16 @@ export class ThemeCustomizer {
         this.renderStylePresets();
         this.loadSavedCustomizations();
         this.bindEvents();
-        this.updateActiveStyleUI(CacheService.get<string>(StorageKeys.STYLE_PRESET) || "");
+        const savedPreset = CacheService.get<string>(StorageKeys.STYLE_PRESET);
+        const hasCustomColor = Boolean(
+            CacheService.get<string>(StorageKeys.ACCENT_HEX) ||
+            CacheService.get<string>(StorageKeys.TEXT_COLOR) ||
+            CacheService.get<string>(StorageKeys.BG_COLOR)
+        );
+        const activePreset = (savedPreset !== null && savedPreset !== undefined && savedPreset !== "")
+            ? savedPreset
+            : (!hasCustomColor && (CacheService.get<string>(StorageKeys.THEME_MODE) || "light") === "light" ? "云瓷白" : "");
+        this.updateActiveStyleUI(activePreset);
     }
 
     /**
@@ -355,7 +364,7 @@ export class ThemeCustomizer {
         CacheService.remove(StorageKeys.TEXT_COLOR);
         CacheService.remove(StorageKeys.BG_COLOR);
 
-        this.updateActiveAccentUI("#3b82f6");
+        this.updateActiveAccentUI("#0071e3");
         this.updateActiveTextUI("");
         this.updateActiveBgUI("");
     }

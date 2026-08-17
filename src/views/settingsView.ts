@@ -61,10 +61,10 @@ export class SettingsView {
     }
 
     /**
-     * 初始化主题模式 (深色/浅色) 及按钮高亮。
+     * 初始化主题模式 (深色/浅色) 及按钮高亮，未自定义时默认浅色模式。
      */
     static initTheme(): void {
-        const savedTheme = CacheService.get<string>(StorageKeys.THEME_MODE) || "dark";
+        const savedTheme = CacheService.get<string>(StorageKeys.THEME_MODE) || "light";
         this.setThemeMode(savedTheme as "dark" | "light");
     }
 
