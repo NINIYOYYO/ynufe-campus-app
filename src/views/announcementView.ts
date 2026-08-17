@@ -142,23 +142,24 @@ export class AnnouncementView {
      *     string[]: 候选路径列表。
      */
     private static getAttachmentCandidates(originalPath: string): string[] {
-        const candidates: string[] = [originalPath];
+        const candidates: string[] = [];
         const trimmed = originalPath.startsWith('/') ? originalPath : `/${originalPath}`;
 
-        if (trimmed.startsWith('/ewebeditor/')) {
-            candidates.push(`/jsxsd${trimmed}`);
-            const filename = trimmed.replace('/ewebeditor/uploadfile/', '');
-            candidates.push(`/jsxsd/uploadfile/${filename}`);
+        const uploadMatch = trimmed.match(/(?:uploadfile|uploadfiles)\/([^?#]+)/i);
+        if (uploadMatch && uploadMatch[1]) {
+            const filename = uploadMatch[1].replace(/^\.?\/?/, "");
+            candidates.push(`/ewebeditor/uploadfile/${filename}`);
             candidates.push(`/uploadfiles/${filename}`);
             candidates.push(`/uploadfile/${filename}`);
-        } else if (!trimmed.startsWith('/jsxsd/')) {
-            candidates.push(`/jsxsd${trimmed}`);
-            if (trimmed.startsWith('/uploadfile/') || trimmed.startsWith('/uploadfiles/')) {
-                candidates.push(`/ewebeditor${trimmed}`);
-                candidates.push(`/jsxsd/ewebeditor${trimmed}`);
+            candidates.push(`/jsxsd/ewebeditor/uploadfile/${filename}`);
+            candidates.push(`/jsxsd/uploadfile/${filename}`);
+        } else {
+            candidates.push(trimmed);
+            if (trimmed.startsWith('/ewebeditor/')) {
+                candidates.push(`/jsxsd${trimmed}`);
+            } else if (!trimmed.startsWith('/jsxsd/')) {
+                candidates.push(`/jsxsd${trimmed}`);
             }
-        } else if (trimmed.startsWith('/jsxsd/ewebeditor/')) {
-            candidates.push(trimmed.replace('/jsxsd', ''));
         }
 
         return Array.from(new Set(candidates));

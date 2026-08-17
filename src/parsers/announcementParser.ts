@@ -127,15 +127,10 @@ export class AnnouncementParser {
      *     string | null: 形如 "/jsxsd/..." 的相对路径；不安全或非教务网资源时为 null。
      */
     static safeResourcePath(href: string, pageUrl: string): string | null {
-        let raw = (href || "").trim();
+        const raw = (href || "").trim();
         if (!raw || raw.startsWith("#")) return null;
         // 伪协议一律拒绝（javascript:、data:、vbscript: 等）
         if (/^[a-z][a-z0-9+.-]*:/i.test(raw) && !/^https?:/i.test(raw)) return null;
-
-        // 若富文本中相对路径形如 "uploadfile/xxx.doc" 或 "./uploadfile/xxx.doc"，精准归一化为教务网标准路径 "/ewebeditor/uploadfile/xxx.doc"
-        if (/^\.?\/?uploadfile\//i.test(raw) && !raw.startsWith("/ewebeditor/")) {
-            raw = `/ewebeditor/${raw.replace(/^\.?\/?/, "")}`;
-        }
 
         try {
             const origin = new URL(AppConfig.TARGET_HOST).origin;
