@@ -122,7 +122,7 @@ export class AnnouncementView {
                 btn.addEventListener("click", () => {
                     const idx = parseInt(btn.getAttribute("data-idx") || "-1", 10);
                     const file = detail.attachments[idx];
-                    if (file) this.downloadAttachment(file.url, file.name);
+                    if (file) this.downloadAttachment(file.url, file.name, ann.url);
                 });
             });
         } catch (e) {
@@ -133,21 +133,29 @@ export class AnnouncementView {
     }
 
     /**
-     * 下载公告附件（带二进制与 HTML 拦截校验及 ObjectURL 延迟释放保护）。
+     * 下载公告附件（带二进制与 HTML 拦截校验、Referer 伪装及 ObjectURL 延迟释放保护）。
      *
      * Args:
      *     url (string): 附件相对路径。
      *     name (string): 保存文件名。
+     *     refererUrl (string, optional): 公告详情页面地址。
      */
-    static async downloadAttachment(url: string, name: string): Promise<void> {
+    static async downloadAttachment(url: string, name: string, refererUrl?: string): Promise<void> {
         showToast(`正在获取「${name}」…`, "info");
         try {
-            const { blob, contentType } = await YnufeClient.getBlob(url);
+            const { blob, contentType } = await YnufeClient.getBlob(url, refererUrl);
 
             if (contentType.includes("text/html") || blob.size < 4096) {
                 const head = await blob.slice(0, 4096).text();
-                if (head.includes("非法访问文件") || head.includes("出错页面")) {
-                    showToast("教务系统限制了该附件的直接下载", "warn");
+                if (
+                    head.includes("非法访问") ||
+                    head.includes("出错页面") ||
+                    head.includes("404 error") ||
+                    head.includes("404 错误") ||
+                    head.includes("页面不存在") ||
+                    head.includes("未找到文件")
+                ) {
+                    showToast("教务系统限制了该附件的直接下载或文件已下架", "warn");
                     return;
                 }
             }
@@ -168,7 +176,7 @@ export class AnnouncementView {
                 showToast("登录已过期，请重新登录后再试", "warn");
             } else {
                 console.error("[YnufeUI] 附件下载失败:", e);
-                showToast("附件下载失败，请检查网络", "error");
+                showToast("附件下载失败，教务系统暂未开放直接下载", "warn");
             }
         }
     }

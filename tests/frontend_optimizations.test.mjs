@@ -224,7 +224,9 @@ await build({
         join(ROOT, 'src', 'views', 'settingsView.ts'),
         join(ROOT, 'src', 'views', 'gradeView.ts'),
         join(ROOT, 'src', 'views', 'timetableView.ts'),
-        join(ROOT, 'src', 'services', 'cacheService.ts')
+        join(ROOT, 'src', 'services', 'cacheService.ts'),
+        join(ROOT, 'src', 'services', 'cookieManager.ts'),
+        join(ROOT, 'src', 'api', 'client.ts')
     ],
     outdir: TMP_DIR,
     format: 'esm',
@@ -241,8 +243,10 @@ const { SettingsView } = await import(pathToFileURL(join(TMP_DIR, 'views', 'sett
 const { GradeView } = await import(pathToFileURL(join(TMP_DIR, 'views', 'gradeView.js')).href);
 const { TimetableView } = await import(pathToFileURL(join(TMP_DIR, 'views', 'timetableView.js')).href);
 const { CacheService } = await import(pathToFileURL(join(TMP_DIR, 'services', 'cacheService.js')).href);
+const { SessionCookieManager } = await import(pathToFileURL(join(TMP_DIR, 'services', 'cookieManager.js')).href);
+const { YnufeClient, SessionExpiredError } = await import(pathToFileURL(join(TMP_DIR, 'api', 'client.js')).href);
 
-console.log('=== 开始运行 前端体验与样式三大优化专项测试 ===\n');
+console.log('=== 开始运行 前端体验与会话安全专项测试 ===\n');
 
 // ── R1 测试套件: 默认主题 "云瓷白" (Cloud Porcelain White) ──────────────────────
 console.log('--- 测试套件 1: R1 默认主题 "云瓷白" 与初始样式测试 ---');
@@ -549,9 +553,61 @@ courseCards.forEach(card => {
 });
 console.log('[PASS] 用例 3.2 通过: 课表网格卡片 DOM 渲染结构正常且类名规范');
 
+// ── 测试套件 4: 会话安全防污染与 404/非法访问熔断测试 ───────────────────────────
+console.log('\n--- 测试套件 4: 会话防污染保护与 404 熔断测试 ---');
+
+// 4.1 404 页面被识别为 SessionExpiredError 而非泄漏
+const sample404Html = '<html><head><title>404 error Request Page Not Found!</title></head><body>404 错误 您请求的页面不存在！</body></html>';
+let expiredEventFired = false;
+const onExpired = () => { expiredEventFired = true; };
+window.addEventListener('ynufe-session-expired', onExpired);
+
+try {
+    // 调用私有静态 checkSessionTimeout 逻辑（通过 SessionExpiredError 预期）
+    assert.throws(
+        () => {
+            YnufeClient['checkSessionTimeout'](sample404Html, '/jsxsd/bysj/xsyxxt.do');
+        },
+        (err) => err instanceof SessionExpiredError || err.name === 'SessionExpiredError',
+        '404 页面必须抛出 SessionExpiredError 阻止脏数据污染'
+    );
+    assert.equal(expiredEventFired, true, '必须触发 ynufe-session-expired 事件通知应用自动续期');
+    console.log('[PASS] 用例 4.1 通过: 404 错误页面成功触发 SessionExpiredError 与续期广播');
+} finally {
+    window.removeEventListener('ynufe-session-expired', onExpired);
+}
+
+// 4.2 错误响应中的 Set-Cookie 严禁覆盖已登录的合法会话
+localStorage.setItem('ynufe_saved_jsessionid', 'VALID_AUTHENTICATED_SESSION_123');
+YnufeClient['extractAndSaveCookieFromHeaders'](
+    { 'Set-Cookie': 'JSESSIONID=UNAUTH_404_EMPTY_SESSION; Path=/' },
+    '/jsxsd/bysj/xsyxxt.do',
+    sample404Html
+);
+assert.equal(
+    localStorage.getItem('ynufe_saved_jsessionid'),
+    'VALID_AUTHENTICATED_SESSION_123',
+    '404 错误响应中的 Set-Cookie 绝对不能覆盖已登录的合法会话'
+);
+console.log('[PASS] 用例 4.2 通过: 404 错误响应中的临时 Set-Cookie 成功被安全锁拦截');
+
+// 4.3 允许在登录与验证码流程下正常更新 Session
+YnufeClient['extractAndSaveCookieFromHeaders'](
+    { 'Set-Cookie': 'JSESSIONID=NEW_LOGIN_SESSION_456; Path=/jsxsd' },
+    '/jsxsd/xk/LoginToXkLdap',
+    '<html><body>登录成功</body></html>'
+);
+assert.equal(
+    localStorage.getItem('ynufe_saved_jsessionid'),
+    'NEW_LOGIN_SESSION_456',
+    '登录接口返回的合法 Set-Cookie 必须能够正常更新会话'
+);
+console.log('[PASS] 用例 4.3 通过: 登录接口合法 Set-Cookie 正常更新会话');
+
 // 清理临时构建目录
 try { rmSync(TMP_DIR, { recursive: true, force: true }); } catch {}
 
 console.log('\n==========================================================');
-console.log('  全部 3 大体验与样式优化专项测试用例 100% 实测通过！');
+console.log('  全部前端体验、样式与会话安全测试用例 100% 实测通过！');
 console.log('==========================================================\n');
+

@@ -49,12 +49,33 @@ export class YnufeClient {
     }
 
     /**
-     * 从 HTTP 响应头或原生响应对象中直接提取 Set-Cookie (JSESSIONID / jsxsd) 并存入本地。
+     * 从 HTTP 响应头或原生响应对象中提取 Set-Cookie (JSESSIONID / jsxsd) 并存入本地。
+     * 具备会话防污染防护：仅当本地无 Session 或为登录/验证码流程时允许更新，并过滤 404/错误响应。
      */
-    private static extractAndSaveCookieFromHeaders(respOrHeaders: Response | Record<string, string>): void {
+    private static extractAndSaveCookieFromHeaders(
+        respOrHeaders: Response | Record<string, string>,
+        endpoint: string = "",
+        responseText: string = ""
+    ): void {
         try {
+            // 1. 过滤 404、500 及错误页响应
+            if (
+                responseText.includes("404 error") ||
+                responseText.includes("404 错误") ||
+                responseText.includes("非法访问") ||
+                responseText.includes("出错页面") ||
+                responseText.includes("页面不存在") ||
+                responseText.includes("HTTP Status 404") ||
+                responseText.includes("HTTP Status 500")
+            ) {
+                return;
+            }
+
             let setCookie = "";
             if (respOrHeaders instanceof Response) {
+                if (!respOrHeaders.ok && respOrHeaders.status >= 400) {
+                    return;
+                }
                 setCookie = respOrHeaders.headers.get("Set-Cookie") || respOrHeaders.headers.get("set-cookie") || "";
                 if (!setCookie && typeof respOrHeaders.headers.forEach === "function") {
                     respOrHeaders.headers.forEach((v, k) => {
@@ -71,10 +92,16 @@ export class YnufeClient {
                 const jsessionMatch = setCookie.match(/JSESSIONID=([^;]+)/i);
                 const jsxsdMatch = setCookie.match(/jsxsd=([^;]+)/i);
                 if (jsessionMatch && jsessionMatch[1]) {
-                    SessionCookieManager.saveJsessionId(
-                        jsessionMatch[1].trim(),
-                        jsxsdMatch ? jsxsdMatch[1].trim() : undefined
-                    );
+                    const newJsession = jsessionMatch[1].trim();
+                    const currentSaved = SessionCookieManager.getSavedJsessionId();
+                    // 仅当本地尚无 Session、或者当前请求为显式登录/验证码流程时才允许覆盖
+                    const isAuthEndpoint = endpoint.includes("LoginToXk") || endpoint.includes("verifycode");
+                    if (!currentSaved || isAuthEndpoint) {
+                        SessionCookieManager.saveJsessionId(
+                            newJsession,
+                            jsxsdMatch ? jsxsdMatch[1].trim() : undefined
+                        );
+                    }
                 }
             }
         } catch (e) {
@@ -83,7 +110,7 @@ export class YnufeClient {
     }
 
     /**
-     * 校验请求返回的 HTML 文本是否触发了教务系统的登录重定向。
+     * 校验请求返回的 HTML 文本是否触发了教务系统的登录重定向或会话失效 404。
      */
     private static checkSessionTimeout(text: string, endpoint: string): void {
         if (endpoint.includes("LoginToXkLdap")) {
@@ -100,8 +127,17 @@ export class YnufeClient {
             text.includes('id="kbtable"') ||
             text.includes("middletopdwxxcont") ||
             text.includes('id="Table1"');
+
+        // 强智教务网 Session 丢失后，许多子页面或接口会直接返回 404 错误页、非法访问或请重新登录
+        const is404Error =
+            (text.includes("404 error") ||
+             text.includes("404 错误") ||
+             text.includes("Request Page Not Found") ||
+             text.includes("您请求的页面不存在") ||
+             text.includes("HTTP Status 404")) && !hasBusinessContent;
+
         const phraseOnly =
-            (text.includes("非法访问") || text.includes("请重新登录")) && !hasBusinessContent;
+            (text.includes("非法访问") || text.includes("请重新登录") || is404Error) && !hasBusinessContent;
 
         if (structural || phraseOnly) {
             console.warn(`[YnufeClient] Session timeout detected on: ${endpoint}`);
@@ -186,10 +222,10 @@ export class YnufeClient {
                         ...cookieHeader
                     }
                 });
-                if (res.headers) {
-                    this.extractAndSaveCookieFromHeaders(res.headers);
-                }
                 const text = typeof res.data === "string" ? res.data : JSON.stringify(res.data);
+                if (res.headers) {
+                    this.extractAndSaveCookieFromHeaders(res.headers, endpoint, text);
+                }
                 await SessionCookieManager.captureAndPersist();
                 this.checkSessionTimeout(text, endpoint);
                 return text;
@@ -209,7 +245,7 @@ export class YnufeClient {
                 }
             });
             const text = await resp.text();
-            this.extractAndSaveCookieFromHeaders(resp);
+            this.extractAndSaveCookieFromHeaders(resp, endpoint, text);
             await SessionCookieManager.captureAndPersist();
             this.checkSessionTimeout(text, endpoint);
             return text;
@@ -252,10 +288,10 @@ export class YnufeClient {
                     },
                     data: params.toString()
                 });
-                if (res.headers) {
-                    this.extractAndSaveCookieFromHeaders(res.headers);
-                }
                 const text = typeof res.data === "string" ? res.data : JSON.stringify(res.data);
+                if (res.headers) {
+                    this.extractAndSaveCookieFromHeaders(res.headers, endpoint, text);
+                }
                 await SessionCookieManager.captureAndPersist();
                 this.checkSessionTimeout(text, endpoint);
                 return text;
@@ -277,7 +313,7 @@ export class YnufeClient {
                 body: params.toString()
             });
             const text = await resp.text();
-            this.extractAndSaveCookieFromHeaders(resp);
+            this.extractAndSaveCookieFromHeaders(resp, endpoint, text);
             await SessionCookieManager.captureAndPersist();
             this.checkSessionTimeout(text, endpoint);
             return text;
@@ -290,10 +326,11 @@ export class YnufeClient {
     }
 
     /**
-     * 拉取任意教务网资源的二进制流（用于公告附件等文件下载），支持 Cookie 恢复与超时熔断。
+     * 拉取任意教务网资源的二进制流（用于公告附件等文件下载），支持 Native 插件、Cookie 恢复与会话防污染保护。
      *
      * Args:
      *     endpoint (string): 以 / 开头的相对路径。
+     *     refererUrl (string, optional): 指定 Referer 来源页面 URL。
      *
      * Returns:
      *     Promise<{ blob: Blob; contentType: string }>: 响应体与其 Content-Type。
@@ -301,26 +338,67 @@ export class YnufeClient {
      * Raises:
      *     Error: 下载失败或网络超时。
      */
-    static async getBlob(endpoint: string): Promise<{ blob: Blob; contentType: string }> {
+    static async getBlob(endpoint: string, refererUrl?: string): Promise<{ blob: Blob; contentType: string }> {
         const url = `${this.BASE_URL}${endpoint}`;
         await SessionCookieManager.restoreCookies();
         const cookieHeader = SessionCookieManager.getCookieHeader();
 
-        const resp = await this.fetchWithTimeout(url, {
-            method: "GET",
-            credentials: "include",
-            headers: {
-                ...this.COMMON_HEADERS,
-                ...cookieHeader
-            }
-        });
-        if (!resp.ok) {
-            throw new Error(`Download failed with status ${resp.status}`);
-        }
-        return {
-            blob: await resp.blob(),
-            contentType: resp.headers.get("Content-Type") || "",
+        const customHeaders: Record<string, string> = {
+            ...this.COMMON_HEADERS,
+            ...cookieHeader
         };
+        if (refererUrl) {
+            customHeaders["Referer"] = refererUrl.startsWith("http") ? refererUrl : `${this.BASE_URL}${refererUrl}`;
+        }
+
+        const cap = window.Capacitor;
+        const isNative = typeof cap?.isNativePlatform === "function" && cap.isNativePlatform() === true;
+
+        if (isNative && cap?.Plugins?.CapacitorHttp?.get) {
+            try {
+                const res = await cap.Plugins.CapacitorHttp.get({
+                    url,
+                    headers: customHeaders,
+                    responseType: "blob"
+                });
+
+                const contentType = res.headers?.["Content-Type"] || res.headers?.["content-type"] || "application/octet-stream";
+                let blobResult: Blob;
+                if (typeof res.data === "string") {
+                    const byteChars = atob(res.data);
+                    const byteNumbers = new Array(byteChars.length);
+                    for (let i = 0; i < byteChars.length; i++) {
+                        byteNumbers[i] = byteChars.charCodeAt(i);
+                    }
+                    blobResult = new Blob([new Uint8Array(byteNumbers)], { type: contentType });
+                } else if (res.data instanceof Blob) {
+                    blobResult = res.data;
+                } else {
+                    blobResult = new Blob([], { type: contentType });
+                }
+                await SessionCookieManager.restoreCookies();
+                return { blob: blobResult, contentType };
+            } catch (err) {
+                console.warn("[YnufeClient] Native CapacitorHttp.get blob failed, falling back to fetch:", err);
+            }
+        }
+
+        try {
+            const resp = await this.fetchWithTimeout(url, {
+                method: "GET",
+                credentials: "include",
+                headers: customHeaders
+            });
+            if (!resp.ok) {
+                throw new Error(`Download failed with status ${resp.status}`);
+            }
+            const blob = await resp.blob();
+            const contentType = resp.headers.get("Content-Type") || "";
+            return { blob, contentType };
+        } finally {
+            // 严防下载附件时服务端下发的任何临时 Set-Cookie 污染已登录 Session
+            await SessionCookieManager.restoreCookies();
+        }
     }
 
     /**
