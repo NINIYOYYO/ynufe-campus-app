@@ -28,12 +28,10 @@ const TERM = process.env.YNUFE_TERM || '2025-2026-2';
 /** 空教室查询用的节次配置 GUID，需与 src/config.ts 保持一致 */
 const KBJCMSID = process.env.YNUFE_KBJCMSID || 'C8B3C60AE20444B499A15ABFA3ECFF9D';
 
-/** 脱敏规则：真实姓名与学号 → 占位值。按需追加。 */
+/** 脱敏规则：真实姓名与学号 → 占位值。通过环境变量安全注入。 */
 const rawRedactions = [
     [process.env.YNUFE_REAL_NAME, '张三'],
     [process.env.YNUFE_REAL_ID, '200000000000'],
-    ['张三', '张三'],
-    ['200000000000', '200000000000'],
 ];
 const seenKeys = new Set();
 const REDACTIONS = rawRedactions.filter(([from]) => {
