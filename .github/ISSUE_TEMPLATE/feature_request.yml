@@ -1,0 +1,24 @@
+name: "功能建议 (Feature Request)"
+description: 为云财智能教务助手提出新的功能想法或体验优化建议
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        欢迎提出您的宝贵构想！好的建议能够帮助教务助手变得更加好用。
+  - type: textarea
+    id: problem
+    attributes:
+      label: 您的需求或痛点 (Problem / Motivation)
+      description: 当前缺少什么功能？遇到什么不便？
+      placeholder: 例如 考试倒计时目前只能在应用内查看，希望能够增加桌面小组件支持
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: 建议的解决方案 (Proposed Solution)
+      description: 您希望如何实现该功能？期望的交互是什么样的？
+    validations:
+      required: true\n

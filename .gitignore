@@ -31,21 +31,37 @@ android/app/src/main/assets/capacitor.plugins.json
 *.jks
 keystore.properties
 
-# 临时测试、多代理审计与本地临时文件
+# 环境变量文件
+.env
+.env.local
+.env.*.local
+
+# 临时测试、基准采样与本地临时脚本
 .agents/
 .ruff_cache/
 tests/.*_tmp/
 tests/.*_build/
+tests/benchmark*
+tests/test_benchmark*
+tests/test_live*
+tests/test_node*
+tests/test_ts*
 tests/adversarial*.mjs
 tests/challenger*.mjs
 ORIGINAL_REQUEST.md
 PROJECT.md
 TEST_INFRA.md
 TEST_READY.md
+
 # Python
 __pycache__/
 *.pyc
+.venv/
 
+# 系统与编辑器残留
 .DS_Store
 Thumbs.db
+.idea/
+.vscode/
+*.swp
 

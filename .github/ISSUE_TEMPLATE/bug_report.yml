@@ -1,0 +1,41 @@
+name: "Bug 报告 (Bug Report)"
+description: 提交应用在运行或数据解析中遇到的错误与异常
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢提交 Bug 报告！请尽量提供清晰的复现步骤与设备环境信息，帮助我们更快定位并修复问题。
+  - type: input
+    id: version
+    attributes:
+      label: 应用版本 / 平台
+      description: 例如 Android 14 APK、Windows Web (Chrome 120)、iOS Safari 等
+      placeholder: 例如 Android 14 (云财学子 v1.1.0)
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 异常现象描述 (What Happened)
+      description: 发生了什么错误？界面报错信息或弹窗内容是什么？
+      placeholder: 例如 点击公告附件提示无法下载 / 课表第 3 周某节次未正确渲染
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤 (Steps to Reproduce)
+      description: 如何一步步复现该问题？
+      placeholder: |
+        1. 登录教务系统
+        2. 切换到「课表」Tab
+        3. 切换周次为第 5 周
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志或截图 (Logs or Screenshots)
+      description: 控制台输出、错误日志（注意：请务必遮挡学号、密码及姓名等个人隐私）\n

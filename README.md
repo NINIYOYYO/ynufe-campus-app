@@ -1,9 +1,12 @@
 # 云财智能教务助手 (YNUFE Mobile Assistant)
 
+[![CI](https://github.com/NINIYOYYO/ynufe-campus-app/actions/workflows/ci.yml/badge.svg)](https://github.com/NINIYOYYO/ynufe-campus-app/actions/workflows/ci.yml)
+[![Build APK](https://github.com/NINIYOYYO/ynufe-campus-app/actions/workflows/build-apk.yml/badge.svg)](https://github.com/NINIYOYYO/ynufe-campus-app/actions/workflows/build-apk.yml)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue.svg)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-5.1-purple.svg)](https://vitejs.dev/)
 [![Capacitor](https://img.shields.io/badge/Capacitor-6.0-blue.svg)](https://capacitorjs.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Security Policy](https://img.shields.io/badge/Security-Policy-green.svg)](SECURITY.md)
 
 云财智能教务助手是一款专为云南财经大学学子打造的现代化、轻量级、离线优先的第三方教务移动端应用（支持 Android 原生 APK 与 Web SPA）。
 
