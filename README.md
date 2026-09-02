@@ -14,6 +14,13 @@
 
 ---
 
+## 📥 快速下载与安装 (For Students)
+
+- **Android 手机安装包**：前往 **[Releases 页面](https://github.com/NINIYOYYO/ynufe-campus-app/releases)**，直接下载最新版的 **`云财学子.apk`**（约 3.9 MB）即可安装使用。
+- **免安装网页版 (Web)**：直接通过手机或电脑浏览器访问部署地址，无需安装即可体验全功能。
+
+---
+
 ## 核心亮点与架构特性
 
 ### 1. 零中转纯本地直连 (Zero-Server Architecture)
@@ -114,7 +121,7 @@ campus_app/
 ### 1. 环境准备
 - **Node.js** >= 18.0.0
 - **npm** >= 9.0.0
-- **Python** >= 3.10（仅用于 APK 打包与本地冒烟）
+- **Python** >= 3.10（可选，仅用于执行本地一键打包脚本 `build_apk.py` 与冒烟检查）
 
 ### 2. 克隆仓库与安装依赖
 ```cmd
@@ -127,21 +134,21 @@ npm install
 ```cmd
 npm run dev
 ```
-启动后在浏览器中打开 `http://localhost:8000` 即可。Vite 已内置 `/jsxsd` 反向代理，支持在浏览器中直接调试登录、验证码拉取与数据解析。
+启动后在浏览器中打开 `http://localhost:8000` 即可。Vite 已内置 `/jsxsd` 反向代理，支持在电脑浏览器中直接调试登录、验证码拉取与数据解析。
 
 ---
 
 ## 测试与质量保障
 
-项目贯彻严格的测试驱动与自动化验证标准，包含 6 大核心模块化测试套件：
+项目贯彻严格的测试驱动与自动化验证标准，覆盖 88 条关键测试断言：
 
-### 1. 一键运行全量模块测试
+### 1. 一键运行全量自动化测试
 ```cmd
 npm test
 ```
-将依次执行所有模块化测试（解析器断言、Cookie 穿透、提醒排程、缓存自愈、凭据混淆与心跳保活）。
+将依次执行所有模块化测试（强智解析器 88 项断言、Cookie 穿透、提醒排程、缓存自愈、凭据混淆与心跳保活）。
 
-### 2. 运行 DOM 解析器 73 条回归测试
+### 2. 运行 DOM 解析器专属回归测试
 ```cmd
 npm run test:parsers
 ```
@@ -171,20 +178,26 @@ uv run ruff check .
 
 ## 打包 Android 原生 APK
 
-### 1. 构建离线独立正式版 APK
-```cmd
-python build_apk.py
-```
-脚本将依次执行：`tsc` 类型检查 -> `vite build` 生产构建 -> `npx cap sync` 原生同步 -> Gradle 编译，产物为根目录下的 **`云财学子.apk`**。
+项目提供 **「云端免环境自动构建」** 与 **「本地一键极速打包」** 两种方式：
 
-### 2. 构建开发热重载版 APK (Live Reload)
+### 方式一（推荐）：GitHub Actions 云端免安装出包（无需本地 Android 环境）
+如果您的电脑没有安装 Android Studio 或 Android SDK：
+1. Fork 本仓库并进入您 GitHub 仓库的 **Actions** 标签页；
+2. 选择 **Build Android APK** 工作流，点击 **Run workflow**；
+3. 云端将在 1~2 分钟内完成编译，并在构件区生成打包好的 `云财学子.apk` 供直接下载。
+
+### 方式二：本地一键极速打包 (Local CLI)
+如果本地已配置 Java 17 / Android 环境：
 ```cmd
+# 构建离线独立正式版 APK（产物为根目录下的「云财学子.apk」）
+python build_apk.py
+
+# 构建局域网热重载调试版 APK (Live Reload)
 python build_apk.py --dev
 ```
-该模式会自动获取本机局域网 IP 并注入配置，手机连接同一 Wi-Fi 即可实现代码保存实时刷新。
 
 ### 3. 真机 USB 调试部署
-推荐开启手机“开发者选项 -> USB 调试”后通过 ADB 直连：
+开启手机“开发者选项 -> USB 调试”后通过 ADB 直连：
 ```cmd
 # 1. 安装 APK 到真机
 adb install -r 云财学子.apk
