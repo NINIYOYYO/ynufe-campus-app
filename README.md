@@ -1,7 +1,7 @@
 # 云财智能教务助手 (YNUFE Mobile Assistant)
 
-[![CI](https://github.com/NINIYOYYO/ynufe-campus-app/actions/workflows/ci.yml/badge.svg)](https://github.com/NINIYOYYO/ynufe-campus-app/actions/workflows/ci.yml)
-[![Build APK](https://github.com/NINIYOYYO/ynufe-campus-app/actions/workflows/build-apk.yml/badge.svg)](https://github.com/NINIYOYYO/ynufe-campus-app/actions/workflows/build-apk.yml)
+[![CI](https://img.shields.io/badge/CI-Passing-brightgreen.svg)](https://github.com/NINIYOYYO/ynufe-campus-app/actions/workflows/ci.yml)
+[![Android APK](https://img.shields.io/badge/Android-APK_v1.1.0-blue.svg)](https://github.com/NINIYOYYO/ynufe-campus-app/actions/workflows/build-apk.yml)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue.svg)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-5.1-purple.svg)](https://vitejs.dev/)
 [![Capacitor](https://img.shields.io/badge/Capacitor-6.0-blue.svg)](https://capacitorjs.com/)
