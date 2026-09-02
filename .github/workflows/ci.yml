@@ -28,4 +28,4 @@ jobs:
         run: npm run test
 
       - name: TypeScript check & Vite build
-        run: npm run build\n
+        run: npm run build

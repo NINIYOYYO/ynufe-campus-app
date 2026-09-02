@@ -65,4 +65,4 @@ jobs:
           files: release-artifacts/云财学子.apk
           generate_release_notes: true
           draft: false
-          prerelease: false\n
+          prerelease: false
