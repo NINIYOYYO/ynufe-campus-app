@@ -1,0 +1,205 @@
+
+
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+	
+
+<head id="headerid1">
+	<base target='_self'>
+	<title>学生信息管理_学生个人中心</title>	
+	<meta http-equiv="pragma" content="no-cache">
+	<meta http-equiv="cache-control" content="no-cache">
+	<meta http-equiv="expires" content="0">
+	<meta http-equiv="keywords" content="湖南强智科技教务系统">
+	<meta http-equiv="description" content="湖南强智科技教务系统">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<script type="text/javascript" src="/jsxsd/js/jquery-min.js" language="javascript" ></script>
+<script type="text/javascript" src="/jsxsd/js/common.js" language="javascript" ></script>
+<script type="text/javascript" src="/jsxsd/js/iepngfix_tilebg.js" language="javascript" ></script>
+
+<link href="/jsxsd/framework/images/common.css" rel="stylesheet" type="text/css" />
+<link href="/jsxsd/framework/images/blue.css" rel="stylesheet" type="text/css" id="link_theme" />
+<link href="/jsxsd/framework/images/workstation.css" rel="stylesheet" type="text/css" /> 
+
+</head>
+<iframe id="notSession" name="notSession" style="display: none;" src=""></iframe>
+<script type="text/javascript">
+jQuery(document).ready(function(){
+	window.setInterval(function(){
+		 document.getElementById("notSession").src = "/jsxsd/framework/blankPage.jsp";
+	 }, 1000 * 60 * 10);
+});
+</script>
+
+<body>
+ 
+<div class="Nsb_pw">
+	
+	
+		
+
+
+
+
+
+
+
+ 
+	
+	<div class="Nsb_layout_r">
+	<div class="Nsb_layout_r title">学生选题</div>
+	<iframe id="hiddenframe" name="hiddenframe" style="display: none;"></iframe>
+	
+		<form action="/jsxsd/bysj/xsyxxt.do" name="Form1" id="Form1" method="post"  >
+	
+	
+        <!--   <div id="yk">
+        <a  href="/jsxsd/bysj/xsxt.do"><font id="kx" size="3">可选课题</font></a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <a  href="/jsxsd/bysj/xsxt.do?listType=myself"><font id="yx" size="3">已选课题</font></a>
+		</div>-->
+		<!--  
+		<select id="sel1" name="sel1">
+		   <option value="f2">学号</option>
+		   <option value="f3">姓名</option>
+		   <option value="f19">修改字段</option>
+		   <option value="f18">修改信息</option>
+		   <option value="f17">审核状态</option>
+		   <option value="f21">修改时间</option>
+		</select>&nbsp;
+		<select id="flag1" name="flag1">
+		   <option value="like">像</option>
+		   <option value="=">等于</option>
+		   <option value="<>">不等于</option>
+		</select>&nbsp;
+		<input id="value1" name="value1" style="width:120px;" value=""/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+		<select id="sel2" name="sel2">
+		   <option value="f2">学号</option>
+		   <option value="f3">姓名</option>
+		   <option value="f19">修改字段</option>
+		   <option value="f18">修改信息</option>
+		   <option value="f17">审核状态</option>
+		   <option value="f21">修改时间</option>
+		</select>&nbsp;&nbsp;
+		<select id="flag2" name="flag2">
+		   <option value="like">像</option>
+		   <option value="=">等于</option>
+		   <option value="<>">不等于</option>
+		</select>&nbsp;&nbsp;
+		<input id="value2" name="value2" style="width:120px;" value=""/>&nbsp;&nbsp;&nbsp;&nbsp;
+		<input type="button" id="but" name="but" value="查 询" onclick="doSel();"/>
+		-->
+		 
+		<table width="100%" border="0" cellspacing="0" cellpadding="0" class="Nsb_r_list Nsb_table">
+            <tr>　
+                <th class="Nsb_r_list_thb" scope="col">年度</th>
+              
+                <th class="Nsb_r_list_thb" scope="col">设计(论文)题目</th>
+                <th class="Nsb_r_list_thb" scope="col">院系</th>
+                <th class="Nsb_r_list_thb" scope="col">指导老师</th>
+                <th class="Nsb_r_list_thb" scope="col">职称</th>
+				<th class="Nsb_r_list_thb" scope="col">第二指导老师</th>
+
+                
+                    <th class="Nsb_r_list_thb" scope="col">是否选中</th>
+                    <th class="Nsb_r_list_thb" scope="col">志愿</th>
+                
+                <th class="Nsb_r_list_thb" scope="col">已选人数</th>
+				<th class="Nsb_r_list_thb" scope="col">是否辅修课题</th>
+
+                <th class="Nsb_r_list_thb" scope="col">可报人数上限</th>
+                <th class="Nsb_r_list_thb" scope="col">操作</th>
+            </tr>
+             
+            
+				<tr>
+					<td colspan="10">未查询到数据</td>
+				</tr>
+			
+			<input type="hidden" value=""  name="ktmc" id="ktmc" />
+			<input type="hidden" value=""  name="jsmc" id="jsmc" />
+        </table>		
+		<div id="PagingControl1_divOuterClass" class="Nsb_r_list_tdfy"> <div class="Nsb_r_list_fy" ><div class="Nsb_r_list_fy2"><span>转到</span><input name="pageIndex" type="text" value="1" id="pageIndex" onkeyup="keyUpNum(this);"  onafterpaste="keyUpNum(this);" onkeydown="paginationKeyDown()"/> </div><div class="Nsb_r_list_fy3"> <span> 共1页&nbsp;0条</span></div><div class="Nsb_r_list_fy4"><a id="PagingControl1_btnPrevPage" disabled="disabled" title='第一页'></a><a id="PagingControl1_btnNextPage" disabled="disabled" title='最后一页'></a></div></div></div>		
+		</form>
+		<form  action="" name="Formfr" id="FormFr">
+			<input type="hidden" name="key" id="key" />
+		</form>
+</div>
+</div>
+<form target="hideFrame" name="Form2" id="Form2" method="post"></form>
+ 
+<input id="PageContext" type="hidden" value="/jsxsd" />
+<script type="text/javascript" src="/jsxsd/js/validate.js" language="javascript"></script>
+<script language="javascript">
+	function PrintRws(id) {
+		document.forms["Form1"].action = "/jsxsd/bysj/PrintRws_14073?sj1102id="+id;
+		document.forms["Form1"].submit();
+	}
+	
+
+	function tocxjs() {
+		var xm = $("#cxzdjs").val();
+		var jsktmc = $("#jsktmc").val();
+
+		var url = "/jsxsd/bysj/xsxt.do";
+		document.getElementById("Form1").action= url;
+		document.getElementById("Form1").submit();
+	}
+
+	function select(id,type,obj) {
+		if('cal' == type && !window.confirm("是否确定取消选择?")){
+			return;
+		}
+
+		if('getzy' == type){
+			var sfbzx = '';
+			if(sfbzx=='1'){
+             alert("当前为不在校状态，不能参与选题!");
+				return false;
+			}
+
+		}
+
+		obj.disabled = true;
+		var url = "/jsxsd/bysj/toxk.do?sj1102id="+id+"&type="+type;
+		if('cal' == type){
+			window.Form2.action=url;
+			window.Form2.target="hiddenframe";
+			window.Form2.submit();
+
+		}else{
+			var iTop = (window.screen.availHeight-30-600)/2; //获得窗口的垂直位置;
+			var iLeft = (window.screen.availWidth-10-600)/2; //获得窗口的水平位置;
+			var ret = window.open(url,"","height=600,width=600, top="+iTop+", left="+iLeft+",scrollbars=yes,resizable=yes");
+			if(undefined != ret && 'ok' == ret){
+				document.Form2.action='';
+				document.Form2.target="hiddenframe";
+				document.Form2.submit();
+			}
+		}
+
+	}
+
+	function to_mx(id) {
+		
+		var url = "/jsxsd/view/bysj/kt_Mx.jsp?id="+id;
+		
+		var iTop = (window.screen.availHeight-30-700)/2; //获得窗口的垂直位置;
+		var iLeft = (window.screen.availWidth-10-1100)/2; //获得窗口的水平位置;
+		window.open(url,"","height=700, width=1100, top="+iTop+", left="+iLeft+", scrollbars=yes");
+	}
+
+	function to_rws(id,isedit,jb) {
+		var height = 600;
+		var width = 900;
+		
+		var url = "/jsxsd/view/bysj/kt_rws.jsp?id="+id+"&type=view&isedit="+isedit+"&jb="+jb;
+		
+		window.open(url,"","height="+height+"px; width="+width+"px;scroll:yes;");
+	}
+
+</script>
+</body>
+</html>

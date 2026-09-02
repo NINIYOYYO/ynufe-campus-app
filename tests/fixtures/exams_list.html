@@ -1,0 +1,99 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+
+<head id="headerid1">
+	<base target='_self'>
+	<title>我的考试 - 考试安排查询</title>	
+	<meta http-equiv="pragma" content="no-cache">
+	<meta http-equiv="cache-control" content="no-cache">
+	<meta http-equiv="expires" content="0">
+	<meta http-equiv="keywords" content="湖南强智科技教务系统">
+	<meta http-equiv="description" content="湖南强智科技教务系统">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<script type="text/javascript" src="/jsxsd/js/jquery-min.js" language="javascript" ></script>
+<script type="text/javascript" src="/jsxsd/js/common.js" language="javascript" ></script>
+<script type="text/javascript" src="/jsxsd/js/iepngfix_tilebg.js" language="javascript" ></script>
+
+<link href="/jsxsd/framework/images/common.css" rel="stylesheet" type="text/css" />
+<link href="/jsxsd/framework/images/blue.css" rel="stylesheet" type="text/css" id="link_theme" />
+<link href="/jsxsd/framework/images/workstation.css" rel="stylesheet" type="text/css" /> 
+
+</head>
+<iframe id="notSession" name="notSession" style="display: none;" src=""></iframe>
+<script type="text/javascript">
+jQuery(document).ready(function(){
+	window.setInterval(function(){
+		 document.getElementById("notSession").src = "/jsxsd/framework/blankPage.jsp";
+	 }, 1000 * 60 * 10);
+});
+</script>
+<body>
+<script >
+            .MHover{
+                border:1px solid #ccc;
+                white-space:nowrap;
+                text-overflow:ellipsis;
+                overflow:hidden;
+            }
+</script>
+ 
+<div class="Nsb_pw">
+	<br/>
+	
+	<table id="dataList" width="100%" border="0" cellspacing="0" cellpadding="0" class="Nsb_r_list Nsb_table">
+		<tr>
+			
+				<th class="Nsb_r_list_thb" style="width: 35px;">序号</th>
+				<th class="Nsb_r_list_thb" style="width: 80px;">校区</th>
+				<th class="Nsb_r_list_thb" style="width: 60px;">考场校区</th>
+				<th class="Nsb_r_list_thb" style="width: 120px;">考试场次</th>
+				<th class="Nsb_r_list_thb" style="width: 120px;">课程编号</th>
+				<th class="Nsb_r_list_thb" style="width: 160px;">课程名称</th>
+				<th class="Nsb_r_list_thb" style="width: 110px;">授课教师</th>
+				<th class="Nsb_r_list_thb">考试时间</th>
+				<th class="Nsb_r_list_thb">考场</th>
+				<th class="Nsb_r_list_thb" style="width: 60px;">座位号</th>
+				<th class="Nsb_r_list_thb" style="width: 120px;">准考证号</th>
+				<th class="Nsb_r_list_thb" style="width: 120px;">备注</th>
+				<th class="Nsb_r_list_thb" style="width: 50px;">操作</th>
+			
+			
+		</tr>
+		
+		
+			<tr>
+				<td colspan="13">未查询到数据</td>
+			</tr>
+		
+	</table>
+</div>
+<br />
+ 
+<script language="javascript">
+	function fuc(obj){
+			JsMod('/jsxsd/xsks/xsksap_bz.do?kw0410id='+obj);
+
+
+	}
+
+	$(document).ready(function () {
+            $(".MALL").hide();
+            $(".MHover").mouseover(function (e) {
+                $(this).next(".MALL").css({"position":"absolute","top":e.pageY+5,"left":e.pageX+5}).show();
+            });
+            $(".MHover").mousemove(function (e) {
+                $(this).next(".MALL").css({ "color": "fff", "position": "absolute", "opacity": "1.0", "background-color": "#F0FFFF", "top": e.pageY + 5, "left": e.pageX+5});
+            });
+            $(".MHover").mouseout(function () {
+                $(this).next(".MALL").hide();
+            });
+        });
+
+</script>
+</body>
+
+</html>

@@ -1,0 +1,3363 @@
+
+
+
+
+    
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+
+<head id="headerid1">
+	<base target='_self'>
+	<title>项目列表</title>	
+	<meta http-equiv="pragma" content="no-cache">
+	<meta http-equiv="cache-control" content="no-cache">
+	<meta http-equiv="expires" content="0">
+	<meta http-equiv="keywords" content="湖南强智科技教务系统">
+	<meta http-equiv="description" content="湖南强智科技教务系统">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<script type="text/javascript" src="/jsxsd/js/jquery-min.js" language="javascript" ></script>
+<script type="text/javascript" src="/jsxsd/js/common.js" language="javascript" ></script>
+<script type="text/javascript" src="/jsxsd/js/iepngfix_tilebg.js" language="javascript" ></script>
+
+<link href="/jsxsd/framework/images/common.css" rel="stylesheet" type="text/css" />
+<link href="/jsxsd/framework/images/blue.css" rel="stylesheet" type="text/css" id="link_theme" />
+<link href="/jsxsd/framework/images/workstation.css" rel="stylesheet" type="text/css" /> 
+
+</head>
+<iframe id="notSession" name="notSession" style="display: none;" src=""></iframe>
+<script type="text/javascript">
+jQuery(document).ready(function(){
+	window.setInterval(function(){
+		 document.getElementById("notSession").src = "/jsxsd/framework/blankPage.jsp";
+	 }, 1000 * 60 * 10);
+});
+</script>
+<head>
+<style type="">
+.Nsb_r_list {
+	font-size: 12px;
+	color: #666;
+	text-align: center
+}
+
+.Nsb_r_list a {
+	color: #0C5FC0;
+}
+
+.Nsb_r_list th {
+	height: 30px;
+	line-height: 30px;
+	font-size: 14px;
+	font-weight: normal;
+    color: #178fe6;
+}
+
+.Nsb_r_list th a:hover {
+	text-decoration: none
+}
+
+.Nsb_r_list th span,.Nsb_r_list th a {
+	display: inline-block
+}
+.Nsb_r_list th {
+	background: #eff7fd;
+	border: 1px solid #E5E5E5;
+	padding: 0px;
+	margin:0px;
+	font-size:12px;
+    color: #178fe6;
+}
+
+.Nsb_r_list td {
+	border: 2px solid #E5E5E5;
+/*	border-top: none;*/
+	color: #000;
+	padding: 5;
+	margin: 0;
+}
+
+.Nsb_r_list .Nsb_r_list_thb {
+	border-right: 1px solid #E5E5E5
+}
+.Nsb_table,.Nsb_table table {
+	border-spacing: 0;
+	border-collapse: separate;
+	
+}
+
+.Nsb_table {
+	width: 100%
+}
+</style>
+</head>
+<body >
+<form action="/jsxsd/jspyfa/selectJx02" name="Form1" id="Form1" method="post">
+
+		<input type="hidden" name="startZc" id="startZc" value="1" />
+		<input type="hidden" name="endZc" id="endZc" value="1" />
+		<input type="hidden" name="startJc" id="startJc" value="1" />
+		<input type="hidden" name="endJc" id="endJc" value="4" />
+		<input type="hidden" name="startXq" id="startXq" value="1" />
+		<input type="hidden" name="endXq" id="endXq" value="1" />
+		<input type="hidden" name="jszt" id="jszt" value="" />
+		<input type="hidden" name="xnxqh" id="xnxqh" value="2025-2026-2" />
+		<input type="hidden" name="kbjcmsid" id="kbjcmsid" value="C8B3C60AE20444B499A15ABFA3ECFF9D" />
+	<input type="hidden" name="syjs0601id" id="syjs0601id" value="" />
+		<input type="hidden" id="oldrow" name="oldrow"  />
+		<table id="dataList" width="100%" cellpadding="0" border="0" cellspacing="0" class="Nsb_r_list Nsb_table" >
+		   <thead id="thead2" style="background-color: white;" >
+	       <th align="left">
+			   
+			   <input type="checkbox" name="selectAll" id="selectAll" onclick="selectAllJS(this)"  />
+			   <input type="button" name="pljy" class="button el-button" value="批量借用教室" onclick="xx()" />
+			   
+	       </th>
+		<th align="right">
+			教室类型
+			<select name="jslx" id="jslx"  style="width:80px;" onchange="changPrentVal(3);">
+				<option value="">-请选择-</option>
+				
+					<option value="01">一般教室</option>
+				
+					<option value="02">制图室</option>
+				
+					<option value="03">实验室</option>
+				
+					<option value="04">语音室</option>
+				
+					<option value="05">多媒体教室</option>
+				
+					<option value="06">多媒体授课室</option>
+				
+					<option value="07">视听教室</option>
+				
+					<option value="08">计算机房</option>
+				
+					<option value="09">网络教室</option>
+				
+					<option value="10">练功房</option>
+				
+					<option value="12">琴室</option>
+				
+					<option value="13">画室</option>
+				
+					<option value="14">办公室</option>
+				
+					<option value="15">体育馆</option>
+				
+					<option value="16">体育场</option>
+				
+					<option value="17">舞蹈房</option>
+				
+					<option value="18">游泳池</option>
+				
+					<option value="19">武术房</option>
+				
+					<option value="20">篮排馆</option>
+				
+					<option value="21">足球场</option>
+				
+					<option value="22">体操房</option>
+				
+					<option value="23">网球场</option>
+				
+					<option value="24">跆拳道馆</option>
+				
+					<option value="25">健身房</option>
+				
+					<option value="26">乒乓球馆</option>
+				
+					<option value="27">羽毛球馆</option>
+				
+					<option value="28">田径场</option>
+				
+					<option value="29">报告厅</option>
+				
+					<option value="30">多媒体阶梯教室</option>
+				
+					<option value="31">实践场地</option>
+				
+					<option value="32">实训室</option>
+				
+					<option value="33">运动场</option>
+				
+			</select>
+		    功能区名称<input type="text" name="gnq_mh" id="gnq_mh" value="" style="width:80px;" onchange="changPrentVal(1);"/> 
+	         教室名称<input type="text" name="jsmc_mh" id="jsmc_mh" value="" style="width:80px;" onchange="changPrentVal(2);"/> 
+	        <input type="button"  value="查 询" class="button el-button" onclick="queryKb_mh();" /> 
+		</th>
+	   </thead>
+		</table>
+		
+	<table id="dataList" width="100%" cellpadding="0" class="Nsb_r_list Nsb_table" >
+	    
+		<thead id="thead1" style="background-color: white;
+			
+			" >
+		<th width="180" height="160" class="Nsb_r_list_thb" scope="col">星期</th>
+		
+		
+            <th class="Nsb_r_list_thb" colspan="2" scope="col">星期一</th>
+        
+		</tr>
+		<tr height="60">
+			<td>
+			</td>
+			
+				
+					
+						<td id="jc0" tdvalue="0102" tdKssj="08:00" tdJssj="09:30">01<br>02<br></td>
+					
+						<td id="jc1" tdvalue="030405" tdKssj="10:00" tdJssj="12:20">03<br>04<br>05</td>
+					
+				
+				
+			
+		</tr>
+		</thead>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1152" onclick="clickTr(this,'1')">
+		<td width="180">
+			<input type="checkbox" value="1152" name="jsids"  /> 成蹊205(120/60)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="6281DC41641047EB9F5226007C9F44DE" onclick="clickTr(this,'2')">
+		<td width="180">
+			<input type="checkbox" value="6281DC41641047EB9F5226007C9F44DE" name="jsids"  /> 汇新101(50/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="A482D40C9CC84CAD8CF1D4E3CECCF506" onclick="clickTr(this,'3')">
+		<td width="180">
+			<input type="checkbox" value="A482D40C9CC84CAD8CF1D4E3CECCF506" name="jsids"  /> 汇新102(50/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="8A8E092D16084691B48EC5992B09FDEA" onclick="clickTr(this,'4')">
+		<td width="180">
+			<input type="checkbox" value="8A8E092D16084691B48EC5992B09FDEA" name="jsids"  /> 汇新105(50/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1140" onclick="clickTr(this,'5')">
+		<td width="180">
+			<input type="checkbox" value="1140" name="jsids"  /> 汇新106(50/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1255" onclick="clickTr(this,'6')">
+		<td width="180">
+			<input type="checkbox" value="1255" name="jsids"  /> 汇新201(60/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1211" onclick="clickTr(this,'7')">
+		<td width="180">
+			<input type="checkbox" value="1211" name="jsids"  /> 汇新202(56/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1212" onclick="clickTr(this,'8')">
+		<td width="180">
+			<input type="checkbox" value="1212" name="jsids"  /> 汇新204(56/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1256" onclick="clickTr(this,'9')">
+		<td width="180">
+			<input type="checkbox" value="1256" name="jsids"  /> 汇新205(56/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1213" onclick="clickTr(this,'10')">
+		<td width="180">
+			<input type="checkbox" value="1213" name="jsids"  /> 汇新206(56/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1214" onclick="clickTr(this,'11')">
+		<td width="180">
+			<input type="checkbox" value="1214" name="jsids"  /> 汇新208(56/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1257" onclick="clickTr(this,'12')">
+		<td width="180">
+			<input type="checkbox" value="1257" name="jsids"  /> 汇新301(60/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1143" onclick="clickTr(this,'13')">
+		<td width="180">
+			<input type="checkbox" value="1143" name="jsids"  /> 汇新302(50/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1216" onclick="clickTr(this,'14')">
+		<td width="180">
+			<input type="checkbox" value="1216" name="jsids"  /> 汇新304(50/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1217" onclick="clickTr(this,'15')">
+		<td width="180">
+			<input type="checkbox" value="1217" name="jsids"  /> 汇新305(35/35)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1218" onclick="clickTr(this,'16')">
+		<td width="180">
+			<input type="checkbox" value="1218" name="jsids"  /> 汇新306(50/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1219" onclick="clickTr(this,'17')">
+		<td width="180">
+			<input type="checkbox" value="1219" name="jsids"  /> 汇新308(50/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="7AA0065624404F9C86CA9FF42D3344EE" onclick="clickTr(this,'18')">
+		<td width="180">
+			<input type="checkbox" value="7AA0065624404F9C86CA9FF42D3344EE" name="jsids"  /> 汇新309(30/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1153" onclick="clickTr(this,'19')">
+		<td width="180">
+			<input type="checkbox" value="1153" name="jsids"  /> 景贤101(56/35)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1154" onclick="clickTr(this,'20')">
+		<td width="180">
+			<input type="checkbox" value="1154" name="jsids"  /> 景贤102(56/35)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1010" onclick="clickTr(this,'21')">
+		<td width="180">
+			<input type="checkbox" value="1010" name="jsids"  /> 凌媒北301(120/60)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1014" onclick="clickTr(this,'22')">
+		<td width="180">
+			<input type="checkbox" value="1014" name="jsids"  /> 凌媒北304(60/35)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1018" onclick="clickTr(this,'23')">
+		<td width="180">
+			<input type="checkbox" value="1018" name="jsids"  /> 凌媒北403(90/50)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1019" onclick="clickTr(this,'24')">
+		<td width="180">
+			<input type="checkbox" value="1019" name="jsids"  /> 凌媒北405(40/20)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1021" onclick="clickTr(this,'25')">
+		<td width="180">
+			<input type="checkbox" value="1021" name="jsids"  /> 凌媒北501(120/60)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1023" onclick="clickTr(this,'26')">
+		<td width="180">
+			<input type="checkbox" value="1023" name="jsids"  /> 凌媒北502(60/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1025" onclick="clickTr(this,'27')">
+		<td width="180">
+			<input type="checkbox" value="1025" name="jsids"  /> 凌媒北503(90/50)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1027" onclick="clickTr(this,'28')">
+		<td width="180">
+			<input type="checkbox" value="1027" name="jsids"  /> 凌媒北504(60/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1030" onclick="clickTr(this,'29')">
+		<td width="180">
+			<input type="checkbox" value="1030" name="jsids"  /> 凌媒北601(120/60)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1032" onclick="clickTr(this,'30')">
+		<td width="180">
+			<input type="checkbox" value="1032" name="jsids"  /> 凌媒北602(60/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1034" onclick="clickTr(this,'31')">
+		<td width="180">
+			<input type="checkbox" value="1034" name="jsids"  /> 凌媒北603(90/50)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1036" onclick="clickTr(this,'32')">
+		<td width="180">
+			<input type="checkbox" value="1036" name="jsids"  /> 凌媒北604(60/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1039" onclick="clickTr(this,'33')">
+		<td width="180">
+			<input type="checkbox" value="1039" name="jsids"  /> 凌媒北701(120/60)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1041" onclick="clickTr(this,'34')">
+		<td width="180">
+			<input type="checkbox" value="1041" name="jsids"  /> 凌媒北702(60/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1043" onclick="clickTr(this,'35')">
+		<td width="180">
+			<input type="checkbox" value="1043" name="jsids"  /> 凌媒北703(90/50)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1045" onclick="clickTr(this,'36')">
+		<td width="180">
+			<input type="checkbox" value="1045" name="jsids"  /> 凌媒北704(60/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1049" onclick="clickTr(this,'37')">
+		<td width="180">
+			<input type="checkbox" value="1049" name="jsids"  /> 凌媒北801(120/63)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1050" onclick="clickTr(this,'38')">
+		<td width="180">
+			<input type="checkbox" value="1050" name="jsids"  /> 凌媒北802(60/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1052" onclick="clickTr(this,'39')">
+		<td width="180">
+			<input type="checkbox" value="1052" name="jsids"  /> 凌媒北803(60/50)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1054" onclick="clickTr(this,'40')">
+		<td width="180">
+			<input type="checkbox" value="1054" name="jsids"  /> 凌媒北804(60/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1059" onclick="clickTr(this,'41')">
+		<td width="180">
+			<input type="checkbox" value="1059" name="jsids"  /> 凌媒北902(90/45)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1004" onclick="clickTr(this,'42')">
+		<td width="180">
+			<input type="checkbox" value="1004" name="jsids"  /> 凌媒南201(48/24)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="D3F09963E7F347C085DD8C060F095C7E" onclick="clickTr(this,'43')">
+		<td width="180">
+			<input type="checkbox" value="D3F09963E7F347C085DD8C060F095C7E" name="jsids"  /> 凌媒南204(48/24)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1011" onclick="clickTr(this,'44')">
+		<td width="180">
+			<input type="checkbox" value="1011" name="jsids"  /> 凌媒南301(120/60)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1013" onclick="clickTr(this,'45')">
+		<td width="180">
+			<input type="checkbox" value="1013" name="jsids"  /> 凌媒南303(90/50)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1022" onclick="clickTr(this,'46')">
+		<td width="180">
+			<input type="checkbox" value="1022" name="jsids"  /> 凌媒南501(120/60)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1024" onclick="clickTr(this,'47')">
+		<td width="180">
+			<input type="checkbox" value="1024" name="jsids"  /> 凌媒南502(60/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1026" onclick="clickTr(this,'48')">
+		<td width="180">
+			<input type="checkbox" value="1026" name="jsids"  /> 凌媒南503(90/50)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1028" onclick="clickTr(this,'49')">
+		<td width="180">
+			<input type="checkbox" value="1028" name="jsids"  /> 凌媒南504(60/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1031" onclick="clickTr(this,'50')">
+		<td width="180">
+			<input type="checkbox" value="1031" name="jsids"  /> 凌媒南601(120/60)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1033" onclick="clickTr(this,'51')">
+		<td width="180">
+			<input type="checkbox" value="1033" name="jsids"  /> 凌媒南602(60/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1035" onclick="clickTr(this,'52')">
+		<td width="180">
+			<input type="checkbox" value="1035" name="jsids"  /> 凌媒南603(90/50)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1037" onclick="clickTr(this,'53')">
+		<td width="180">
+			<input type="checkbox" value="1037" name="jsids"  /> 凌媒南604(60/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1040" onclick="clickTr(this,'54')">
+		<td width="180">
+			<input type="checkbox" value="1040" name="jsids"  /> 凌媒南701(120/60)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1042" onclick="clickTr(this,'55')">
+		<td width="180">
+			<input type="checkbox" value="1042" name="jsids"  /> 凌媒南702(60/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1044" onclick="clickTr(this,'56')">
+		<td width="180">
+			<input type="checkbox" value="1044" name="jsids"  /> 凌媒南703(90/50)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1046" onclick="clickTr(this,'57')">
+		<td width="180">
+			<input type="checkbox" value="1046" name="jsids"  /> 凌媒南704(60/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1048" onclick="clickTr(this,'58')">
+		<td width="180">
+			<input type="checkbox" value="1048" name="jsids"  /> 凌媒南801(120/62)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1051" onclick="clickTr(this,'59')">
+		<td width="180">
+			<input type="checkbox" value="1051" name="jsids"  /> 凌媒南802(60/35)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1053" onclick="clickTr(this,'60')">
+		<td width="180">
+			<input type="checkbox" value="1053" name="jsids"  /> 凌媒南803(60/55)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1055" onclick="clickTr(this,'61')">
+		<td width="180">
+			<input type="checkbox" value="1055" name="jsids"  /> 凌媒南804(60/35)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1210" onclick="clickTr(this,'62')">
+		<td width="180">
+			<input type="checkbox" value="1210" name="jsids"  /> 凌媒南902(90/45)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1181" onclick="clickTr(this,'63')">
+		<td width="180">
+			<input type="checkbox" value="1181" name="jsids"  /> 凌媒南附101(230/200)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1182" onclick="clickTr(this,'64')">
+		<td width="180">
+			<input type="checkbox" value="1182" name="jsids"  /> 凌媒南附201(200/100)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1183" onclick="clickTr(this,'65')">
+		<td width="180">
+			<input type="checkbox" value="1183" name="jsids"  /> 凌媒南附301(230/200)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1184" onclick="clickTr(this,'66')">
+		<td width="180">
+			<input type="checkbox" value="1184" name="jsids"  /> 凌媒南附401(230/200)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1016" onclick="clickTr(this,'67')">
+		<td width="180">
+			<input type="checkbox" value="1016" name="jsids"  /> 凌媒中401(60/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1020" onclick="clickTr(this,'68')">
+		<td width="180">
+			<input type="checkbox" value="1020" name="jsids"  /> 凌媒中501(60/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1029" onclick="clickTr(this,'69')">
+		<td width="180">
+			<input type="checkbox" value="1029" name="jsids"  /> 凌媒中601(60/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1038" onclick="clickTr(this,'70')">
+		<td width="180">
+			<input type="checkbox" value="1038" name="jsids"  /> 凌媒中701(60/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1047" onclick="clickTr(this,'71')">
+		<td width="180">
+			<input type="checkbox" value="1047" name="jsids"  /> 凌媒中801(60/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1056" onclick="clickTr(this,'72')">
+		<td width="180">
+			<input type="checkbox" value="1056" name="jsids"  /> 凌媒中901(60/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1223" onclick="clickTr(this,'73')">
+		<td width="180">
+			<input type="checkbox" value="1223" name="jsids"  /> 凌实北101(70/70)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1273" onclick="clickTr(this,'74')">
+		<td width="180">
+			<input type="checkbox" value="1273" name="jsids"  /> 南院运动场(60/0)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1221" onclick="clickTr(this,'75')">
+		<td width="180">
+			<input type="checkbox" value="1221" name="jsids"  /> 实践场地(1000/0)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1229" onclick="clickTr(this,'76')">
+		<td width="180">
+			<input type="checkbox" value="1229" name="jsids"  /> 实实北102(60/60)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1231" onclick="clickTr(this,'77')">
+		<td width="180">
+			<input type="checkbox" value="1231" name="jsids"  /> 实实北104(60/60)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="7778C152E1CB4F14853D940230A5B3C8" onclick="clickTr(this,'78')">
+		<td width="180">
+			<input type="checkbox" value="7778C152E1CB4F14853D940230A5B3C8" name="jsids"  /> 实实北204(60/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="260F2147E0A640DFBA02C94E055C0E0F" onclick="clickTr(this,'79')">
+		<td width="180">
+			<input type="checkbox" value="260F2147E0A640DFBA02C94E055C0E0F" name="jsids"  /> 实实北206(80/80)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1235" onclick="clickTr(this,'80')">
+		<td width="180">
+			<input type="checkbox" value="1235" name="jsids"  /> 实实北304(64/32)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1236" onclick="clickTr(this,'81')">
+		<td width="180">
+			<input type="checkbox" value="1236" name="jsids"  /> 实实北305(70/70)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1238" onclick="clickTr(this,'82')">
+		<td width="180">
+			<input type="checkbox" value="1238" name="jsids"  /> 实实北404(80/80)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='red'>M</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1239" onclick="clickTr(this,'83')">
+		<td width="180">
+			<input type="checkbox" value="1239" name="jsids"  /> 实实北405(40/40)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='red'>M</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='red'>M</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1249" onclick="clickTr(this,'84')">
+		<td width="180">
+			<input type="checkbox" value="1249" name="jsids"  /> 实实北604(54/54)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1250" onclick="clickTr(this,'85')">
+		<td width="180">
+			<input type="checkbox" value="1250" name="jsids"  /> 实实北605(80/80)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="858EB5106B514C35893A97CA56AA20D8" onclick="clickTr(this,'86')">
+		<td width="180">
+			<input type="checkbox" value="858EB5106B514C35893A97CA56AA20D8" name="jsids"  /> 实实北705(30/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1254" onclick="clickTr(this,'87')">
+		<td width="180">
+			<input type="checkbox" value="1254" name="jsids"  /> 实实北707(60/60)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1228" onclick="clickTr(this,'88')">
+		<td width="180">
+			<input type="checkbox" value="1228" name="jsids"  /> 实实南101(60/60)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1230" onclick="clickTr(this,'89')">
+		<td width="180">
+			<input type="checkbox" value="1230" name="jsids"  /> 实实南103(60/60)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1232" onclick="clickTr(this,'90')">
+		<td width="180">
+			<input type="checkbox" value="1232" name="jsids"  /> 实实南202(80/40)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1233" onclick="clickTr(this,'91')">
+		<td width="180">
+			<input type="checkbox" value="1233" name="jsids"  /> 实实南204(80/40)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1237" onclick="clickTr(this,'92')">
+		<td width="180">
+			<input type="checkbox" value="1237" name="jsids"  /> 实实南402(60/60)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='red'>M</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1246" onclick="clickTr(this,'93')">
+		<td width="180">
+			<input type="checkbox" value="1246" name="jsids"  /> 实实南602(60/60)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1247" onclick="clickTr(this,'94')">
+		<td width="180">
+			<input type="checkbox" value="1247" name="jsids"  /> 实实南603(54/54)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1248" onclick="clickTr(this,'95')">
+		<td width="180">
+			<input type="checkbox" value="1248" name="jsids"  /> 实实南604(10/40)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='red'>M</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='red'>M</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1127" onclick="clickTr(this,'96')">
+		<td width="180">
+			<input type="checkbox" value="1127" name="jsids"  /> 逸夫楼104(120/60)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1131" onclick="clickTr(this,'97')">
+		<td width="180">
+			<input type="checkbox" value="1131" name="jsids"  /> 逸夫楼208(60/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1132" onclick="clickTr(this,'98')">
+		<td width="180">
+			<input type="checkbox" value="1132" name="jsids"  /> 逸夫楼209(120/60)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1133" onclick="clickTr(this,'99')">
+		<td width="180">
+			<input type="checkbox" value="1133" name="jsids"  /> 逸夫楼210(60/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1134" onclick="clickTr(this,'100')">
+		<td width="180">
+			<input type="checkbox" value="1134" name="jsids"  /> 逸夫楼211(150/75)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1136" onclick="clickTr(this,'101')">
+		<td width="180">
+			<input type="checkbox" value="1136" name="jsids"  /> 逸夫楼307(120/60)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1138" onclick="clickTr(this,'102')">
+		<td width="180">
+			<input type="checkbox" value="1138" name="jsids"  /> 逸夫楼309(150/75)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1139" onclick="clickTr(this,'103')">
+		<td width="180">
+			<input type="checkbox" value="1139" name="jsids"  /> 逸夫楼310(60/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1065" onclick="clickTr(this,'104')">
+		<td width="180">
+			<input type="checkbox" value="1065" name="jsids"  /> 逸媒东103(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1067" onclick="clickTr(this,'105')">
+		<td width="180">
+			<input type="checkbox" value="1067" name="jsids"  /> 逸媒东104(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1069" onclick="clickTr(this,'106')">
+		<td width="180">
+			<input type="checkbox" value="1069" name="jsids"  /> 逸媒东105(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1070" onclick="clickTr(this,'107')">
+		<td width="180">
+			<input type="checkbox" value="1070" name="jsids"  /> 逸媒东106(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1075" onclick="clickTr(this,'108')">
+		<td width="180">
+			<input type="checkbox" value="1075" name="jsids"  /> 逸媒东202(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1077" onclick="clickTr(this,'109')">
+		<td width="180">
+			<input type="checkbox" value="1077" name="jsids"  /> 逸媒东203(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1079" onclick="clickTr(this,'110')">
+		<td width="180">
+			<input type="checkbox" value="1079" name="jsids"  /> 逸媒东204(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1081" onclick="clickTr(this,'111')">
+		<td width="180">
+			<input type="checkbox" value="1081" name="jsids"  /> 逸媒东205(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1082" onclick="clickTr(this,'112')">
+		<td width="180">
+			<input type="checkbox" value="1082" name="jsids"  /> 逸媒东206(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1086" onclick="clickTr(this,'113')">
+		<td width="180">
+			<input type="checkbox" value="1086" name="jsids"  /> 逸媒东301(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1089" onclick="clickTr(this,'114')">
+		<td width="180">
+			<input type="checkbox" value="1089" name="jsids"  /> 逸媒东302(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1091" onclick="clickTr(this,'115')">
+		<td width="180">
+			<input type="checkbox" value="1091" name="jsids"  /> 逸媒东303(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1093" onclick="clickTr(this,'116')">
+		<td width="180">
+			<input type="checkbox" value="1093" name="jsids"  /> 逸媒东304(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1095" onclick="clickTr(this,'117')">
+		<td width="180">
+			<input type="checkbox" value="1095" name="jsids"  /> 逸媒东305(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1097" onclick="clickTr(this,'118')">
+		<td width="180">
+			<input type="checkbox" value="1097" name="jsids"  /> 逸媒东306(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1100" onclick="clickTr(this,'119')">
+		<td width="180">
+			<input type="checkbox" value="1100" name="jsids"  /> 逸媒东401(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1102" onclick="clickTr(this,'120')">
+		<td width="180">
+			<input type="checkbox" value="1102" name="jsids"  /> 逸媒东402(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1105" onclick="clickTr(this,'121')">
+		<td width="180">
+			<input type="checkbox" value="1105" name="jsids"  /> 逸媒东403(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1107" onclick="clickTr(this,'122')">
+		<td width="180">
+			<input type="checkbox" value="1107" name="jsids"  /> 逸媒东404(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1109" onclick="clickTr(this,'123')">
+		<td width="180">
+			<input type="checkbox" value="1109" name="jsids"  /> 逸媒东405(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1111" onclick="clickTr(this,'124')">
+		<td width="180">
+			<input type="checkbox" value="1111" name="jsids"  /> 逸媒东406(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1113" onclick="clickTr(this,'125')">
+		<td width="180">
+			<input type="checkbox" value="1113" name="jsids"  /> 逸媒东501(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1115" onclick="clickTr(this,'126')">
+		<td width="180">
+			<input type="checkbox" value="1115" name="jsids"  /> 逸媒东502(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1117" onclick="clickTr(this,'127')">
+		<td width="180">
+			<input type="checkbox" value="1117" name="jsids"  /> 逸媒东503(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1119" onclick="clickTr(this,'128')">
+		<td width="180">
+			<input type="checkbox" value="1119" name="jsids"  /> 逸媒东504(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1121" onclick="clickTr(this,'129')">
+		<td width="180">
+			<input type="checkbox" value="1121" name="jsids"  /> 逸媒东505(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1123" onclick="clickTr(this,'130')">
+		<td width="180">
+			<input type="checkbox" value="1123" name="jsids"  /> 逸媒东506(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1061" onclick="clickTr(this,'131')">
+		<td width="180">
+			<input type="checkbox" value="1061" name="jsids"  /> 逸媒西101(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1063" onclick="clickTr(this,'132')">
+		<td width="180">
+			<input type="checkbox" value="1063" name="jsids"  /> 逸媒西102(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1064" onclick="clickTr(this,'133')">
+		<td width="180">
+			<input type="checkbox" value="1064" name="jsids"  /> 逸媒西103(58/31)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1066" onclick="clickTr(this,'134')">
+		<td width="180">
+			<input type="checkbox" value="1066" name="jsids"  /> 逸媒西104(58/31)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1068" onclick="clickTr(this,'135')">
+		<td width="180">
+			<input type="checkbox" value="1068" name="jsids"  /> 逸媒西105(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1071" onclick="clickTr(this,'136')">
+		<td width="180">
+			<input type="checkbox" value="1071" name="jsids"  /> 逸媒西108(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1072" onclick="clickTr(this,'137')">
+		<td width="180">
+			<input type="checkbox" value="1072" name="jsids"  /> 逸媒西109(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1073" onclick="clickTr(this,'138')">
+		<td width="180">
+			<input type="checkbox" value="1073" name="jsids"  /> 逸媒西201(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1074" onclick="clickTr(this,'139')">
+		<td width="180">
+			<input type="checkbox" value="1074" name="jsids"  /> 逸媒西202(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1076" onclick="clickTr(this,'140')">
+		<td width="180">
+			<input type="checkbox" value="1076" name="jsids"  /> 逸媒西203(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1078" onclick="clickTr(this,'141')">
+		<td width="180">
+			<input type="checkbox" value="1078" name="jsids"  /> 逸媒西204(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1080" onclick="clickTr(this,'142')">
+		<td width="180">
+			<input type="checkbox" value="1080" name="jsids"  /> 逸媒西205(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1083" onclick="clickTr(this,'143')">
+		<td width="180">
+			<input type="checkbox" value="1083" name="jsids"  /> 逸媒西207(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1084" onclick="clickTr(this,'144')">
+		<td width="180">
+			<input type="checkbox" value="1084" name="jsids"  /> 逸媒西208(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1085" onclick="clickTr(this,'145')">
+		<td width="180">
+			<input type="checkbox" value="1085" name="jsids"  /> 逸媒西209(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1087" onclick="clickTr(this,'146')">
+		<td width="180">
+			<input type="checkbox" value="1087" name="jsids"  /> 逸媒西301(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1090" onclick="clickTr(this,'147')">
+		<td width="180">
+			<input type="checkbox" value="1090" name="jsids"  /> 逸媒西302(58/31)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1092" onclick="clickTr(this,'148')">
+		<td width="180">
+			<input type="checkbox" value="1092" name="jsids"  /> 逸媒西303(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1094" onclick="clickTr(this,'149')">
+		<td width="180">
+			<input type="checkbox" value="1094" name="jsids"  /> 逸媒西304(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1096" onclick="clickTr(this,'150')">
+		<td width="180">
+			<input type="checkbox" value="1096" name="jsids"  /> 逸媒西305(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1098" onclick="clickTr(this,'151')">
+		<td width="180">
+			<input type="checkbox" value="1098" name="jsids"  /> 逸媒西308(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1099" onclick="clickTr(this,'152')">
+		<td width="180">
+			<input type="checkbox" value="1099" name="jsids"  /> 逸媒西309(80/40)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1101" onclick="clickTr(this,'153')">
+		<td width="180">
+			<input type="checkbox" value="1101" name="jsids"  /> 逸媒西401(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1103" onclick="clickTr(this,'154')">
+		<td width="180">
+			<input type="checkbox" value="1103" name="jsids"  /> 逸媒西402(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1106" onclick="clickTr(this,'155')">
+		<td width="180">
+			<input type="checkbox" value="1106" name="jsids"  /> 逸媒西403(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1110" onclick="clickTr(this,'156')">
+		<td width="180">
+			<input type="checkbox" value="1110" name="jsids"  /> 逸媒西405(58/31)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1114" onclick="clickTr(this,'157')">
+		<td width="180">
+			<input type="checkbox" value="1114" name="jsids"  /> 逸媒西501(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1116" onclick="clickTr(this,'158')">
+		<td width="180">
+			<input type="checkbox" value="1116" name="jsids"  /> 逸媒西502(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1118" onclick="clickTr(this,'159')">
+		<td width="180">
+			<input type="checkbox" value="1118" name="jsids"  /> 逸媒西503(58/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1124" onclick="clickTr(this,'160')">
+		<td width="180">
+			<input type="checkbox" value="1124" name="jsids"  /> 逸媒西602(58/31)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1126" onclick="clickTr(this,'161')">
+		<td width="180">
+			<input type="checkbox" value="1126" name="jsids"  /> 逸媒西603(90/48)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1186" onclick="clickTr(this,'162')">
+		<td width="180">
+			<input type="checkbox" value="1186" name="jsids"  /> 逸媒中101(190/190)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1187" onclick="clickTr(this,'163')">
+		<td width="180">
+			<input type="checkbox" value="1187" name="jsids"  /> 逸媒中102(190/190)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1188" onclick="clickTr(this,'164')">
+		<td width="180">
+			<input type="checkbox" value="1188" name="jsids"  /> 逸媒中202(300/300)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1104" onclick="clickTr(this,'165')">
+		<td width="180">
+			<input type="checkbox" value="1104" name="jsids"  /> 逸媒中402(80/40)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1226" onclick="clickTr(this,'166')">
+		<td width="180">
+			<input type="checkbox" value="1226" name="jsids"  /> 逸媒中502(60/30)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"><font color='black'>◆</font></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1125" onclick="clickTr(this,'167')">
+		<td width="180">
+			<input type="checkbox" value="1125" name="jsids"  /> 逸媒中602(80/40)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1227" onclick="clickTr(this,'168')">
+		<td width="180">
+			<input type="checkbox" value="1227" name="jsids"  /> 逸实中701(60/60)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1165" onclick="clickTr(this,'169')">
+		<td width="180">
+			<input type="checkbox" value="1165" name="jsids"  /> 毓新202(56/35)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1166" onclick="clickTr(this,'170')">
+		<td width="180">
+			<input type="checkbox" value="1166" name="jsids"  /> 毓新203(56/35)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1167" onclick="clickTr(this,'171')">
+		<td width="180">
+			<input type="checkbox" value="1167" name="jsids"  /> 毓新204(56/35)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1168" onclick="clickTr(this,'172')">
+		<td width="180">
+			<input type="checkbox" value="1168" name="jsids"  /> 毓新205(56/35)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1169" onclick="clickTr(this,'173')">
+		<td width="180">
+			<input type="checkbox" value="1169" name="jsids"  /> 毓新206(80/50)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1170" onclick="clickTr(this,'174')">
+		<td width="180">
+			<input type="checkbox" value="1170" name="jsids"  /> 毓新207(56/35)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1171" onclick="clickTr(this,'175')">
+		<td width="180">
+			<input type="checkbox" value="1171" name="jsids"  /> 毓新302(56/35)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1172" onclick="clickTr(this,'176')">
+		<td width="180">
+			<input type="checkbox" value="1172" name="jsids"  /> 毓新305(56/35)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1173" onclick="clickTr(this,'177')">
+		<td width="180">
+			<input type="checkbox" value="1173" name="jsids"  /> 毓新306(56/35)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1174" onclick="clickTr(this,'178')">
+		<td width="180">
+			<input type="checkbox" value="1174" name="jsids"  /> 毓新309(56/35)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1175" onclick="clickTr(this,'179')">
+		<td width="180">
+			<input type="checkbox" value="1175" name="jsids"  /> 毓新310(80/50)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1176" onclick="clickTr(this,'180')">
+		<td width="180">
+			<input type="checkbox" value="1176" name="jsids"  /> 毓新313(56/35)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1177" onclick="clickTr(this,'181')">
+		<td width="180">
+			<input type="checkbox" value="1177" name="jsids"  /> 毓新402(56/35)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1178" onclick="clickTr(this,'182')">
+		<td width="180">
+			<input type="checkbox" value="1178" name="jsids"  /> 毓新406(56/35)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1179" onclick="clickTr(this,'183')">
+		<td width="180">
+			<input type="checkbox" value="1179" name="jsids"  /> 毓新407(56/35)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		<tr  onMouseOver="this.style.cursor='hand'" jsbh="1180" onclick="clickTr(this,'184')">
+		<td width="180">
+			<input type="checkbox" value="1180" name="jsids"  /> 毓新413(56/35)
+		</td>
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+			
+			<td width="18" height="11" align="center" ondblclick="clickTd(this)" onmousemove="showJc1(this)"></td>
+			
+		
+		
+		</tr>
+		
+		
+			
+	</table>
+</form>
+<script language="javascript">
+
+window.onload = function(){
+	document.getElementById("jslx").value="";
+  var tableCont = document.querySelector('#dataList');
+
+  function scrollHandle (e){
+    var scrollTop =  document.documentElement.scrollTop || document.body.scrollTop;
+    $('#thead1 tr th').css('Transform','translateY(' + (scrollTop -0.7)+ 'px)');
+   $('#thead1 tr td').css('Transform','translateY(' + (scrollTop -0.7)+ 'px)');
+    $('#thead1 tr td').css('background-color','white');
+     $('#thead2 tr th').css('Transform','translateY(' + (scrollTop -0.7)+ 'px)');
+   $('#thead2 tr td').css('Transform','translateY(' + (scrollTop -0.7)+ 'px)');
+    $('#thead2 tr td').css('background-color','white');
+    //$('#thead1 tr th').css('border-width','1px');
+  }
+	
+  window.addEventListener('scroll',scrollHandle);
+  
+  if(document.getElementById("gnq_mh")!=null&&document.getElementById("gnq_mh")!=undefined){
+     document.getElementById("gnq_mh").value = window.parent.document.getElementById("gnq_mh").value;
+  }
+  if(document.getElementById("jsmc_mh")!=null&&document.getElementById("jsmc_mh")!=undefined){
+     document.getElementById("jsmc_mh").value = window.parent.document.getElementById("jsmc_mh").value;
+  }
+ 
+}
+ 
+	
+ // tableCont.addEventListener('scroll',scrollHandle);
+ 
+
+function showJc1(obj){
+	var kbtable=document.getElementById("dataList");
+	obj.title=kbtable.rows[0].cells[1+Math.floor((obj.cellIndex-1)/parseInt("2"))].innerHTML+"   "+kbtable.rows[1].cells[obj.cellIndex].innerHTML;
+}
+
+//单击行
+function clickTr(obj,xh){
+	var oldrow=document.getElementById("oldrow").value;
+	if(oldrow==""){
+		obj.bgColor="#cccccc";
+	}else{
+		document.getElementById("dataList").rows[parseInt(document.getElementById("oldrow").value)+1].bgColor="";
+		obj.bgColor="#cccccc";
+	}
+	document.getElementById("oldrow").value=xh;
+}
+
+function clickTd(obj){
+	var xnxqh = document.getElementById("xnxqh").value;
+	
+	var jsbh = $(obj.parentElement).attr("jsbh");
+	//var jsmc = obj.parentElement.cells[0].innerHTML;
+	var startZc = document.getElementById("startZc").value;
+	var endZc = document.getElementById("endZc").value;
+	var startJc = document.getElementById("startJc").value;
+	var endJc = document.getElementById("endJc").value;
+	var startXq = document.getElementById("startXq").value;
+	var endXq = document.getElementById("endXq").value;
+	var jszt = document.getElementById("jszt").value;
+	var kbjcmsid = document.getElementById("kbjcmsid").value;
+	//console.info();
+	//console.info(Math.floor((obj.cellIndex-1)/parseInt("2")));
+	//return false;
+	var kcsj = Math.floor((obj.cellIndex-1)/parseInt("2"))+parseInt(startXq)+$(document.getElementById("jc"+(parseInt(startXq-1)*parseInt("2")+obj.cellIndex-1))).attr("tdvalue");
+	var xq = Math.floor((obj.cellIndex-1)/parseInt("2"))+parseInt(startXq);
+	var kssj = $(document.getElementById("jc"+(parseInt(startXq-1)*parseInt("2")+obj.cellIndex-1))).attr("tdKssj");
+	var jssj = $(document.getElementById("jc"+(parseInt(startXq-1)*parseInt("2")+obj.cellIndex-1))).attr("tdJssj");
+	//console.info(kcsj);
+	//return ;
+	if("js"=="js"){
+		if(trim(obj.innerHTML)==""){
+			var result=JsMod("/jsxsd/kbxx/jsjy_add_main?xnxqh="
+			+xnxqh+"&jsbh="+jsbh+"&typewhere=jszq&kcsj="+kcsj+"&startZc="+startZc+"&endZc="+endZc
+			+"&startJc="+startJc+"&endJc="+endJc+"&startXq="+startXq+"&endXq="+endXq+"&jszt="+jszt+"&type=add&kbjcmsid="+kbjcmsid+"&xq="+xq+"&kssj="+kssj+"&jssj="+jssj,900,550);
+				//creating.style.visibility='visible';
+				//window.parent.Form1.submit();
+		}else{ 
+			var res = JsMod("/jsxsd/kbxx/jsjy_jszyqk?xnxqh="+xnxqh+"&jsbh="+jsbh
+			+"&kcsj="+kcsj+"&typewhere=jszq&startZc="+startZc+"&endZc="+endZc
+			+"&startJc="+startJc+"&endJc="+endJc+"&startXq="+startXq+"&endXq="+endXq+"&jszt="+jszt+"&type=add&kbjcmsid="+kbjcmsid+"&xq="+xq+"&kssj="+kssj+"&jssj="+jssj,900,550);
+				//creating.style.visibility='visible';
+				//window.parent.Form1.submit();
+		}
+	}
+}
+
+function JsMod(htmlurl,tmpWidth,tmpHeight){
+	htmlurl=getRandomUrl(htmlurl);
+	var newwin = window.open(htmlurl,"","Width="+tmpWidth+"px,Height="+tmpHeight+"px");
+	
+	if (newwin != null && newwin == "ok"){
+		alert(newwin);
+		window.parent.Form1.action="";
+		window.parent.Form1.submit();
+	}
+} 
+
+function ltrim(s){     
+    return s.replace(/(^\s*)/, "");  
+ }   
+ //去右空格;   
+function rtrim(s){   
+  return s.replace(/(\s*$)/, "");  
+}  
+
+function trim(s){  
+	  return rtrim(ltrim(s));   
+	 }
+
+
+function xx(){
+	var c_select=document.getElementsByName("jsids");
+		var val="";	
+		//判断是否选定记录
+		var cnt = 0;
+		for(var i=0;i<c_select.length;i++) {
+			if(c_select[i].checked==true){// No selected 属性
+				val+=c_select[i].value+",";
+				cnt++;
+			}
+		}
+		if(val==''){
+	       alert("请至少选择一个教室");
+	       return ;
+		}
+		if(cnt>50){
+		  alert("一次性最多选择50个教室！");
+		  return ;
+		}
+		  var startZc = document.getElementById("startZc").value;
+		var endZc = document.getElementById("endZc").value;
+		var startXq = document.getElementById("startXq").value;
+		var endXq = document.getElementById("endXq").value;
+		var startJc = document.getElementById("startJc").value;
+		var endJc = document.getElementById("endJc").value;
+
+			var xnxqh = document.getElementById("xnxqh").value;
+		var kbjcmsid = document.getElementById("kbjcmsid").value;
+	//定义ajax对象
+	$.ajax( {
+		url:"/jsxsd/kbxx/validateJs",
+		type:'post',
+		cache:false,
+		dataType:'json',
+		data:{'jsid':val},
+		success:function(data) {
+			if(data.success) {
+				alert("不能跨单位借用教室");
+			}else{
+				var url="/jsxsd/kbxx/jsjy_addBatch_main?xnxqh="+xnxqh+"&jsbh="+val+"&startZc="+startZc+"&endZc="+endZc+"&kbjcmsid="+kbjcmsid+"&startXq="+startXq+"&endXq="+endXq+"&startJc="+startJc+"&endJc="+endJc;
+				var ret = window.open(url,"_blank","Width=900px,Height=600px");
+				if(undefined != ret && "ok" == ret){
+					document.Form1.action="";
+					document.Form1.submit();
+				}
+			}
+		},
+		error:function() {
+			alert("计算异常！");
+		}
+	});
+	}
+	 function selectAllJS(obj) {
+		 if(obj.checked){
+			 $("input[name='jsids']").prop("checked",true); 
+		 }else{
+		    $("input[name='jsids']").prop("checked",false); 
+		 }
+	}
+	
+	function queryKb_mh(){
+	   window.parent.document.getElementById("gnq_mh").value=document.getElementById("gnq_mh").value;
+	   window.parent.document.getElementById("jsmc_mh").value=document.getElementById("jsmc_mh").value;
+		window.parent.document.getElementById("jslx").value=document.getElementById("jslx").value;
+	   window.parent.queryKb();
+	}
+	
+	function changPrentVal(indx){
+	   if(indx==1){
+	       window.parent.document.getElementById("gnq_mh").value=document.getElementById("gnq_mh").value;
+	   }
+	   
+	   if(indx==2){
+	      window.parent.document.getElementById("jsmc_mh").value=document.getElementById("jsmc_mh").value;
+	   }
+		if(indx==3){
+			window.parent.document.getElementById("jslx").value=document.getElementById("jslx").value;
+		}
+	}
+
+</script>
+</body>
+</html>
