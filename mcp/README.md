@@ -32,10 +32,14 @@ export YNUFE_PASS="你的密码"
 
 ## 🚀 安装
 
-### 方式一：uvx（推荐，一行安装）
+### 方式一：本地源码运行（尚未发布 PyPI）
+
+> ⚠️ 尚未发布到 PyPI，`uvx ynufe-campus-mcp` 暂不可用。
 
 ```bash
-uvx ynufe-campus-mcp
+cd mcp
+uv sync
+uv run ynufe-campus-mcp
 ```
 
 ### 方式二：从源码

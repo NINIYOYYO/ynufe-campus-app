@@ -134,10 +134,14 @@ campus_app/
 | `ynufe_plan` | 培养方案 + 学分缺口 |
 | `ynufe_logout` | 退出登录 |
 
-### 安装（uvx）
+### 安装
+
+> ⚠️ 尚未发布到 PyPI，`uvx ynufe-campus-mcp` 暂不可用。当前需从源码运行：
 
 ```bash
-uvx ynufe-campus-mcp
+cd mcp
+uv sync          # 安装依赖
+uv run ynufe-campus-mcp   # 启动 MCP 服务器 (stdio)
 ```
 
 ### 接入 MCP 客户端
@@ -161,7 +165,9 @@ uvx ynufe-campus-mcp
 
 > 详见 [`mcp/README.md`](mcp/README.md)。
 
+---
 
+## 快速上手与本地开发
 
 ### 1. 环境准备
 - **Node.js** >= 18.0.0
