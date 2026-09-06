@@ -136,7 +136,7 @@ campus_app/
 
 ### 安装
 
-> ️ 尚未发布到 PyPI，uvx ynufe-campus-mcp 暂不可用。当前需从源码运行：
+> 尚未发布到 PyPI，uvx ynufe-campus-mcp 暂不可用。当前需从源码运行：
 
 bash
 cd mcp
