@@ -151,7 +151,7 @@ uv run ynufe-campus-mcp   # 启动 MCP 服务器 (stdio)
   "mcpServers": {
     "ynufe": {
       "command": "uvx",
-      "args": ["ynufe-campus-mcp"],
+      "args": ["--from", "/path/to/ynufe-campus-app/mcp", "ynufe-campus-mcp"],
       "env": {
         "YNUFE_USER": "你的学号",
         "YNUFE_PASS": "你的密码"
