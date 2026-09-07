@@ -1,0 +1,32 @@
+# ---- 凭据与个人数据 (绝不提交) ----
+.env
+.env.*
+session.pkl
+data_dump.json
+pyfa_snapshot.html
+snapshot.json
+*.pkl
+*_snapshot.*
+card_weekly.*
+
+# ---- 硬编码凭据的调试/测试脚本 (绝不提交) ----
+test_*.py
+tmp_*.py
+gen_*.py
+parse_*.py
+show_*.py
+appusage_parse.py
+test_ocr.py
+ynufe_login.py
+yunfu_full.py
+cli.py
+main.py
+
+# ---- Python / 构建产物 ----
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+build/
+dist/
+*.egg-info/

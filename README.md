@@ -116,6 +116,57 @@ campus_app/
 
 ---
 
+## MCP 服务器 (ynufe-campus-mcp)
+
+本仓库同时内置一个独立的 **Python MCP 服务器** 子包 mcp/，将教务登录、成绩、课表、考试、通知、培养方案等能力封装为 [Model Context Protocol](https://modelcontextprotocol.io) 工具，供 AI Agent / CLI 程序化调用。
+
+### 功能
+
+| 工具 | 说明 |
+| :--- | :--- |
+| ynufe_login | 登录（自动 OCR 验证码） |
+| ynufe_profile | 学籍信息 |
+| ynufe_grades | 成绩单（GPA / 学分 / 明细） |
+| ynufe_timetable | 课表（按周） |
+| ynufe_semester | 学期信息（周次 / 校区模式） |
+| ynufe_exams | 考试安排 |
+| ynufe_notices | 教务通知 |
+| ynufe_plan | 培养方案 + 学分缺口 |
+| ynufe_logout | 退出登录 |
+
+### 安装
+
+> 尚未发布到 PyPI，uvx ynufe-campus-mcp 暂不可用。当前需从源码运行：
+
+bash
+cd mcp
+uv sync          # 安装依赖
+uv run ynufe-campus-mcp   # 启动 MCP 服务器 (stdio)
+
+
+### 接入 MCP 客户端
+
+json
+{
+  "mcpServers": {
+    "ynufe": {
+      "command": "uvx",
+      "args": ["--from", "/path/to/ynufe-campus-app/mcp", "ynufe-campus-mcp"],
+      "env": {
+        "YNUFE_USER": "你的学号",
+        "YNUFE_PASS": "你的密码"
+      }
+    }
+  }
+}
+
+
+> **凭据安全**：学号/密码绝不硬编码，仅通过环境变量 YNUFE_USER / YNUFE_PASS 或工具参数传入。所有请求客户端直连学校教务系统，零第三方中转。
+
+> 详见 [mcp/README.md](mcp/README.md)。
+
+---
+
 ## 快速上手与本地开发
 
 ### 1. 环境准备
