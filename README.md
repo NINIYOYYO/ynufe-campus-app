@@ -14,7 +14,7 @@
 
 ---
 
-## 📥 快速下载与安装 (For Students)
+## 快速下载与安装 (For Students)
 
 - **Android 手机安装包**：前往 **[Releases 页面](https://github.com/NINIYOYYO/ynufe-campus-app/releases)**，直接下载最新版的 **`云财学子.apk`**（约 3.9 MB）即可安装使用。
 - **免安装网页版 (Web)**：直接通过手机或电脑浏览器访问部署地址，无需安装即可体验全功能。
@@ -138,15 +138,15 @@ campus_app/
 
 > 尚未发布到 PyPI，uvx ynufe-campus-mcp 暂不可用。当前需从源码运行：
 
-bash
+```bash
 cd mcp
 uv sync          # 安装依赖
 uv run ynufe-campus-mcp   # 启动 MCP 服务器 (stdio)
-
+```
 
 ### 接入 MCP 客户端
 
-json
+```json
 {
   "mcpServers": {
     "ynufe": {
@@ -159,6 +159,7 @@ json
     }
   }
 }
+```
 
 
 > **凭据安全**：学号/密码绝不硬编码，仅通过环境变量 YNUFE_USER / YNUFE_PASS 或工具参数传入。所有请求客户端直连学校教务系统，零第三方中转。

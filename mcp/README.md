@@ -23,10 +23,10 @@
 - **绝不硬编码** 学号 / 密码
 - 凭据仅通过 MCP 工具参数或环境变量传入：
 
-bash
+```bash
 export YNUFE_USER="你的学号"
 export YNUFE_PASS="你的密码"
-
+```
 
 - 所有数据只落在使用者本地，不经任何第三方服务器中转
 
@@ -36,42 +36,42 @@ export YNUFE_PASS="你的密码"
 
 > 尚未发布到 PyPI，uvx ynufe-campus-mcp 暂不可用。
 
-bash
+```bash
 cd mcp
 uv sync     # 安装依赖
 uv run ynufe-campus-mcp
-
+```
 
 ### 方式二：交互式 CLI
 
-bash
+```bash
 YNUFE_USER=学号 YNUFE_PASS=密码 uv run ynufe-campus-mcp --interactive
-
+```
 
 ## 接入 MCP 客户端
 
 以 Claude Desktop / Hermes / Cursor 为例，在 MCP 配置中加入：
 
-json
+```json
 {
- "mcpServers": {
-  "ynufe": {
-   "command": "uvx",
-   "args": ["--from", "/path/to/ynufe-campus-app/mcp", "ynufe-campus-mcp"],
-   "env": {
-    "YNUFE_USER": "你的学号",
-    "YNUFE_PASS": "你的密码"
-   }
+  "mcpServers": {
+    "ynufe": {
+      "command": "uvx",
+      "args": ["--from", "/path/to/ynufe-campus-app/mcp", "ynufe-campus-mcp"],
+      "env": {
+        "YNUFE_USER": "你的学号",
+        "YNUFE_PASS": "你的密码"
+      }
+    }
   }
- }
 }
-
+```
 
 ## 自测（无需真实凭据）
 
-bash
+```bash
 uv run python tests/mcp_protocol_test.py
-
+```
 
 验证 MCP 协议握手与 9 个工具的 tools/list 声明，不发起真实登录。
 
