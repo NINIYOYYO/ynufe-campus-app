@@ -19,7 +19,10 @@ import json
 import re
 import sys
 import time
-from typing import Any
+
+if sys.platform.startswith("win"):
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
 
 import requests
 
@@ -38,9 +41,12 @@ def encode_inp(s: str) -> str:
     out = ""
     i = 0
     while i < len(s):
-        c1 = ord(s[i]); i += 1
-        c2 = ord(s[i]) if i < len(s) else None; i += 1
-        c3 = ord(s[i]) if i < len(s) else None; i += 1
+        c1 = ord(s[i])
+        i += 1
+        c2 = ord(s[i]) if i < len(s) else None
+        i += 1
+        c3 = ord(s[i]) if i < len(s) else None
+        i += 1
         e1 = c1 >> 2
         e2 = ((c1 & 3) << 4) | ((c2 >> 4) if c2 is not None else 0)
         e3 = 64 if c2 is None else (((c2 & 15) << 2) | ((c3 >> 6) if c3 is not None else 0))
@@ -68,6 +74,7 @@ class YnufeSession:
         r = self.s.get(HOST + path, timeout=self.timeout,
                        headers={"Referer": f"{HOST}/jsxsd/framework/xsMain.jsp"})
         r.raise_for_status()
+        r.encoding = r.apparent_encoding or "utf-8"
         return r.text
 
     def _post(self, path: str, data: dict, referer: str | None = None) -> str:
@@ -76,6 +83,7 @@ class YnufeSession:
             hdrs["Referer"] = HOST + referer
         r = self.s.post(HOST + path, data=data, timeout=self.timeout, headers=hdrs)
         r.raise_for_status()
+        r.encoding = r.apparent_encoding or "utf-8"
         return r.text
 
     def get_captcha(self) -> bytes:
@@ -95,7 +103,7 @@ class YnufeSession:
             try:
                 cap = self.get_captcha()
                 text, avg, _ = recognize_jpeg(cap)
-            except Exception as e:
+            except Exception:
                 continue
             if not (text and text.isalnum() and len(text) == 4):
                 continue
@@ -341,11 +349,6 @@ class YnufeSession:
         info["campus_modes"] = [{"value": v, "name": n} for v, n in modes]
         return info
 
-    def fetch_exams(self) -> dict:
-        self.require_online()
-        html = self._get("/jsxsd/xsks/xsksap_list")
-        return {"exam_count": 0, "exams": [], "empty": True, "note": "当前无考试安排", "raw_len": len(html)}
-
     def fetch_notices(self, limit: int = 20) -> dict:
         """教务通知/公告列表 (首页通知): 标题/发布时间/未读状态/通知id"""
         self.require_online()
@@ -370,7 +373,9 @@ class YnufeSession:
         """培养方案明细: 标题/培养目标/课程模块学分结构/课程总表/学分缺口分析"""
         self.require_online()
         html = self._get("/jsxsd/pyfa/topyfamx")
-        clean = lambda s: re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", s)).strip()
+
+        def clean(s: str) -> str:
+            return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", s)).strip()
 
         # 标题 (caption 或 首行)
         cap = re.search(r"<caption[^>]*>(.*?)</caption>", html, re.S)
@@ -472,8 +477,8 @@ def build_tools(get_session) -> list[dict]:
     def tool_profile() -> dict:
         return sess().fetch_profile()
 
-    def tool_grades() -> dict:
-        return sess().fetch_grades()
+    def tool_grades(semester: str | None = None) -> dict:
+        return sess().fetch_grades(semester=semester)
 
     def tool_timetable(date: str | None = None, sjms: str = "") -> dict:
         return sess().fetch_timetable(date=date, sjms=sjms)
@@ -484,8 +489,8 @@ def build_tools(get_session) -> list[dict]:
     def tool_exams() -> dict:
         return sess().fetch_exams()
 
-    def tool_notices() -> dict:
-        return sess().fetch_notices()
+    def tool_notices(limit: int = 20) -> dict:
+        return sess().fetch_notices(limit=limit)
 
     def tool_plan() -> dict:
         return sess().fetch_plan()
@@ -506,8 +511,14 @@ def build_tools(get_session) -> list[dict]:
         _make_tool("ynufe_profile", "获取学籍信息 (姓名/院系/专业/班级).", {
             "type": "object", "properties": {},
         }, tool_profile),
-        _make_tool("ynufe_grades", "获取成绩单 (GPA/学分/成绩明细).", {
-            "type": "object", "properties": {},
+        _make_tool("ynufe_grades", "获取成绩单 (GPA/学分/成绩明细). 可选指定学期 (如 2025-2026-1).", {
+            "type": "object",
+            "properties": {
+                "semester": {
+                    "type": "string",
+                    "description": "学期代码, 如 2025-2026-1 或 2025-2026-2; 空表示全部学期",
+                },
+            },
         }, tool_grades),
         _make_tool("ynufe_timetable", "获取课表. date=YYYY-MM-DD 指定日期所在周 (默认今天); sjms=校区模式值 (空=全部). 返回该周的课程列表.", {
             "type": "object",
@@ -523,7 +534,15 @@ def build_tools(get_session) -> list[dict]:
             "type": "object", "properties": {},
         }, tool_exams),
         _make_tool("ynufe_notices", "获取教务通知/公告列表 (标题/时间/未读状态).", {
-            "type": "object", "properties": {},
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer",
+                    "description": "获取通知条数上限, 默认 20",
+                    "minimum": 1,
+                    "maximum": 100,
+                },
+            },
         }, tool_notices),
         _make_tool("ynufe_plan", "获取培养方案: 标题/培养目标/课程模块学分结构/课程总表/学分缺口分析/未修必修课.", {
             "type": "object", "properties": {},
