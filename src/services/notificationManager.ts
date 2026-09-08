@@ -116,6 +116,25 @@ export class NotificationManager {
     }
 
     /**
+     * 仅取消本 App 排程的课程提醒（ID 处于 [ID_BASE, EXAM_ID_BASE)），
+     * 避免重排课表时误删已排程的考试提醒 (EXAM_ID_BASE = 62000)。
+     */
+    static async cancelTimetableReminders(): Promise<void> {
+        this.activeWebTimers.forEach(id => clearTimeout(id));
+        this.activeWebTimers = [];
+        if (!this.isNative) return;
+        try {
+            const pending = await LocalNotifications.getPending();
+            const ours = pending.notifications.filter(n => n.id >= this.ID_BASE && n.id < this.EXAM_ID_BASE);
+            if (ours.length > 0) {
+                await LocalNotifications.cancel({ notifications: ours.map(n => ({ id: n.id })) });
+            }
+        } catch (e) {
+            console.error("[NotificationManager] cancelTimetableReminders error:", e);
+        }
+    }
+
+    /**
      * 立即推送一条通知（用于成绩变动等即时提醒）。不受"上课提醒开关"限制，
      * 但原生端需系统通知权限；未授权时静默跳过（Toast 已在 UI 层兜底）。
      *
@@ -226,7 +245,7 @@ export class NotificationManager {
         });
 
         if (this.isNative) {
-            await this.cancelAll();
+            await this.cancelTimetableReminders();
             if (capped.length === 0) return 0;
             const schedule: ScheduleOptions = {
                 notifications: capped.map((p, idx) => ({
