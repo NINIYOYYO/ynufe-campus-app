@@ -144,15 +144,25 @@ def main() -> None:
         run_step(f"{gradle_bin} {gradle_task}", ANDROID_DIR, f"Gradle 编译 {gradle_task}")
 
         print("\n4. 复制并归档 APK 产物...")
-        src_apk = os.path.join(ANDROID_DIR, apk_subpath)
-
-        if is_release and not os.path.exists(src_apk):
-            alt_release_apk = os.path.join(ANDROID_DIR, "app", "build", "outputs", "apk", "release", "app-release.apk")
-            if os.path.exists(alt_release_apk):
-                src_apk = alt_release_apk
-
-        if not os.path.exists(src_apk):
-            raise FileNotFoundError(f"未找到生成的 APK 产物: {src_apk}")
+        if is_release:
+            candidates = [
+                os.path.join(ANDROID_DIR, "app", "build", "outputs", "apk", "release", "app-release-unsigned.apk"),
+                os.path.join(ANDROID_DIR, "app", "build", "outputs", "apk", "release", "app-release.apk"),
+                os.path.join(ANDROID_DIR, "app", "build", "outputs", "apk", "debug", "app-debug.apk"),
+            ]
+            src_apk = next((p for p in candidates if os.path.exists(p)), None)
+            if not src_apk:
+                raise FileNotFoundError(
+                    f"未找到生成的 Release APK 产物 (已尝试: {candidates})。请检查 Gradle 编译日志或配置 release 签名。"
+                )
+            if "unsigned" in os.path.basename(src_apk):
+                print(f"[提示] Release APK 未签名 ({os.path.basename(src_apk)})。安装真机前请使用 apksigner 签名，或直接打包默认版。")
+            elif "debug" in os.path.basename(src_apk):
+                print(f"[警告] 未找到 Release 产物，已降级回退至 Debug 签名包: {os.path.basename(src_apk)}")
+        else:
+            src_apk = os.path.join(ANDROID_DIR, apk_subpath)
+            if not os.path.exists(src_apk):
+                raise FileNotFoundError(f"未找到生成的 APK 产物: {src_apk}")
 
         dest_apk = os.path.join(PROJECT_DIR, output_name)
         shutil.copy2(src_apk, dest_apk)

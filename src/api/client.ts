@@ -27,12 +27,16 @@ export class YnufeClient {
     private static get BASE_URL(): string {
         const cap = window.Capacitor;
         const isNative = typeof cap?.isNativePlatform === "function" && cap.isNativePlatform() === true;
-        // 仅当端口为 Vite 开发端口 8000 时走本地开发代理；在手机原生离线版（localhost）下精准返回教务网域名
-        const isViteDev = typeof window !== "undefined" && (window.location.port === "8000" || (!isNative && window.location.hostname !== "xjwis.ynufe.edu.cn"));
+        // 原生 Capacitor 移动端（包含独立离线版与热重载调试版）一律直连教务系统域名，防止原生请求相对路径报错
+        if (isNative) {
+            return AppConfig.TARGET_HOST;
+        }
+        // 浏览器 Web 开发环境走同源反向代理；若已在教务同源部署则返回教务网域名
+        const isViteDev = typeof window !== "undefined" && (window.location.port === "8000" || window.location.hostname !== "xjwis.ynufe.edu.cn");
         if (isViteDev) {
             return "";
         }
-        return isNative ? AppConfig.TARGET_HOST : "";
+        return AppConfig.TARGET_HOST;
     }
 
     /**
