@@ -216,13 +216,13 @@ export class TimetableParser {
                     const fullHtml = div.innerHTML;
 
                     // 兼容同一槽位多课程（教务网以虚线分割多门课程）
-                    const courseBlocks = fullHtml.split(/(?:<br\s*\/?>)?\s*-{10,}\s*(?:<br\s*\/?>)?|<hr\s*\/?>/i);
+                    const courseBlocks = fullHtml.split(/(?:<br\s*\/?>)?\s*-{5,}\s*(?:<br\s*\/?>)?|<hr\s*\/?>/i);
 
                     for (const blockHtml of courseBlocks) {
                         if (!blockHtml || blockHtml.trim().length === 0) continue;
 
                         // 提取课程名称：取元数据标签前的完整文本并清洗
-                        const rawName = this.extractCourseName(blockHtml, doc);
+                        const rawName = this.extractCourseName(blockHtml, doc).replace(/[\u00a0\s]+/g, " ").trim();
                         if (!rawName || rawName === "&nbsp;" || rawName.length < 2) continue;
 
                         const teacherMatch = blockHtml.match(/(?:老师|教师)['"]?(?:>|[:：])\s*([^<]+)/);

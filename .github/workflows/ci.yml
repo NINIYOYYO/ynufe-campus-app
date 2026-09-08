@@ -37,7 +37,7 @@ jobs:
         run: npm run build
 
       - name: Run Python ruff lint check
-        run: uv run ruff check .
+        run: uv run --with ruff ruff check .
 
       - name: Run Python unit & native bridge tests
         run: uv run python tests/test_build_script_and_native.py

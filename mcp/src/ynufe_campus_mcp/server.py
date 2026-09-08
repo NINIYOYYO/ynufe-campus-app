@@ -454,6 +454,17 @@ class YnufeSession:
 # ---------- MCP server ----------
 
 def _make_tool(name: str, description: str, args_schema: dict, handler) -> dict:
+    """构建标准 MCP Tool 声明字典。
+
+    Args:
+        name (str): 工具唯一标识符。
+        description (str): 工具功能与使用说明。
+        args_schema (dict): JSON Schema 参数定义。
+        handler (Callable): 对应业务处理函数句柄。
+
+    Returns:
+        dict: 包含 name, description, inputSchema, handler 的工具实体。
+    """
     return {
         "name": name,
         "description": description,
@@ -463,6 +474,14 @@ def _make_tool(name: str, description: str, args_schema: dict, handler) -> dict:
 
 
 def build_tools(get_session) -> list[dict]:
+    """构建当前会话所暴露的全量 MCP 工具列表。
+
+    Args:
+        get_session (Callable[[], YnufeSession]): 获取或生成当前教务会话实例的工厂函数。
+
+    Returns:
+        list[dict]: 具备对应 Schema 和执行逻辑的工具集合。
+    """
     def sess():
         return get_session()
 
@@ -556,8 +575,12 @@ def build_tools(get_session) -> list[dict]:
 MCP_PROTOCOL = "2025-06-18"
 
 
-def run_stdio(get_session):
-    """stdin/stdout JSON-RPC MCP 协议"""
+def run_stdio(get_session) -> None:
+    """基于标准输入/输出 (stdio) 的 JSON-RPC MCP 协议事件循环。
+
+    Args:
+        get_session (Callable[[], YnufeSession]): 获取或生成当前教务会话实例的工厂函数。
+    """
     tools = build_tools(get_session)
 
     def send(obj: dict):
@@ -617,14 +640,20 @@ def run_stdio(get_session):
 _SESSION = None
 
 
-def get_session():
+def get_session() -> YnufeSession:
+    """获取或初始化全局单例教务系统会话。
+
+    Returns:
+        YnufeSession: 活跃的教务会话实体。
+    """
     global _SESSION
     if _SESSION is None:
         _SESSION = YnufeSession()
     return _SESSION
 
 
-def main():
+def main() -> None:
+    """MCP 服务主启动入口，支持 stdio JSON-RPC 与交互式 CLI 两种运行模式。"""
     ap = argparse.ArgumentParser(description="ynufe-tong MCP server")
     ap.add_argument("--interactive", action="store_true",
                     help="交互式 CLI 模式 (human-friendly)")
@@ -636,8 +665,8 @@ def main():
         run_stdio(get_session)
 
 
-def run_interactive():
-    """交互式 CLI: 登录 -> 菜单选择 -> 查询"""
+def run_interactive() -> None:
+    """交互式终端菜单命令行工具，便于开发者人工调试教务网各接口。"""
     import os
     s = YnufeSession()
     print("=" * 40)
@@ -649,7 +678,7 @@ def run_interactive():
     if not res.get("ok"):
         print("登录失败:", res.get("error"))
         sys.exit(1)
-    print(f"✓ 登录成功: {res.get('name')} ({res.get('student_id')})")
+    print(f"[PASS] 登录成功: {res.get('name')} ({res.get('student_id')})")
 
     while True:
         print("\n[功能]")
