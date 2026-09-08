@@ -4,14 +4,11 @@ import sys
 import urllib.parse
 import urllib.request
 
-if sys.platform.startswith('win'):
-    sys.stdout.reconfigure(encoding='utf-8')
-    sys.stderr.reconfigure(encoding='utf-8')
+if sys.platform.startswith("win"):
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
 
-COOKIE = os.environ.get(
-    "YNUFE_COOKIE",
-    "JSESSIONID=0295127059F1B61F55BB9E0BC334E9F2; jsxsd=29430648; JSESSIONID=CB4A1850F6464E32B04CC16D8F3F1015"
-)
+COOKIE = os.environ.get("YNUFE_COOKIE", "").strip()
 BASE_URL = "https://xjwis.ynufe.edu.cn"
 
 
@@ -26,8 +23,6 @@ def fetch_get(url_path: str, timeout: int = 15) -> str:
         str: 响应 HTML 文本。
     """
     ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
 
     req = urllib.request.Request(
         f"{BASE_URL}{url_path}",
@@ -61,8 +56,6 @@ def fetch_post(
         str: 响应 HTML 文本。
     """
     ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
 
     encoded_data = urllib.parse.urlencode(data_dict).encode("utf-8")
     req = urllib.request.Request(
@@ -88,6 +81,12 @@ def fetch_post(
 def main() -> None:
     """运行教务网真实连通性、Cookie 鉴权与业务接口实测。"""
     print("=== 开始运行教务网真实接口与 Cookie 会话实测 ===")
+
+    if not COOKIE:
+        print(" [INFO] 未设置环境变量 YNUFE_COOKIE，跳过真实在线教务网会话实测。")
+        print("        若需测试真实会话，请配置环境变量: YNUFE_COOKIE='JSESSIONID=...; jsxsd=...'")
+        return
+
     success_count = 0
 
     # 1. 首页学籍框架
