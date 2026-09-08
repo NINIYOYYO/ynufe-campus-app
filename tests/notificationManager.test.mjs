@@ -118,9 +118,42 @@ console.log("=== 开始运行 NotificationManager 与作息拓展测试 ===");
     console.log(" [PASS] 用例 1 通过: SCHEDULE-01 作息拓展与 11-14 节排程验证成功");
 }
 
-// 2. NOTIFY-01: 校验 cancelTimetableReminders 只取消 [60000, 62000) 不误伤考试提醒
+// 2. NOTIFY-01: 深度穿透验证 cancelTimetableReminders 与 cancelAll 插件调用
 {
-    const scheduledNotifications = [
+    class MockLocalNotificationsPlugin {
+        constructor() {
+            this.pending = [];
+            this.cancelled = [];
+            this.scheduled = [];
+            this.permissionsGranted = true;
+        }
+
+        async requestPermissions() {
+            return { display: this.permissionsGranted ? 'granted' : 'denied' };
+        }
+
+        async getPending() {
+            return { notifications: [...this.pending] };
+        }
+
+        async cancel(options) {
+            this.cancelled.push(...options.notifications);
+            const toCancelIds = new Set(options.notifications.map(n => n.id));
+            this.pending = this.pending.filter(n => !toCancelIds.has(n.id));
+        }
+
+        async schedule(options) {
+            this.scheduled.push(...options.notifications);
+            this.pending.push(...options.notifications.map(n => ({ id: n.id, schedule: n.schedule })));
+            return {};
+        }
+    }
+
+    const mockPlugin = new MockLocalNotificationsPlugin();
+    NotificationManager.setPluginForTest(mockPlugin);
+
+    // 初始状态包含课表提醒、考试提醒及成绩通知
+    mockPlugin.pending = [
         { id: 60001, title: "课表提醒1" },
         { id: 60002, title: "课表提醒2" },
         { id: 61999, title: "课表提醒边界" },
@@ -129,27 +162,57 @@ console.log("=== 开始运行 NotificationManager 与作息拓展测试 ===");
         { id: 63500, title: "成绩变动提醒" }
     ];
 
-    const ID_BASE = 60000;
-    const EXAM_ID_BASE = 62000;
+    // 2.1 真实调用 cancelTimetableReminders()
+    await NotificationManager.cancelTimetableReminders();
 
-    const timetableOnly = scheduledNotifications.filter(n => n.id >= ID_BASE && n.id < EXAM_ID_BASE);
-    assert.strictEqual(timetableOnly.length, 3, "课表过滤区间 [60000, 62000) 应严格包含 3 条课表提醒");
-    assert.deepStrictEqual(timetableOnly.map(n => n.id), [60001, 60002, 61999]);
+    // 断言：cancel 接收到的通知 ID 严格仅限于 [60000, 62000)
+    assert.strictEqual(mockPlugin.cancelled.length, 3, "应该恰好取消 3 条课表提醒");
+    assert.deepStrictEqual(mockPlugin.cancelled.map(n => n.id), [60001, 60002, 61999]);
 
-    const preservedExams = scheduledNotifications.filter(n => !(n.id >= ID_BASE && n.id < EXAM_ID_BASE));
-    assert.strictEqual(preservedExams.length, 3, "考试与成绩通知应被完全保留");
-    assert.deepStrictEqual(preservedExams.map(n => n.id), [62000, 62001, 63500]);
+    // 断言：pending 队列中，考试提醒 (62000, 62001) 与成绩提醒 (63500) 完好无损保留
+    assert.strictEqual(mockPlugin.pending.length, 3, "pending 队列中考试与成绩提醒必须保留");
+    assert.deepStrictEqual(mockPlugin.pending.map(n => n.id), [62000, 62001, 63500]);
 
-    const allOurs = scheduledNotifications.filter(n => n.id >= ID_BASE && n.id < ID_BASE + 10000);
-    assert.strictEqual(allOurs.length, 6, "cancelAll 应覆盖全部 60000-70000 提醒");
+    // 2.2 真实调用 cancelAll()
+    mockPlugin.cancelled = [];
+    await NotificationManager.cancelAll();
 
-    // 验证 NotificationManager 的类方法存在性
-    assert.strictEqual(typeof NotificationManager.cancelTimetableReminders, 'function');
-    assert.strictEqual(typeof NotificationManager.cancelAll, 'function');
-    assert.strictEqual(typeof NotificationManager.rescheduleFromTimetable, 'function');
-    assert.strictEqual(typeof NotificationManager.rescheduleExamReminders, 'function');
+    assert.strictEqual(mockPlugin.cancelled.length, 3, "cancelAll 应取消剩余的 62000-70000 提醒");
+    assert.deepStrictEqual(mockPlugin.cancelled.map(n => n.id), [62000, 62001, 63500]);
+    assert.strictEqual(mockPlugin.pending.length, 0, "cancelAll 执行后 pending 队列应彻底清空");
 
-    console.log(" [PASS] 用例 2 通过: NOTIFY-01 课表与考试提醒分区取消逻辑准确无误");
+    // 2.3 异常边界测试：getPending 返回空或 null 结构时健壮性测试
+    mockPlugin.pending = [
+        { id: undefined },
+        { id: "invalid-id" },
+        { id: 60005, title: "有效ID" }
+    ];
+    mockPlugin.cancelled = [];
+    await NotificationManager.cancelTimetableReminders();
+    assert.strictEqual(mockPlugin.cancelled.length, 1, "异常/非法ID应被安全过滤，仅取消有效 60005");
+    assert.strictEqual(mockPlugin.cancelled[0].id, 60005);
+
+    // 2.4 测试 rescheduleExamReminders 独立 ID 分区
+    localStorage.setItem("ynufe_notify_enabled", "true");
+    mockPlugin.pending = [{ id: 62000, title: "旧考试提醒" }];
+    mockPlugin.cancelled = [];
+    mockPlugin.scheduled = [];
+
+    const examCount = await NotificationManager.rescheduleExamReminders([
+        {
+            courseName: "离散数学",
+            time: "2026-06-20 09:00-11:00",
+            location: "博学楼201",
+            seat: "15"
+        }
+    ]);
+    assert.strictEqual(mockPlugin.cancelled.length, 1, "排程考试应清除旧考试提醒");
+    assert.strictEqual(mockPlugin.cancelled[0].id, 62000);
+
+    // 重置测试注入
+    NotificationManager.setPluginForTest(null);
+
+    console.log(" [PASS] 用例 2 通过: NOTIFY-01 课表与考试提醒分区取消逻辑深层穿透测试成功");
 }
 
 rmSync(OUT_FILE, { force: true });

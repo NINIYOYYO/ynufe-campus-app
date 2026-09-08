@@ -18,7 +18,7 @@ interface ScheduleNotification {
     smallIcon?: string;
 }
 interface ScheduleOptions { notifications: ScheduleNotification[]; }
-interface LocalNotificationsPlugin {
+export interface LocalNotificationsPlugin {
     requestPermissions(): Promise<{ display: string }>;
     schedule(options: ScheduleOptions): Promise<unknown>;
     getPending(): Promise<{ notifications: PendingLocalNotification[] }>;
@@ -38,6 +38,23 @@ export class NotificationManager {
     private static KEY_ENABLED = "ynufe_notify_enabled";
     private static KEY_LEAD_MIN = "ynufe_notify_lead_min";
 
+    /** 测试用插件实现注入 hook */
+    private static pluginOverride: LocalNotificationsPlugin | null = null;
+
+    /**
+     * 允许在单元测试中注入自定义 LocalNotifications 插件实现。
+     *
+     * Args:
+     *     plugin (LocalNotificationsPlugin | null): 待注入的插件实现或 null。
+     */
+    static setPluginForTest(plugin: LocalNotificationsPlugin | null): void {
+        this.pluginOverride = plugin;
+    }
+
+    private static get plugin(): LocalNotificationsPlugin {
+        return this.pluginOverride || LocalNotifications;
+    }
+
     /** 通知 ID 基数：上课提醒统一使用 60000+ 段位，方便整段取消重排 */
     private static ID_BASE = 60000;
     /** 考试提醒 ID 段位（与上课提醒分开，互不干扰） */
@@ -50,6 +67,7 @@ export class NotificationManager {
     private static activeWebTimers: number[] = [];
 
     private static get isNative(): boolean {
+        if (this.pluginOverride) return true;
         const cap = window.Capacitor;
         return !!cap && typeof cap.isNativePlatform === "function" && cap.isNativePlatform();
     }
@@ -83,7 +101,7 @@ export class NotificationManager {
     static async requestPermission(): Promise<boolean> {
         try {
             if (this.isNative) {
-                const status = await LocalNotifications.requestPermissions();
+                const status = await this.plugin.requestPermissions();
                 return status.display === "granted";
             }
             if ("Notification" in window) {
@@ -105,10 +123,11 @@ export class NotificationManager {
         this.activeWebTimers = [];
         if (!this.isNative) return;
         try {
-            const pending = await LocalNotifications.getPending();
-            const ours = pending.notifications.filter(n => n.id >= this.ID_BASE && n.id < this.ID_BASE + 10000);
+            const pending = await this.plugin.getPending();
+            const list = pending?.notifications ?? [];
+            const ours = list.filter(n => typeof n?.id === "number" && n.id >= this.ID_BASE && n.id < this.ID_BASE + 10000);
             if (ours.length > 0) {
-                await LocalNotifications.cancel({ notifications: ours.map(n => ({ id: n.id })) });
+                await this.plugin.cancel({ notifications: ours.map(n => ({ id: n.id })) });
             }
         } catch (e) {
             console.error("[NotificationManager] cancelAll error:", e);
@@ -124,10 +143,11 @@ export class NotificationManager {
         this.activeWebTimers = [];
         if (!this.isNative) return;
         try {
-            const pending = await LocalNotifications.getPending();
-            const ours = pending.notifications.filter(n => n.id >= this.ID_BASE && n.id < this.EXAM_ID_BASE);
+            const pending = await this.plugin.getPending();
+            const list = pending?.notifications ?? [];
+            const ours = list.filter(n => typeof n?.id === "number" && n.id >= this.ID_BASE && n.id < this.EXAM_ID_BASE);
             if (ours.length > 0) {
-                await LocalNotifications.cancel({ notifications: ours.map(n => ({ id: n.id })) });
+                await this.plugin.cancel({ notifications: ours.map(n => ({ id: n.id })) });
             }
         } catch (e) {
             console.error("[NotificationManager] cancelTimetableReminders error:", e);
@@ -145,10 +165,10 @@ export class NotificationManager {
     static async notifyGradeUpdate(title: string, body: string): Promise<void> {
         try {
             if (this.isNative) {
-                const perm = await LocalNotifications.requestPermissions();
+                const perm = await this.plugin.requestPermissions();
                 if (perm.display !== "granted") return;
                 const id = this.EXAM_ID_BASE + 1500 + Math.floor(Math.random() * 400);
-                await LocalNotifications.schedule({
+                await this.plugin.schedule({
                     notifications: [{
                         id,
                         title,
@@ -187,10 +207,11 @@ export class NotificationManager {
 
         // 先清掉旧的考试提醒
         try {
-            const pending = await LocalNotifications.getPending();
-            const oldExam = pending.notifications.filter(n => n.id >= this.EXAM_ID_BASE && n.id < this.EXAM_ID_BASE + 2000);
+            const pending = await this.plugin.getPending();
+            const list = pending?.notifications ?? [];
+            const oldExam = list.filter(n => typeof n?.id === "number" && n.id >= this.EXAM_ID_BASE && n.id < this.EXAM_ID_BASE + 2000);
             if (oldExam.length > 0) {
-                await LocalNotifications.cancel({ notifications: oldExam.map(n => ({ id: n.id })) });
+                await this.plugin.cancel({ notifications: oldExam.map(n => ({ id: n.id })) });
             }
         } catch (e) {
             console.error("[NotificationManager] clear old exam reminders error:", e);
@@ -207,7 +228,7 @@ export class NotificationManager {
                 schedule: { at: n.fireAt, allowWhileIdle: true },
                 smallIcon: "ic_launcher",
             }));
-            await LocalNotifications.schedule({ notifications: scheduleNotifications });
+            await this.plugin.schedule({ notifications: scheduleNotifications });
             console.log(`[NotificationManager] Scheduled ${scheduleNotifications.length} exam reminders.`);
             return scheduleNotifications.length;
         } catch (e) {
@@ -257,7 +278,7 @@ export class NotificationManager {
                 }))
             };
             try {
-                await LocalNotifications.schedule(schedule);
+                await this.plugin.schedule(schedule);
                 console.log(`[NotificationManager] Scheduled ${capped.length} class reminders (lead ${leadMin} min).`);
                 return capped.length;
             } catch (e) {
@@ -291,9 +312,10 @@ export class NotificationManager {
     static async getNextPendingText(): Promise<string> {
         if (!this.isNative) return "";
         try {
-            const pending = await LocalNotifications.getPending();
-            const ours = pending.notifications
-                .filter(n => n.id >= this.ID_BASE && n.id < this.ID_BASE + 10000)
+            const pending = await this.plugin.getPending();
+            const list = pending?.notifications ?? [];
+            const ours = list
+                .filter(n => typeof n?.id === "number" && n.id >= this.ID_BASE && n.id < this.ID_BASE + 10000)
                 .sort((a, b) => (a.schedule?.at ? new Date(a.schedule.at).getTime() : 0) - (b.schedule?.at ? new Date(b.schedule.at).getTime() : 0));
             if (ours.length === 0) return "";
             const next = ours[0];
