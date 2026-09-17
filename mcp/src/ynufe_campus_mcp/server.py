@@ -102,8 +102,8 @@ class YnufeSession:
             attempts = attempt
             try:
                 cap = self.get_captcha()
-                text, avg, _ = recognize_jpeg(cap)
-            except Exception:
+                text, _, _ = recognize_jpeg(cap)
+            except (requests.RequestException, ValueError, OSError):
                 continue
             if not (text and text.isalnum() and len(text) == 4):
                 continue
@@ -116,7 +116,7 @@ class YnufeSession:
             # 验证会话
             try:
                 main = self._get("/jsxsd/framework/xsMain_new.jsp?t1=1")
-            except Exception:
+            except requests.RequestException:
                 continue
             if len(main) > 2000:
                 name, sid = self._parse_profile(main)
@@ -149,7 +149,7 @@ class YnufeSession:
     def fetch_profile(self) -> dict:
         self.require_online()
         main = self._get("/jsxsd/framework/xsMain_new.jsp?t1=1")
-        txt = re.sub(r"<script.*?</script>", "", main, flags=re.S)
+        txt = re.sub(r"<script.*?</script>", "", main, flags=re.DOTALL)
         txt = txt.replace("&nbsp;", " ")
         txt = re.sub(r"<[^>]+>", " ", txt)
         txt = re.sub(r"\s+", " ", txt)
@@ -167,7 +167,7 @@ class YnufeSession:
         """
         self.require_online()
         html = self._get("/jsxsd/kscj/cjcx_list?xsfs=all")
-        txt = re.sub(r"<script.*?</script>", "", html, flags=re.S)
+        txt = re.sub(r"<script.*?</script>", "", html, flags=re.DOTALL)
         txt = re.sub(r"<[^>]+>", " ", txt)
         txt = re.sub(r"\s+", " ", txt)
         m = re.search(r"所修门数[:：]?\s*(\d+)", txt)
@@ -181,13 +181,13 @@ class YnufeSession:
             "平均成绩": m4.group(1) if m4 else None,
         }
         # 明细表
-        rows = re.findall(r"<tr[^>]*>(.*?)</tr>", html, re.S)
+        rows = re.findall(r"<tr[^>]*>(.*?)</tr>", html, re.DOTALL)
         courses = []
         for row in rows:
             if "<td" not in row:
                 continue
             cells = []
-            for td in re.findall(r"<td[^>]*>(.*?)</td>", row, re.S):
+            for td in re.findall(r"<td[^>]*>(.*?)</td>", row, re.DOTALL):
                 t = re.sub(r"<[^>]+>", " ", td)
                 t = re.sub(r"\s+", " ", t).strip()
                 cells.append(t)
@@ -219,14 +219,14 @@ class YnufeSession:
         """考试安排查询 (接口 xsksap_list; 学期初可能返回空)"""
         self.require_online()
         html = self._get("/jsxsd/xsks/xsksap_list")
-        rows = re.findall(r"<tr[^>]*>(.*?)</tr>", html, re.S)
+        rows = re.findall(r"<tr[^>]*>(.*?)</tr>", html, re.DOTALL)
         exams: list[dict] = []
         empty = False
         for row in rows:
             if "<td" not in row:
                 continue
             cells = []
-            for td in re.findall(r"<td[^>]*>(.*?)</td>", row, re.S):
+            for td in re.findall(r"<td[^>]*>(.*?)</td>", row, re.DOTALL):
                 t = re.sub(r"<[^>]+>", " ", td)
                 t = re.sub(r"\s+", " ", t).strip()
                 cells.append(t)
@@ -267,7 +267,7 @@ class YnufeSession:
         """
         self.require_online()
         if not date:
-            date = datetime.date.today().strftime("%Y-%m-%d")
+            date = datetime.datetime.now(datetime.timezone.utc).astimezone().strftime("%Y-%m-%d")
         html = self.s.get(
             f"{HOST}/jsxsd/framework/main_index_loadkb.jsp",
             params={"rq": date, "sjmsValue": sjms},
@@ -282,7 +282,7 @@ class YnufeSession:
         """解析首页迷你课表 HTML -> {week, total_weeks, date, lessons:[...], raw_len}"""
         # 课程在 <p title='课程学分：X<br/>...上课时间：第N周 星期X [节次]节<br/>上课地点：地点<br/>通知单号：编号'>
         title_pat = re.compile(
-            r"title\s*=\s*'(?P<title>[^']+)'", re.S)
+            r"title\s*=\s*'(?P<title>[^']+)'", re.DOTALL)
         lessons = []
         seen = set()
         for m in title_pat.finditer(html):
@@ -358,7 +358,7 @@ class YnufeSession:
         for m in re.finditer(
             r'<li class="list-group-item[^"]*"[^>]*title="([^"]+)".*?'
             r"gotoTzgg\('([0-9A-F]+)'\)[^>]*>(.*?)</a>.*?"
-            r"<span id=\"fbsj\d+\"[^>]*>\s*([\d/ :]+)", html, re.S):
+            r"<span id=\"fbsj\d+\"[^>]*>\s*([\d/ :]+)", html, re.DOTALL):
             title, nid, inner, ts = m.group(1), m.group(2), m.group(3), m.group(4)
             unread = "[未读]" in inner
             notices.append({
@@ -378,7 +378,7 @@ class YnufeSession:
             return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", s)).strip()
 
         # 标题 (caption 或 首行)
-        cap = re.search(r"<caption[^>]*>(.*?)</caption>", html, re.S)
+        cap = re.search(r"<caption[^>]*>(.*?)</caption>", html, re.DOTALL)
         title = clean(cap.group(1)) if cap else ""
         if not title:
             m0 = re.search(r">([^<>]{10,80}培养方案[^<>]{0,40})<", html)
@@ -386,21 +386,21 @@ class YnufeSession:
                 title = clean(m0.group(1))
 
         # 培养目标：一、培养目标 后到 二、
-        m = re.search(r"一、培养目标\s*(.*?)\s*(?:二、|\Z)", html, re.S)
+        m = re.search(r"一、培养目标\s*(.*?)\s*(?:二、|\Z)", html, re.DOTALL)
         goal = clean(m.group(1)) if m else ""
 
         # 课程模块 (应修/已修) + 课程行
         # 注意: 单元格文本含 &nbsp;, clean 前先转空格; 模块行的 td[0] 可能用 <td> 小写
-        rows = re.findall(r"<TR>(.*?)</TR>", html, re.S)
+        rows = re.findall(r"<TR>(.*?)</TR>", html, re.DOTALL)
         modules = []
         module_short = []
         courses = []
         cur_module = ""
         for row in rows:
-            cells = re.findall(r"<TD[^>]*>(.*?)</TD>", row, re.S)
+            cells = re.findall(r"<TD[^>]*>(.*?)</TD>", row, re.DOTALL)
             # 兼容小写 td (培养方案数据行是大写 TD, 但稳妥起见两种都试)
             if not cells:
-                cells = re.findall(r"<td[^>]*>(.*?)</td>", row, re.S)
+                cells = re.findall(r"<td[^>]*>(.*?)</td>", row, re.DOTALL)
             if not cells:
                 continue
             texts = [clean(c.replace("&nbsp;", " ")) for c in cells]
@@ -445,7 +445,7 @@ class YnufeSession:
     def logout(self) -> dict:
         try:
             self._get("/jsxsd/xk/LoginToXkLdap?button1=logout")
-        except Exception:
+        except requests.RequestException:
             pass
         self.logged_in = False
         return {"ok": True}
@@ -626,7 +626,7 @@ def run_stdio(get_session) -> None:
                 else:
                     send({"jsonrpc": "2.0", "id": msg_id,
                           "result": {"content": [{"type": "text", "text": str(result)}]}})
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 send({"jsonrpc": "2.0", "id": msg_id,
                       "error": {"code": -32603, "message": str(e)}})
         elif method == "ping":
@@ -702,7 +702,7 @@ def run_interactive() -> None:
                 print(json.dumps(s.logout(), ensure_ascii=False))
             elif choice == "0":
                 break
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print("出错:", e)
 
 

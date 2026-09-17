@@ -32,7 +32,7 @@ def get_local_ip() -> str:
         ip: str = s.getsockname()[0]
         s.close()
         return ip
-    except Exception:
+    except OSError:
         return "127.0.0.1"
 
 
@@ -175,7 +175,7 @@ def main() -> None:
     except subprocess.CalledProcessError as e:
         print(f"\n[ERROR] 构建指令执行失败 (Exit Code {e.returncode}): {e.cmd}")
         sys.exit(e.returncode if e.returncode != 0 else 1)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"\n[ERROR] 构建流程发生异常: {e}")
         sys.exit(1)
 

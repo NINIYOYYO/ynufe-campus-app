@@ -104,7 +104,7 @@ def start_emulator_if_needed() -> str:
 
     serial = devices[0]
     print(f"[+] 模拟器已连接 ({serial})，正在等待系统桌面加载完成 (sys.boot_completed) ...")
-    
+
     for attempt in range(60):
         time.sleep(2)
         res = run_cmd(f'"{ADB_BIN}" -s {serial} shell getprop sys.boot_completed', check=False)
