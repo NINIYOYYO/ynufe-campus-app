@@ -28,9 +28,20 @@ export class TimetableParser {
      *     number[]: 展开后的生效周次数组。
      */
     static parseActiveWeeks(weeksStr: string): number[] {
-        if (!weeksStr || weeksStr === "全周") return [];
-        const isOddOnly = /(?:^|[^\w(])单周?(?:$|[^\w)])/.test(weeksStr) || weeksStr.includes("单周");
-        const isEvenOnly = /(?:^|[^\w(])双周?(?:$|[^\w)])/.test(weeksStr) || weeksStr.includes("双周");
+        if (!weeksStr) return [];
+        const isOddOnly = /[（(\[]单[）)\]]|单周|[（(\[]单周[）)\]]/.test(weeksStr);
+        const isEvenOnly = /[（(\[]双[）)\]]|双周|[（(\[]双周[）)\]]/.test(weeksStr);
+
+        // 全周课程统一展开为 1-25 周完整教学周，并兼顾单双周修饰
+        if (weeksStr.includes("全周")) {
+            const activeWeeks: number[] = [];
+            for (let i = 1; i <= 25; i++) {
+                if (isOddOnly && i % 2 === 0) continue;
+                if (isEvenOnly && i % 2 !== 0) continue;
+                activeWeeks.push(i);
+            }
+            return activeWeeks;
+        }
 
         const normalized = weeksStr
             .replace(/\[[^\]]*\]/g, "")
@@ -64,7 +75,7 @@ export class TimetableParser {
                 }
             }
         });
-        return activeWeeks;
+        return Array.from(new Set(activeWeeks)).sort((a, b) => a - b);
     }
 
     private static readonly META_PREFIX_RE = /^(?:教师|老师|教室|周次|节次|通知单编号|课程编号|校区|教学班|选课备注)(?:[:：]|\(节次\)|$)/;
