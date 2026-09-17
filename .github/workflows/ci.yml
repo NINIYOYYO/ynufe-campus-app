@@ -43,7 +43,10 @@ jobs:
         run: uv run python tests/test_build_script_and_native.py
 
       - name: Run MCP package tests
-        run: uv run python mcp/tests/mcp_protocol_test.py
+        working-directory: mcp
+        env:
+          VIRTUAL_ENV: ""
+        run: uv run python tests/mcp_protocol_test.py
 
       - name: Run Structural Smoke Check
         run: uv run python test_suite.py
