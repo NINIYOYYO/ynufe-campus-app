@@ -148,7 +148,6 @@ def main() -> None:
             candidates = [
                 os.path.join(ANDROID_DIR, "app", "build", "outputs", "apk", "release", "app-release-unsigned.apk"),
                 os.path.join(ANDROID_DIR, "app", "build", "outputs", "apk", "release", "app-release.apk"),
-                os.path.join(ANDROID_DIR, "app", "build", "outputs", "apk", "debug", "app-debug.apk"),
             ]
             src_apk = next((p for p in candidates if os.path.exists(p)), None)
             if not src_apk:
@@ -157,8 +156,8 @@ def main() -> None:
                 )
             if "unsigned" in os.path.basename(src_apk):
                 print(f"[提示] Release APK 未签名 ({os.path.basename(src_apk)})。安装真机前请使用 apksigner 签名，或直接打包默认版。")
-            elif "debug" in os.path.basename(src_apk):
-                print(f"[警告] 未找到 Release 产物，已降级回退至 Debug 签名包: {os.path.basename(src_apk)}")
+            else:
+                print(f"[提示] 成功定位已签名的 Release APK: {os.path.basename(src_apk)}")
         else:
             src_apk = os.path.join(ANDROID_DIR, apk_subpath)
             if not os.path.exists(src_apk):
