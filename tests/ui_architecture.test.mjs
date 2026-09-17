@@ -536,6 +536,48 @@ console.log("\n--- 测试套件 4: FE-07 统一存储与向后兼容容错测试
     console.log("[PASS] 用例 4.1 通过: StorageKeys 与 CacheService 全站统一存取与向后兼容验证成功");
 }
 
+// -----------------------------------------------------------------------------
+// 测试套件 5: CSP 安全策略加固与 7 天周末课程表完整网格实测
+// -----------------------------------------------------------------------------
+console.log("\n--- 测试套件 5: CSP 安全加固与课表周末支持实测 ---");
+{
+    const { readFileSync } = await import('node:fs');
+    const indexHtml = readFileSync(join(ROOT, 'index.html'), 'utf-8');
+    const appCss = readFileSync(join(ROOT, 'src', 'styles', 'app.css'), 'utf-8');
+
+    // 1. CSP 策略校验：script-src 禁止包含 unsafe-inline
+    const cspMatch = indexHtml.match(/http-equiv="Content-Security-Policy"\s+content="([^"]+)"/i);
+    assert.ok(cspMatch, "index.html 必须配置严格的 CSP 策略");
+    const cspContent = cspMatch[1];
+    const scriptSrcMatch = cspContent.match(/script-src\s+([^;]+)/i);
+    assert.ok(scriptSrcMatch, "CSP 必须显式定义 script-src");
+    assert.ok(!scriptSrcMatch[1].includes("'unsafe-inline'"), "生产环境 CSP script-src 严禁包含 'unsafe-inline'");
+
+    // 2. 课表表头包含六、日
+    assert.ok(indexHtml.includes('<div class="grid-header">六</div>'), "课表表头必须包含周六");
+    assert.ok(indexHtml.includes('<div class="grid-header">日</div>'), "课表表头必须包含周日");
+
+    // 3. 课表 1-7 大节均包含 data-day 6 和 7
+    for (let s = 1; s <= 7; s++) {
+        assert.ok(
+            indexHtml.includes(`data-day="6" data-session="${s}"`),
+            `第 ${s} 大节必须具备周六 (day=6) 槽位 DOM`
+        );
+        assert.ok(
+            indexHtml.includes(`data-day="7" data-session="${s}"`),
+            `第 ${s} 大节必须具备周日 (day=7) 槽位 DOM`
+        );
+    }
+
+    // 4. app.css 网格列数必须支持 7 天自适应收缩
+    assert.ok(
+        appCss.includes("repeat(7, minmax(0, 1fr))"),
+        "app.css 中的 timetable-grid 必须定义 7 列自适应布局"
+    );
+
+    console.log("[PASS] 用例 5.1 通过: CSP 策略严格禁用 unsafe-inline，周末 7 天课程网格完整就绪");
+}
+
 // 清理构建临时目录
 try { rmSync(TMP_DIR, { recursive: true, force: true }); } catch {}
 

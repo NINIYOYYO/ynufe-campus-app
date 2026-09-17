@@ -80,7 +80,7 @@ export class TimetableView {
     }
 
     /**
-     * 渲染课程表核心组件 (填充下拉框、今日课表及 5x5 网格课表)。
+     * 渲染课程表核心组件 (填充下拉框、今日课表及 7x7 网格课表)。
      *
      * Args:
      *     data (TimetableData): 课表数据结构。
@@ -143,7 +143,7 @@ export class TimetableView {
     }
 
     /**
-     * 根据周次筛选条件及去重逻辑，渲染 5x5 课表网格单元格。
+     * 根据周次筛选条件及去重逻辑，渲染 7x7 课表网格单元格。
      */
     static reloadTimetableGrid(): void {
         const weekSelect = document.getElementById("select-week") as HTMLSelectElement | null;
@@ -294,11 +294,13 @@ export class TimetableView {
         const sessionLabel = timeCfg
             ? `${timeCfg.label} (${sessionIdx * 2 + 1}-${sessionIdx * 2 + 2}节)`
             : `第 ${course.slot} 节`;
+        const dayNames = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
+        const dayStr = (course.day >= 1 && course.day <= 7) ? dayNames[course.day - 1] : `星期${course.day}`;
         const rows: Array<{ label: string; value: string; icon: string }> = [
             { label: "上课教室", value: course.room, icon: '<rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>' },
             { label: "授课教师", value: course.teacher, icon: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle>' },
             { label: "上课周次", value: course.weeks, icon: '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line>' },
-            { label: "时间范围", value: sessionLabel, icon: '<circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>' },
+            { label: "时间范围", value: `${dayStr} · ${sessionLabel}`, icon: '<circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>' },
             { label: "通知单号", value: course.code || '-', icon: '<path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>' },
         ];
         const content = rows.map(r => `

@@ -1244,6 +1244,7 @@ body.theme-light .bg-color-btn.active {
 .timetable-scroll-wrapper {
     width: 100%;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
     border-radius: 12px;
     border: 1px solid var(--card-border);
     background: var(--card-bg); /* 自适应浅色白玻璃与深色茶色玻璃 */
@@ -1251,7 +1252,8 @@ body.theme-light .bg-color-btn.active {
 
 .timetable-grid {
     display: grid;
-    grid-template-columns: 46px repeat(5, minmax(0, 1fr)); /* 5天工作日+1时间，列可收缩，保证 5 天完整显示不横滚 */
+    grid-template-columns: 46px repeat(7, minmax(0, 1fr)); /* 7天(周一至周日)+1时间列，列可自适应收缩 */
+    min-width: 382px; /* 46px + 7 * 48px = 382px，配合外部 scroll-wrapper 保证移动端最小可读宽度与横向滚动 */
     width: 100%;
     border-collapse: collapse;
 }
