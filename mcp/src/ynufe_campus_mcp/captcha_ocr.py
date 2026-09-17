@@ -222,7 +222,7 @@ def classify_block(mat):
     if best_char in ('n', 'h', 'p', 'u'):
         bot_left_descender = 0
         for y in range(28, CANVAS_HEIGHT):
-            for x in range(0, 7):
+            for x in range(7):
                 if mat[y][x] == 1:
                     bot_left_descender += 1
         if bot_left_descender >= 3:
@@ -238,7 +238,7 @@ def classify_block(mat):
     # 判决2: h/n
     if best_char in ('h', 'n'):
         left_top = 0
-        for y in range(0, 14):
+        for y in range(14):
             for x in range(2, 8):
                 if mat[y][x] == 1:
                     left_top += 1
@@ -271,8 +271,9 @@ def recognize_rgba(rgba, width, height):
 
 def recognize_jpeg(data: bytes) -> str:
     """JPEG bytes -> OCR 文本 (使用 PIL)"""
-    from PIL import Image
     import io
+
+    from PIL import Image
     img = Image.open(io.BytesIO(data)).convert("RGBA")
     w, h = img.size
     rgba = list(img.tobytes())
@@ -282,7 +283,10 @@ def recognize_jpeg(data: bytes) -> str:
 
 if __name__ == "__main__":
     import sys
-    data = open(sys.argv[1], 'rb').read() if len(sys.argv) > 1 else None
+    data = None
+    if len(sys.argv) > 1:
+        with open(sys.argv[1], "rb") as f:
+            data = f.read()
     if data:
         text, avg, confs = recognize_jpeg(data)
-        print(f"OCR: {text!r} avg_conf={avg:.3f} confs={[round(c,3) for c in confs]}")
+        print(f"OCR: {text!r} avg_conf={avg:.3f} confs={[round(c, 3) for c in confs]}")

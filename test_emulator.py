@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -8,10 +9,10 @@ if sys.platform.startswith('win'):
     sys.stderr.reconfigure(encoding='utf-8')
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-SDK_DIR = r"D:\AndoridSDK"
-ADB_BIN = os.path.join(SDK_DIR, "platform-tools", "adb.exe")
-EMULATOR_BIN = os.path.join(SDK_DIR, "emulator", "emulator.exe")
-AVD_NAME = "Pixel_9_API_36"
+SDK_DIR = os.environ.get("ANDROID_HOME") or os.environ.get("ANDROID_SDK_ROOT") or r"D:\AndoridSDK"
+ADB_BIN = shutil.which("adb") or os.path.join(SDK_DIR, "platform-tools", "adb.exe")
+EMULATOR_BIN = shutil.which("emulator") or os.path.join(SDK_DIR, "emulator", "emulator.exe")
+AVD_NAME = os.environ.get("AVD_NAME", "Pixel_9_API_36")
 PACKAGE_NAME = "com.ynufe.campusapp"
 ACTIVITY_NAME = f"{PACKAGE_NAME}/.MainActivity"
 APK_PATH = os.path.join(BASE_DIR, "云财学子.apk")
@@ -46,10 +47,10 @@ def check_sdk_tools() -> bool:
     Returns:
         bool: 工具链完备返回 True。
     """
-    if not os.path.exists(ADB_BIN):
+    if not (os.path.exists(ADB_BIN) or shutil.which(ADB_BIN)):
         print(f"[ERROR] 未找到 ADB 工具: {ADB_BIN}")
         return False
-    if not os.path.exists(EMULATOR_BIN):
+    if not (os.path.exists(EMULATOR_BIN) or shutil.which(EMULATOR_BIN)):
         print(f"[ERROR] 未找到 Emulator 工具: {EMULATOR_BIN}")
         return False
     print(f"[+] ADB 路径: {ADB_BIN}")
@@ -103,7 +104,7 @@ def start_emulator_if_needed() -> str:
 
     serial = devices[0]
     print(f"[+] 模拟器已连接 ({serial})，正在等待系统桌面加载完成 (sys.boot_completed) ...")
-    
+
     for attempt in range(60):
         time.sleep(2)
         res = run_cmd(f'"{ADB_BIN}" -s {serial} shell getprop sys.boot_completed', check=False)

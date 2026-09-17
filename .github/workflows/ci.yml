@@ -21,11 +21,32 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+          python-version: "3.10"
+
+      - name: Install Node dependencies
         run: npm ci
 
-      - name: Run test suites (88 Assertions)
+      - name: Run Node test suites
         run: npm run test
 
       - name: TypeScript check & Vite build
         run: npm run build
+
+      - name: Run Python ruff lint check
+        run: uv run --with ruff ruff check .
+
+      - name: Run Python unit & native bridge tests
+        run: uv run python tests/test_build_script_and_native.py
+
+      - name: Run MCP package tests
+        working-directory: mcp
+        env:
+          VIRTUAL_ENV: ""
+        run: uv run python tests/mcp_protocol_test.py
+
+      - name: Run Structural Smoke Check
+        run: uv run python test_suite.py

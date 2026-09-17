@@ -67,6 +67,8 @@ export class TimetableParser {
         return activeWeeks;
     }
 
+    private static readonly META_PREFIX_RE = /^(?:教师|老师|教室|周次|节次|通知单编号|课程编号|校区|教学班|选课备注)(?:[:：]|\(节次\)|$)/;
+
     /**
      * 从课程单元 HTML 块中提取完整的课程名称（兼容多行换行、<br/> 截断与内联修饰标签）。
      *
@@ -105,12 +107,26 @@ export class TimetableParser {
 
                 const txt = el.textContent?.trim() || "";
                 if (txt && txt !== "&nbsp;") {
+                    if (this.META_PREFIX_RE.test(txt)) {
+                        break;
+                    }
                     nameParts.push(txt);
                 }
             } else if (node.nodeType === 3) {
-                const txt = node.textContent?.trim() || "";
-                if (txt && txt !== "&nbsp;") {
-                    nameParts.push(txt);
+                const txt = node.textContent || "";
+                const lines = txt.split(/\r?\n/);
+                let shouldStop = false;
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (!trimmed || trimmed === "&nbsp;") continue;
+                    if (this.META_PREFIX_RE.test(trimmed)) {
+                        shouldStop = true;
+                        break;
+                    }
+                    nameParts.push(trimmed);
+                }
+                if (shouldStop) {
+                    break;
                 }
             }
         }
@@ -200,19 +216,19 @@ export class TimetableParser {
                     const fullHtml = div.innerHTML;
 
                     // 兼容同一槽位多课程（教务网以虚线分割多门课程）
-                    const courseBlocks = fullHtml.split(/(?:<br\s*\/?>)?\s*-{10,}\s*(?:<br\s*\/?>)?|<hr\s*\/?>/i);
+                    const courseBlocks = fullHtml.split(/(?:<br\s*\/?>)?\s*-{5,}\s*(?:<br\s*\/?>)?|<hr\s*\/?>/i);
 
                     for (const blockHtml of courseBlocks) {
                         if (!blockHtml || blockHtml.trim().length === 0) continue;
 
                         // 提取课程名称：取元数据标签前的完整文本并清洗
-                        const rawName = this.extractCourseName(blockHtml, doc);
+                        const rawName = this.extractCourseName(blockHtml, doc).replace(/[\u00a0\s]+/g, " ").trim();
                         if (!rawName || rawName === "&nbsp;" || rawName.length < 2) continue;
 
-                        const teacherMatch = blockHtml.match(/老师['"]?>([^<]+)/);
-                        const roomMatch = blockHtml.match(/教室['"]?>([^<]+)/);
-                        const weeksMatch = blockHtml.match(/周次\(节次\)['"]?>([^<]+)/);
-                        const codeMatch = blockHtml.match(/通知单编号['"]?>([^<]+)/) || blockHtml.match(/课程编号['"]?>([^<]+)/);
+                        const teacherMatch = blockHtml.match(/(?:老师|教师)['"]?(?:>|[:：])\s*([^<]+)/);
+                        const roomMatch = blockHtml.match(/教室['"]?(?:>|[:：])\s*([^<]+)/);
+                        const weeksMatch = blockHtml.match(/周次\(节次\)['"]?(?:>|[:：])\s*([^<]+)/);
+                        const codeMatch = blockHtml.match(/(?:通知单编号|课程编号)['"]?(?:>|[:：])\s*([^<]+)/);
 
                         const teacher = teacherMatch ? teacherMatch[1].trim() : "未知教师";
                         const room = roomMatch ? roomMatch[1].trim() : "未定教室";

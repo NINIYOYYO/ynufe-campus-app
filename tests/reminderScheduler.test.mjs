@@ -7,6 +7,8 @@ const AppConfig = {
         { label: "14:30-16:00", start: "14:30", end: "16:00" },
         { label: "16:30-18:00", start: "16:30", end: "18:00" },
         { label: "19:00-20:30", start: "19:00", end: "20:30" },
+        { label: "20:50-22:20", start: "20:50", end: "22:20" },
+        { label: "22:30-23:55", start: "22:30", end: "23:55" },
     ]
 };
 
@@ -195,6 +197,44 @@ assert.ok(examNotices[0].title.includes('明天考试'));
 assert.ok(examNotices[1].title.includes('1 小时后考试'));
 console.log('✓ 用例 4 通过: 考前前夕与考前 1 小时双重考试提醒计算准确');
 
+// 5. 测试第 11-14 节（第 6-7 大节）晚间课程提醒计算
+const eveningCourses = {
+    currentWeek: 3,
+    courses: [
+        {
+            name: '移动应用实训A',
+            day: 1,
+            slot: 11,
+            session: 6,
+            activeWeeks: [3],
+            room: '实训中心101',
+            teacher: '王老师'
+        },
+        {
+            name: '移动应用实训B',
+            day: 1,
+            slot: 13,
+            session: 7,
+            activeWeeks: [3],
+            room: '实训中心102',
+            teacher: '赵老师'
+        }
+    ]
+};
+
+const eveningReminders = ReminderScheduler.computeTimetableReminders(eveningCourses, {
+    now: new Date(2026, 8, 14, 8, 0, 0),
+    leadMinutes: 15,
+    daysAhead: 7,
+});
+assert.strictEqual(eveningReminders.length, 2, '第 11-14 节晚课应成功计算出排程提醒');
+assert.strictEqual(eveningReminders[0].classAt.getHours(), 20);
+assert.strictEqual(eveningReminders[0].classAt.getMinutes(), 50);
+assert.strictEqual(eveningReminders[1].classAt.getHours(), 22);
+assert.strictEqual(eveningReminders[1].classAt.getMinutes(), 30);
+console.log('✓ 用例 5 通过: 第 11-14 节 (6-7大节) 晚间课程排程时间准确无误');
+
 console.log('==========================================');
 console.log('  ReminderScheduler 全部测试用例实测通过！');
 console.log('==========================================');
+

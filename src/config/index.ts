@@ -17,7 +17,7 @@ export const AppConfig = {
     HEARTBEAT_INTERVAL_MS: 120000,
 
     /**
-     * 每个大节的上课时间（session 1-5 对应 1-2节 ... 9-10节）。
+     * 每个大节的上课时间（session 1-7 对应 1-2节 ... 13-14节）。
      * start/end 为 "HH:mm"，用于今日课程展示与上课提醒排程。
      */
     SESSION_TIMES: [
@@ -26,6 +26,8 @@ export const AppConfig = {
         { label: "14:30-16:00", start: "14:30", end: "16:00" },
         { label: "16:30-18:00", start: "16:30", end: "18:00" },
         { label: "19:00-20:30", start: "19:00", end: "20:30" },
+        { label: "20:50-22:20", start: "20:50", end: "22:20" },
+        { label: "22:30-23:55", start: "22:30", end: "23:55" },
     ],
 
     /**

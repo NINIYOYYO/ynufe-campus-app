@@ -51,7 +51,7 @@ class TestNativeCookiePluginLogic(unittest.TestCase):
                     # IPv6 格式规范化
                     hostname = f"[{hostname}]"
                 return f"{parsed.scheme}://{hostname}{port_part}"
-        except Exception:
+        except (ValueError, AttributeError):
             pass
         return re.sub(r"/+$", "", trimmed)
 
@@ -116,7 +116,8 @@ class TestBuildApkScript(unittest.TestCase):
             [sys.executable, BUILD_SCRIPT, "--help"],
             capture_output=True,
             text=True,
-            encoding="utf-8"
+            encoding="utf-8",
+            check=False,
         )
         self.assertEqual(res.returncode, 0)
         self.assertIn("--dev", res.stdout)
@@ -129,7 +130,8 @@ class TestBuildApkScript(unittest.TestCase):
             [sys.executable, BUILD_SCRIPT, "--invalid-flag-12345"],
             capture_output=True,
             text=True,
-            encoding="utf-8"
+            encoding="utf-8",
+            check=False,
         )
         self.assertNotEqual(res.returncode, 0)
         self.assertEqual(res.returncode, 2)  # argparse 退出码为 2

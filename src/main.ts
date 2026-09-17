@@ -22,11 +22,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     const savedPass = YnufeSession.getPassword();
 
     const userEl = document.getElementById("username") as HTMLInputElement | null;
-    const passEl = document.getElementById("password") as HTMLInputElement | null;
     const rememberEl = document.getElementById("remember-me") as HTMLInputElement | null;
 
     if (userEl) userEl.value = savedUser;
-    if (passEl) passEl.value = savedPass;
     if (rememberEl) rememberEl.checked = YnufeSession.getRememberMe();
 
     const hasCache = YnufeApp.loadCachedData();
