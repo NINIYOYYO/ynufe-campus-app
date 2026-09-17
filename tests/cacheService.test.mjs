@@ -100,6 +100,24 @@ assert.equal(CacheService.get("ynufe_cache_b"), null, "匹配前缀的缓存项�
 assert.equal(CacheService.get("ynufe_user_info"), "keep_me", "未匹配前缀的缓存项应完好保留");
 console.log("✓ 用例 5 通过: clearByPrefix 批量前缀清理验证通过");
 
+// 6. 存储配额超限错误抛出测试 (QuotaExceededError 不被静默吞噬)
+const originalSetItem = globalThis.localStorage.setItem;
+try {
+    globalThis.localStorage.setItem = () => {
+        const quotaErr = new Error("QuotaExceededError: DOM Exception 22");
+        quotaErr.name = "QuotaExceededError";
+        throw quotaErr;
+    };
+    assert.throws(
+        () => CacheService.set("ynufe_oversized_key", "massive_image_data"),
+        (err) => err.name === "QuotaExceededError",
+        "超出存储配额时必须主动向上抛出异常供上层捕获"
+    );
+    console.log("[PASS] 用例 6 通过: QuotaExceededError 配额超限向上抛出验证通过");
+} finally {
+    globalThis.localStorage.setItem = originalSetItem;
+}
+
 try { rmSync(OUT_FILE); } catch {}
 
 console.log("==========================================");
