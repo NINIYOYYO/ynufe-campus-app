@@ -278,6 +278,12 @@ ok('但"未查询到数据"是正常空结果，不应报错',
 section('单双周与多课程槽位切分扩展测试');
 eq('单周课程展开为奇数周', TimetableParser.parseActiveWeeks('1-8(单周)'), [1, 3, 5, 7]);
 eq('双周课程展开为偶数周', TimetableParser.parseActiveWeeks('2-8(双周)'), [2, 4, 6, 8]);
+eq('单字修饰单周展开', TimetableParser.parseActiveWeeks('1-8(单)'), [1, 3, 5, 7]);
+eq('单字修饰双周展开', TimetableParser.parseActiveWeeks('2-8(双)'), [2, 4, 6, 8]);
+eq('全周课程展开为全学期1-25周', TimetableParser.parseActiveWeeks('全周'), Array.from({ length: 25 }, (_, i) => i + 1));
+eq('全周(单)课程展开为全学期单周', TimetableParser.parseActiveWeeks('全周(单)'), Array.from({ length: 25 }, (_, i) => i + 1).filter(w => w % 2 !== 0));
+eq('全周(双)课程展开为全学期双周', TimetableParser.parseActiveWeeks('全周(双)'), Array.from({ length: 25 }, (_, i) => i + 1).filter(w => w % 2 === 0));
+eq('重叠周次区间自动去重与排序', TimetableParser.parseActiveWeeks('1-4周, 3-6周'), [1, 2, 3, 4, 5, 6]);
 eq('中文字符周次清洗展开', TimetableParser.parseActiveWeeks('1-3周,5-6周'), [1, 2, 3, 5, 6]);
 eq('无括号单周格式展开', TimetableParser.parseActiveWeeks('1-16单周'), [1, 3, 5, 7, 9, 11, 13, 15]);
 eq('第N周与波浪线/中文至格式展开', TimetableParser.parseActiveWeeks('第1~4周，6至8周'), [1, 2, 3, 4, 6, 7, 8]);

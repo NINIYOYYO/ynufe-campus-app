@@ -27,6 +27,9 @@ export class CacheService {
      * Args:
      *     key (StorageKey | string): 存储键名。
      *     data (T): 待持久化数据。
+     *
+     * Raises:
+     *     Error: 当 LocalStorage 超出存储配额 (QuotaExceededError) 或持久化失败时抛出。
      */
     static set<T>(key: StorageKey | string, data: T): void {
         try {
@@ -38,6 +41,7 @@ export class CacheService {
             localStorage.setItem(key, JSON.stringify(envelope));
         } catch (err) {
             console.error(`[CacheService] Failed to set cache for key "${key}":`, err);
+            throw err;
         }
     }
 

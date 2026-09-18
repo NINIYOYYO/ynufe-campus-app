@@ -1,240 +1,226 @@
-import assert from 'node:assert';
+import assert from 'node:assert/strict';
+import { build } from 'esbuild';
+import { rmSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const AppConfig = {
-    SESSION_TIMES: [
-        { label: "08:00-09:30", start: "08:00", end: "09:30" },
-        { label: "10:00-11:30", start: "10:00", end: "11:30" },
-        { label: "14:30-16:00", start: "14:30", end: "16:00" },
-        { label: "16:30-18:00", start: "16:30", end: "18:00" },
-        { label: "19:00-20:30", start: "19:00", end: "20:30" },
-        { label: "20:50-22:20", start: "20:50", end: "22:20" },
-        { label: "22:30-23:55", start: "22:30", end: "23:55" },
-    ]
-};
+const HERE = dirname(fileURLToPath(import.meta.url));
+const ROOT = join(HERE, '..');
+const OUT_FILE = join(HERE, '.reminder_scheduler_bundle.mjs');
 
-class ReminderScheduler {
-    static computeWeek1Monday(now, currentTeachingWeek) {
-        const jsDay = now.getDay() === 0 ? 7 : now.getDay();
-        const thisMonday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (jsDay - 1), 0, 0, 0, 0);
-        return new Date(thisMonday.getTime() - (currentTeachingWeek - 1) * 7 * 86400000);
-    }
+// 使用 esbuild 编译真实的 TypeScript 生产模块
+await build({
+    entryPoints: [join(ROOT, 'src', 'services', 'reminderScheduler.ts')],
+    outfile: OUT_FILE,
+    format: 'esm',
+    bundle: true,
+    platform: 'node',
+});
 
-    static computeTimetableReminders(data, options) {
-        if (!data || !Array.isArray(data.courses) || data.courses.length === 0 || !data.currentWeek) {
-            return [];
-        }
+const { ReminderScheduler } = await import(pathToFileURL(OUT_FILE).href);
 
-        const now = options.now || new Date();
-        const leadMin = options.leadMinutes;
-        const daysAhead = options.daysAhead ?? 14;
-        const maxScheduled = options.maxScheduled ?? 60;
+console.log('=== 开始运行 ReminderScheduler 算法测试 (真实生产模块) ===');
 
-        const week1Monday = this.computeWeek1Monday(now, data.currentWeek);
-        const planned = [];
-        const plannedKeys = new Set();
+try {
+    // 1. 测试跨周计算
+    const refDate = new Date(2026, 8, 16, 10, 0, 0); // 2026-09-16 (周三)
+    const week1Monday = ReminderScheduler.computeWeek1Monday(refDate, 3);
+    assert.strictEqual(week1Monday.getFullYear(), 2026);
+    assert.strictEqual(week1Monday.getMonth(), 7); // 8月 (0-indexed 7)
+    assert.strictEqual(week1Monday.getDate(), 31); // 2026-08-31 是第 1 周周一
+    console.log('[PASS] 用例 1: 第 1 周周一推算准确');
 
-        for (const c of data.courses) {
-            if (!Array.isArray(c.activeWeeks) || c.activeWeeks.length === 0) continue;
-            const session = c.session || Math.ceil(c.slot / 2);
-            const timeCfg = AppConfig.SESSION_TIMES[session - 1];
-            if (!timeCfg) continue;
-            const [hh, mm] = timeCfg.start.split(":").map(Number);
+    // 2. 测试考试时间解析
+    const examDt1 = ReminderScheduler.parseExamStart('2026-07-30 09:00-11:00');
+    assert.ok(examDt1 instanceof Date);
+    assert.strictEqual(examDt1.getFullYear(), 2026);
+    assert.strictEqual(examDt1.getMonth(), 6); // 7月 (0-indexed 6)
+    assert.strictEqual(examDt1.getDate(), 30);
+    assert.strictEqual(examDt1.getHours(), 9);
+    assert.strictEqual(examDt1.getMinutes(), 0);
+    console.log('[PASS] 用例 2: 考试时间文本准确解析为 Date 实例');
 
-            for (const wk of c.activeWeeks) {
-                const classDate = new Date(week1Monday.getTime() + ((wk - 1) * 7 + (c.day - 1)) * 86400000);
-                classDate.setHours(hh, mm, 0, 0);
-
-                const key = `${classDate.getTime()}|${c.name}|${c.room}`;
-                if (plannedKeys.has(key)) continue;
-
-                const fireAt = new Date(classDate.getTime() - leadMin * 60000);
-                const daysFromNow = (classDate.getTime() - now.getTime()) / 86400000;
-                if (fireAt.getTime() > now.getTime() && daysFromNow <= daysAhead) {
-                    plannedKeys.add(key);
-                    planned.push({
-                        fireAt,
-                        classAt: classDate,
-                        course: c,
-                        sessionLabel: timeCfg.label,
-                        title: `${leadMin} 分钟后上课：${c.name}`,
-                        body: `${timeCfg.label} · ${c.room} · ${c.teacher}`,
-                    });
-                }
+    // 3. 测试上课提醒去重与未来 14 天排程
+    const mockTimetable = {
+        currentWeek: 3,
+        courses: [
+            {
+                name: '高等数学',
+                room: '汇文201',
+                teacher: '张老师',
+                day: 3, // 周三
+                slot: 1, // 第 1 节 (session 1: 08:00)
+                session: 1,
+                activeWeeks: [3, 4, 5],
+            },
+            // 重复的小节（同一大节第二小节）
+            {
+                name: '高等数学',
+                room: '汇文201',
+                teacher: '张老师',
+                day: 3, // 周三
+                slot: 2,
+                session: 1,
+                activeWeeks: [3, 4, 5],
             }
+        ]
+    };
+
+    const reminders = ReminderScheduler.computeTimetableReminders(mockTimetable, {
+        now: new Date(2026, 8, 14, 8, 0, 0), // 2026-09-14 (第 3 周周一早晨)
+        leadMinutes: 15,
+        daysAhead: 14,
+    });
+
+    assert.strictEqual(reminders.length, 2, '未来 14 天内应恰好排程第 3 周周三与第 4 周周三两次课程，且同大节第二小节已被成功去重');
+    assert.ok(reminders[0].title.includes('高等数学'));
+    assert.strictEqual(reminders[0].classAt.getHours(), 8);
+    assert.strictEqual(reminders[0].fireAt.getHours(), 7);
+    assert.strictEqual(reminders[0].fireAt.getMinutes(), 45);
+    console.log('[PASS] 用例 3: 跨周上课提醒排程与去重逻辑全部准确');
+
+    // 4. 测试考试提醒计算（考前前一天 21:00 与考前 1 小时）
+    const mockExams = [
+        {
+            courseName: '概率论与数理统计',
+            date: '2026-09-20 14:30-16:30',
+            location: '汇文302',
+            seatNo: '18'
         }
+    ];
 
-        planned.sort((a, b) => a.fireAt.getTime() - b.fireAt.getTime());
-        return planned.slice(0, maxScheduled);
-    }
+    const examNotices = ReminderScheduler.computeExamReminders(mockExams, {
+        now: new Date(2026, 8, 14, 8, 0, 0),
+    });
+    assert.strictEqual(examNotices.length, 2);
+    assert.ok(examNotices[0].title.includes('明天考试'));
+    assert.ok(examNotices[1].title.includes('1 小时后考试'));
+    console.log('[PASS] 用例 4: 考前前夕与考前 1 小时双重考试提醒计算准确');
 
-    static parseExamStart(text) {
-        if (!text) return null;
-        const m = text.match(/(\d{4})-(\d{1,2})-(\d{1,2})(?:[^\d]+(\d{1,2}):(\d{2}))?/);
-        if (!m) return null;
-        const y = parseInt(m[1], 10);
-        const mo = parseInt(m[2], 10) - 1;
-        const d = parseInt(m[3], 10);
-        const hh = m[4] ? parseInt(m[4], 10) : 8;
-        const mm = m[5] ? parseInt(m[5], 10) : 0;
-        const dt = new Date(y, mo, d, hh, mm, 0, 0);
-        return isNaN(dt.getTime()) ? null : dt;
-    }
-
-    static computeExamReminders(exams, options) {
-        if (!Array.isArray(exams) || exams.length === 0) return [];
-        const now = options?.now || new Date();
-        const maxScheduled = options?.maxScheduled ?? 40;
-        const notices = [];
-        let idx = 0;
-
-        for (const ex of exams) {
-            const start = this.parseExamStart(ex.date || ex.time || "");
-            if (!start || start.getTime() <= now.getTime()) continue;
-            const name = ex.name || ex.courseName || "考试";
-            const room = ex.room || ex.location || "待定";
-            const seat = ex.seatNo || ex.seat || "";
-            const timeStr = `${start.getMonth() + 1}月${start.getDate()}日 ${String(start.getHours()).padStart(2, "0")}:${String(start.getMinutes()).padStart(2, "0")}`;
-            const body = `考场 ${room}${seat ? " · 座位 " + seat : ""} · ${timeStr}`;
-
-            const eveBefore = new Date(start.getFullYear(), start.getMonth(), start.getDate() - 1, 21, 0, 0);
-            if (eveBefore.getTime() > now.getTime() && idx < maxScheduled) {
-                notices.push({
-                    idOffset: idx++,
-                    title: `明天考试：${name}`,
-                    body,
-                    fireAt: eveBefore,
-                });
+    // 5. 测试第 11-14 节（第 6-7 大节）晚间课程提醒计算
+    const eveningCourses = {
+        currentWeek: 3,
+        courses: [
+            {
+                name: '移动应用实训A',
+                day: 1,
+                slot: 11,
+                session: 6,
+                activeWeeks: [3],
+                room: '实训中心101',
+                teacher: '王老师'
+            },
+            {
+                name: '移动应用实训B',
+                day: 1,
+                slot: 13,
+                session: 7,
+                activeWeeks: [3],
+                room: '实训中心102',
+                teacher: '赵老师'
             }
+        ]
+    };
 
-            const hourBefore = new Date(start.getTime() - 60 * 60000);
-            if (hourBefore.getTime() > now.getTime() && idx < maxScheduled) {
-                notices.push({
-                    idOffset: idx++,
-                    title: `1 小时后考试：${name}`,
-                    body,
-                    fireAt: hourBefore,
-                });
+    const eveningReminders = ReminderScheduler.computeTimetableReminders(eveningCourses, {
+        now: new Date(2026, 8, 14, 8, 0, 0),
+        leadMinutes: 15,
+        daysAhead: 7,
+    });
+    assert.strictEqual(eveningReminders.length, 2, '第 11-14 节晚课应成功计算出排程提醒');
+    assert.strictEqual(eveningReminders[0].classAt.getHours(), 20);
+    assert.strictEqual(eveningReminders[0].classAt.getMinutes(), 50);
+    assert.strictEqual(eveningReminders[1].classAt.getHours(), 22);
+    assert.strictEqual(eveningReminders[1].classAt.getMinutes(), 30);
+    console.log('[PASS] 用例 5: 第 11-14 节 (6-7大节) 晚间课程排程时间准确无误');
+
+    // 6. 测试仅凭 week1MondayIso 排程（契约冲突修复验证，无需 currentWeek）
+    const isoTimetable = {
+        week1MondayIso: "2026-08-31T00:00:00.000Z",
+        courses: [
+            {
+                name: '现代金融学',
+                day: 3,
+                slot: 1,
+                session: 1,
+                activeWeeks: [3],
+                room: '汇新501',
+                teacher: '钱老师'
             }
-        }
-        return notices;
+        ]
+    };
+    const isoReminders = ReminderScheduler.computeTimetableReminders(isoTimetable, {
+        now: new Date(2026, 8, 14, 8, 0, 0),
+        leadMinutes: 15,
+        daysAhead: 7,
+    });
+    assert.strictEqual(isoReminders.length, 1, '在未提供 currentWeek 仅提供 week1MondayIso 时必须成功排程');
+    assert.strictEqual(isoReminders[0].course.name, '现代金融学');
+    console.log('[PASS] 用例 6: week1MondayIso 独立排程契约测试通过');
+
+    // 7. 测试全周课程提醒计算 (1-25 周全覆盖)
+    const fullTermCourse = {
+        currentWeek: 3,
+        courses: [
+            {
+                name: '形势与政策',
+                day: 2,
+                slot: 3,
+                session: 2,
+                activeWeeks: Array.from({ length: 25 }, (_, i) => i + 1),
+                room: '汇文大礼堂',
+                teacher: '刘老师'
+            }
+        ]
+    };
+    const fullTermReminders = ReminderScheduler.computeTimetableReminders(fullTermCourse, {
+        now: new Date(2026, 8, 14, 8, 0, 0),
+        leadMinutes: 15,
+        daysAhead: 14,
+    });
+    assert.strictEqual(fullTermReminders.length, 2, '全周课程未来 14 天内应正常排程第 3 周与第 4 周两次');
+    console.log('[PASS] 用例 7: 全周课程提醒正常生成排程');
+
+    // 8. 测试非法/越界教学周防御性熔断
+    const invalidWeekCourse = {
+        currentWeek: -1,
+        courses: [
+            {
+                name: '形势与政策',
+                day: 2,
+                slot: 3,
+                session: 2,
+                activeWeeks: [1, 2, 3],
+                room: '汇文大礼堂',
+                teacher: '刘老师'
+            }
+        ]
+    };
+    const invalidReminders = ReminderScheduler.computeTimetableReminders(invalidWeekCourse, {
+        now: new Date(2026, 8, 14, 8, 0, 0),
+        leadMinutes: 15,
+    });
+    assert.strictEqual(invalidReminders.length, 0, '非法负数周次应安全熔断返回空列表');
+    console.log('[PASS] 用例 8: 非法教学周次防御性拦截测试通过');
+
+    // 9. 测试考试提醒时间升序严格排列与 idOffset 连续性
+    const multipleExams = [
+        { courseName: '后期考试B', date: '2026-10-15 14:00-16:00', room: '二教101' },
+        { courseName: '早期考试A', date: '2026-09-20 09:00-11:00', room: '一教201' },
+    ];
+    const examReminders = ReminderScheduler.computeExamReminders(multipleExams, {
+        now: new Date(2026, 8, 15, 8, 0, 0),
+    });
+    assert.ok(examReminders.length >= 2, '应成功生成至少两场考试的提醒');
+    for (let i = 0; i < examReminders.length - 1; i++) {
+        assert.ok(examReminders[i].fireAt.getTime() <= examReminders[i + 1].fireAt.getTime(), '考试提醒必须按触发时间严格升序排列');
+        assert.strictEqual(examReminders[i].idOffset, i, 'idOffset 必须按升序重编号');
     }
+    console.log('[PASS] 用例 9: 考试提醒严格升序排列与 idOffset 连续性测试通过');
+
+    console.log('==========================================');
+    console.log('  ReminderScheduler 全部测试用例实测通过！');
+    console.log('==========================================');
+} finally {
+    try { rmSync(OUT_FILE); } catch {}
 }
-
-console.log('=== 开始运行 ReminderScheduler 算法测试 ===');
-
-// 1. 测试跨周计算
-const refDate = new Date(2026, 8, 16, 10, 0, 0); // 2026-09-16 (周三)
-const week1Monday = ReminderScheduler.computeWeek1Monday(refDate, 3);
-assert.strictEqual(week1Monday.getFullYear(), 2026);
-assert.strictEqual(week1Monday.getMonth(), 7); // 8月 (0-indexed 7)
-assert.strictEqual(week1Monday.getDate(), 31); // 2026-08-31 是第 1 周周一
-console.log('✓ 用例 1 通过: 第 1 周周一推算准确');
-
-// 2. 测试考试时间解析
-const examDt1 = ReminderScheduler.parseExamStart('2026-07-30 09:00-11:00');
-assert.ok(examDt1 instanceof Date);
-assert.strictEqual(examDt1.getFullYear(), 2026);
-assert.strictEqual(examDt1.getMonth(), 6); // 7月 (0-indexed 6)
-assert.strictEqual(examDt1.getDate(), 30);
-assert.strictEqual(examDt1.getHours(), 9);
-assert.strictEqual(examDt1.getMinutes(), 0);
-console.log('✓ 用例 2 通过: 考试时间文本准确解析为 Date 实例');
-
-// 3. 测试上课提醒去重与未来 14 天排程
-const mockTimetable = {
-    currentWeek: 3,
-    courses: [
-        {
-            name: '高等数学',
-            room: '汇文201',
-            teacher: '张老师',
-            day: 3, // 周三
-            slot: 1, // 第 1 节 (session 1: 08:00)
-            session: 1,
-            activeWeeks: [3, 4, 5],
-        },
-        // 重复的小节（同一大节第二小节）
-        {
-            name: '高等数学',
-            room: '汇文201',
-            teacher: '张老师',
-            day: 3, // 周三
-            slot: 2,
-            session: 1,
-            activeWeeks: [3, 4, 5],
-        }
-    ]
-};
-
-const reminders = ReminderScheduler.computeTimetableReminders(mockTimetable, {
-    now: new Date(2026, 8, 14, 8, 0, 0), // 2026-09-14 (第 3 周周一早晨)
-    leadMinutes: 15,
-    daysAhead: 14,
-});
-
-assert.strictEqual(reminders.length, 2, '未来 14 天内应恰好排程第 3 周周三与第 4 周周三两次课程，且同大节第二小节已被成功去重');
-assert.ok(reminders[0].title.includes('高等数学'));
-assert.strictEqual(reminders[0].classAt.getHours(), 8);
-assert.strictEqual(reminders[0].fireAt.getHours(), 7);
-assert.strictEqual(reminders[0].fireAt.getMinutes(), 45);
-console.log('✓ 用例 3 通过: 跨周上课提醒排程与去重逻辑全部准确');
-
-// 4. 测试考试提醒计算（考前前一天 21:00 与考前 1 小时）
-const mockExams = [
-    {
-        courseName: '概率论与数理统计',
-        date: '2026-09-20 14:30-16:30',
-        location: '汇文302',
-        seatNo: '18'
-    }
-];
-
-const examNotices = ReminderScheduler.computeExamReminders(mockExams, {
-    now: new Date(2026, 8, 14, 8, 0, 0),
-});
-assert.strictEqual(examNotices.length, 2);
-assert.ok(examNotices[0].title.includes('明天考试'));
-assert.ok(examNotices[1].title.includes('1 小时后考试'));
-console.log('✓ 用例 4 通过: 考前前夕与考前 1 小时双重考试提醒计算准确');
-
-// 5. 测试第 11-14 节（第 6-7 大节）晚间课程提醒计算
-const eveningCourses = {
-    currentWeek: 3,
-    courses: [
-        {
-            name: '移动应用实训A',
-            day: 1,
-            slot: 11,
-            session: 6,
-            activeWeeks: [3],
-            room: '实训中心101',
-            teacher: '王老师'
-        },
-        {
-            name: '移动应用实训B',
-            day: 1,
-            slot: 13,
-            session: 7,
-            activeWeeks: [3],
-            room: '实训中心102',
-            teacher: '赵老师'
-        }
-    ]
-};
-
-const eveningReminders = ReminderScheduler.computeTimetableReminders(eveningCourses, {
-    now: new Date(2026, 8, 14, 8, 0, 0),
-    leadMinutes: 15,
-    daysAhead: 7,
-});
-assert.strictEqual(eveningReminders.length, 2, '第 11-14 节晚课应成功计算出排程提醒');
-assert.strictEqual(eveningReminders[0].classAt.getHours(), 20);
-assert.strictEqual(eveningReminders[0].classAt.getMinutes(), 50);
-assert.strictEqual(eveningReminders[1].classAt.getHours(), 22);
-assert.strictEqual(eveningReminders[1].classAt.getMinutes(), 30);
-console.log('✓ 用例 5 通过: 第 11-14 节 (6-7大节) 晚间课程排程时间准确无误');
-
-console.log('==========================================');
-console.log('  ReminderScheduler 全部测试用例实测通过！');
-console.log('==========================================');
-

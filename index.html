@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://xjwis.ynufe.edu.cn; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://xjwis.ynufe.edu.cn; script-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:* ws://localhost:* http://127.0.0.1:* ws://127.0.0.1:* http://192.168.*:* ws://192.168.*:* http://10.*:* ws://10.*:* http://172.*:* ws://172.*:* https://xjwis.ynufe.edu.cn;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://xjwis.ynufe.edu.cn; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://xjwis.ynufe.edu.cn; script-src 'self'; connect-src 'self' http://localhost:* ws://localhost:* http://127.0.0.1:* ws://127.0.0.1:* http://192.168.*:* ws://192.168.*:* http://10.*:* ws://10.*:* http://172.*:* ws://172.*:* https://xjwis.ynufe.edu.cn;">
 </head>
 <body class="theme-light">
     <!-- 独立壁纸背景层 (支持手机般手势无缝缩放和拖拽移动) -->
@@ -165,14 +165,15 @@
                 <div class="selector-row">
                     <select id="select-semester"></select>
                     <select id="select-week"><option value="">全部周</option></select>
+                    <button type="button" id="btn-toggle-weekend" class="weekend-toggle-btn" title="切换周末课程显示">5天</button>
                 </div>
             </header>
 
             <div class="timetable-scroll-wrapper">
-                <div class="timetable-grid">
+                <div class="timetable-grid days-5 hide-late">
                     <div class="grid-header">时间</div>
                     <div class="grid-header">一</div><div class="grid-header">二</div><div class="grid-header">三</div>
-                    <div class="grid-header">四</div><div class="grid-header">五</div>
+                    <div class="grid-header">四</div><div class="grid-header">五</div><div class="grid-header">六</div><div class="grid-header">日</div>
                     
                     <!-- 1-2节 -->
                     <div class="grid-time-cell"><span>1-2节</span><small>08:00</small></div>
@@ -181,6 +182,8 @@
                     <div class="grid-course-slot" data-day="3" data-session="1"></div>
                     <div class="grid-course-slot" data-day="4" data-session="1"></div>
                     <div class="grid-course-slot" data-day="5" data-session="1"></div>
+                    <div class="grid-course-slot" data-day="6" data-session="1"></div>
+                    <div class="grid-course-slot" data-day="7" data-session="1"></div>
                     
                     <!-- 3-4节 -->
                     <div class="grid-time-cell"><span>3-4节</span><small>10:00</small></div>
@@ -189,6 +192,8 @@
                     <div class="grid-course-slot" data-day="3" data-session="2"></div>
                     <div class="grid-course-slot" data-day="4" data-session="2"></div>
                     <div class="grid-course-slot" data-day="5" data-session="2"></div>
+                    <div class="grid-course-slot" data-day="6" data-session="2"></div>
+                    <div class="grid-course-slot" data-day="7" data-session="2"></div>
                     
                     <!-- 5-6节 -->
                     <div class="grid-time-cell"><span>5-6节</span><small>14:30</small></div>
@@ -197,6 +202,8 @@
                     <div class="grid-course-slot" data-day="3" data-session="3"></div>
                     <div class="grid-course-slot" data-day="4" data-session="3"></div>
                     <div class="grid-course-slot" data-day="5" data-session="3"></div>
+                    <div class="grid-course-slot" data-day="6" data-session="3"></div>
+                    <div class="grid-course-slot" data-day="7" data-session="3"></div>
                     
                     <!-- 7-8节 -->
                     <div class="grid-time-cell"><span>7-8节</span><small>16:30</small></div>
@@ -205,6 +212,8 @@
                     <div class="grid-course-slot" data-day="3" data-session="4"></div>
                     <div class="grid-course-slot" data-day="4" data-session="4"></div>
                     <div class="grid-course-slot" data-day="5" data-session="4"></div>
+                    <div class="grid-course-slot" data-day="6" data-session="4"></div>
+                    <div class="grid-course-slot" data-day="7" data-session="4"></div>
                     
                     <!-- 9-10节 -->
                     <div class="grid-time-cell"><span>9-10节</span><small>19:00</small></div>
@@ -213,23 +222,37 @@
                     <div class="grid-course-slot" data-day="3" data-session="5"></div>
                     <div class="grid-course-slot" data-day="4" data-session="5"></div>
                     <div class="grid-course-slot" data-day="5" data-session="5"></div>
+                    <div class="grid-course-slot" data-day="6" data-session="5"></div>
+                    <div class="grid-course-slot" data-day="7" data-session="5"></div>
 
                     <!-- 11-12节 -->
-                    <div class="grid-time-cell"><span>11-12节</span><small>20:50</small></div>
-                    <div class="grid-course-slot" data-day="1" data-session="6"></div>
-                    <div class="grid-course-slot" data-day="2" data-session="6"></div>
-                    <div class="grid-course-slot" data-day="3" data-session="6"></div>
-                    <div class="grid-course-slot" data-day="4" data-session="6"></div>
-                    <div class="grid-course-slot" data-day="5" data-session="6"></div>
+                    <div class="grid-time-cell grid-session-late" data-session="6"><span>11-12节</span><small>20:50</small></div>
+                    <div class="grid-course-slot grid-session-late" data-day="1" data-session="6"></div>
+                    <div class="grid-course-slot grid-session-late" data-day="2" data-session="6"></div>
+                    <div class="grid-course-slot grid-session-late" data-day="3" data-session="6"></div>
+                    <div class="grid-course-slot grid-session-late" data-day="4" data-session="6"></div>
+                    <div class="grid-course-slot grid-session-late" data-day="5" data-session="6"></div>
+                    <div class="grid-course-slot grid-session-late" data-day="6" data-session="6"></div>
+                    <div class="grid-course-slot grid-session-late" data-day="7" data-session="6"></div>
 
                     <!-- 13-14节 -->
-                    <div class="grid-time-cell"><span>13-14节</span><small>22:30</small></div>
-                    <div class="grid-course-slot" data-day="1" data-session="7"></div>
-                    <div class="grid-course-slot" data-day="2" data-session="7"></div>
-                    <div class="grid-course-slot" data-day="3" data-session="7"></div>
-                    <div class="grid-course-slot" data-day="4" data-session="7"></div>
-                    <div class="grid-course-slot" data-day="5" data-session="7"></div>
+                    <div class="grid-time-cell grid-session-late" data-session="7"><span>13-14节</span><small>22:30</small></div>
+                    <div class="grid-course-slot grid-session-late" data-day="1" data-session="7"></div>
+                    <div class="grid-course-slot grid-session-late" data-day="2" data-session="7"></div>
+                    <div class="grid-course-slot grid-session-late" data-day="3" data-session="7"></div>
+                    <div class="grid-course-slot grid-session-late" data-day="4" data-session="7"></div>
+                    <div class="grid-course-slot grid-session-late" data-day="5" data-session="7"></div>
+                    <div class="grid-course-slot grid-session-late" data-day="6" data-session="7"></div>
+                    <div class="grid-course-slot grid-session-late" data-day="7" data-session="7"></div>
                 </div>
+            </div>
+
+            <!-- 晚间节次 (11-14节) 展开/收起切换栏 -->
+            <div id="timetable-late-bar" class="timetable-late-bar" style="display: none;">
+                <button type="button" id="btn-toggle-late" class="btn-toggle-late">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    <span id="txt-toggle-late">展开晚间 11-14 节</span>
+                </button>
             </div>
         </section>
 

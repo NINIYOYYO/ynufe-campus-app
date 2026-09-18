@@ -53,7 +53,7 @@ export class ReminderScheduler {
         data: TimetableData,
         options: { now?: Date; leadMinutes: number; daysAhead?: number; maxScheduled?: number }
     ): PlannedNotice[] {
-        if (!data || !Array.isArray(data.courses) || data.courses.length === 0 || !data.currentWeek) {
+        if (!data || !Array.isArray(data.courses) || data.courses.length === 0 || (!data.week1MondayIso && !data.currentWeek)) {
             return [];
         }
 
@@ -65,8 +65,16 @@ export class ReminderScheduler {
         let week1Monday: Date;
         if (data.week1MondayIso) {
             week1Monday = new Date(data.week1MondayIso);
-        } else {
+        } else if (data.currentWeek) {
+            if (data.currentWeek < 1 || data.currentWeek > 30 || isNaN(data.currentWeek)) {
+                return [];
+            }
             week1Monday = this.computeWeek1Monday(now, data.currentWeek);
+        } else {
+            return [];
+        }
+        if (isNaN(week1Monday.getTime())) {
+            return [];
         }
         const planned: PlannedNotice[] = [];
         const plannedKeys = new Set<string>();
@@ -176,6 +184,8 @@ export class ReminderScheduler {
                 });
             }
         }
-        return notices;
+        notices.sort((a, b) => a.fireAt.getTime() - b.fireAt.getTime());
+        notices.forEach((n, i) => { n.idOffset = i; });
+        return notices.slice(0, maxScheduled);
     }
 }

@@ -257,12 +257,18 @@ console.log('\n>>> 3. Testing TimetableParser Adversarial Scenarios...');
 
 // 3.1 parseActiveWeeks
 assertEq('parseActiveWeeks empty', TimetableParser.parseActiveWeeks(''), []);
-assertEq('parseActiveWeeks "全周"', TimetableParser.parseActiveWeeks('全周'), []);
+assertEq('parseActiveWeeks "全周"', TimetableParser.parseActiveWeeks('全周'), Array.from({ length: 25 }, (_, i) => i + 1));
+assertEq('parseActiveWeeks "全周(单周)"', TimetableParser.parseActiveWeeks('全周(单周)'), Array.from({ length: 25 }, (_, i) => i + 1).filter(w => w % 2 !== 0));
+assertEq('parseActiveWeeks "全周(单)"', TimetableParser.parseActiveWeeks('全周(单)'), Array.from({ length: 25 }, (_, i) => i + 1).filter(w => w % 2 !== 0));
+assertEq('parseActiveWeeks "全周(双)"', TimetableParser.parseActiveWeeks('全周(双)'), Array.from({ length: 25 }, (_, i) => i + 1).filter(w => w % 2 === 0));
 assertEq('parseActiveWeeks standard "1-16"', TimetableParser.parseActiveWeeks('1-16'),
     [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]);
 assertEq('parseActiveWeeks "1-8(单周)"', TimetableParser.parseActiveWeeks('1-8(单周)'), [1, 3, 5, 7]);
+assertEq('parseActiveWeeks "1-8(单)"', TimetableParser.parseActiveWeeks('1-8(单)'), [1, 3, 5, 7]);
 assertEq('parseActiveWeeks "2-8(双周)"', TimetableParser.parseActiveWeeks('2-8(双周)'), [2, 4, 6, 8]);
+assertEq('parseActiveWeeks "2-8(双)"', TimetableParser.parseActiveWeeks('2-8(双)'), [2, 4, 6, 8]);
 assertEq('parseActiveWeeks "1-3周,5-6周"', TimetableParser.parseActiveWeeks('1-3周,5-6周'), [1, 2, 3, 5, 6]);
+assertEq('parseActiveWeeks overlapping "1-4周,3-6周"', TimetableParser.parseActiveWeeks('1-4周,3-6周'), [1, 2, 3, 4, 5, 6]);
 assertEq('parseActiveWeeks with section tag "1-4[01-02节]"', TimetableParser.parseActiveWeeks('1-4[01-02节]'), [1, 2, 3, 4]);
 
 // 3.2 parseTimetable with multiple courses per slot

@@ -106,9 +106,66 @@ class TestNativeCookiePluginLogic(unittest.TestCase):
         for path in ["/jsxsd", "/jsxsd/xk/LoginToXkLdap", "/jsxsd/verifycode.servlet", "/jsxsd/framework/xsMain.jsp"]:
             self.assertIn(path, self.java_source)
 
+        # 确保包含原生附件保存防目录穿越及合法性加固
+        self.assertIn("saveAndOpenFile", self.java_source)
+        self.assertIn("getCanonicalPath()", self.java_source)
+        self.assertIn("SecurityException", self.java_source)
+        self.assertIn("replace('\\\\', '/')", self.java_source)
+        self.assertIn("FLAG_GRANT_READ_URI_PERMISSION", self.java_source)
+
+    def test_file_paths_xml_security(self):
+        """验证 file_paths.xml 杜绝根目录整盘暴露。"""
+        paths_xml = os.path.join(PROJECT_DIR, "android", "app", "src", "main", "res", "xml", "file_paths.xml")
+        with open(paths_xml, "r", encoding="utf-8") as f:
+            content = f.read()
+        self.assertNotIn('<external-path name="external_files" path="."', content)
+        self.assertIn('path="Download"', content)
+
+    def test_manifest_cleartext_traffic_security(self):
+        """验证生产 release manifest 禁止全局明文 HTTP，且网络安全配置生效。"""
+        main_manifest = os.path.join(PROJECT_DIR, "android", "app", "src", "main", "AndroidManifest.xml")
+        with open(main_manifest, "r", encoding="utf-8") as f:
+            content = f.read()
+        self.assertNotIn('android:usesCleartextTraffic="true"', content)
+        self.assertIn('android:networkSecurityConfig="@xml/network_security_config"', content)
+
+        # Release 网络安全配置禁止任何明文 HTTP
+        main_net_cfg = os.path.join(PROJECT_DIR, "android", "app", "src", "main", "res", "xml", "network_security_config.xml")
+        self.assertTrue(os.path.exists(main_net_cfg))
+        with open(main_net_cfg, "r", encoding="utf-8") as f:
+            main_net_content = f.read()
+        self.assertIn('cleartextTrafficPermitted="false"', main_net_content)
+
+        debug_manifest = os.path.join(PROJECT_DIR, "android", "app", "src", "debug", "AndroidManifest.xml")
+        self.assertTrue(os.path.exists(debug_manifest))
+        with open(debug_manifest, "r", encoding="utf-8") as f:
+            debug_content = f.read()
+        self.assertIn('android:usesCleartextTraffic="true"', debug_content)
+
+        # Debug 资源级覆盖允许开发热重载 Vite HTTP 流量
+        debug_net_cfg = os.path.join(PROJECT_DIR, "android", "app", "src", "debug", "res", "xml", "network_security_config.xml")
+        self.assertTrue(os.path.exists(debug_net_cfg))
+        with open(debug_net_cfg, "r", encoding="utf-8") as f:
+            debug_net_content = f.read()
+        self.assertIn('cleartextTrafficPermitted="true"', debug_net_content)
+
 
 class TestBuildApkScript(unittest.TestCase):
     """SEC-06 build_apk.py 构建脚本对抗性压力与退出码测试。"""
+
+    def test_gradle_version_sync_with_package_json(self):
+        """验证 build.gradle 中 versionName 与 package.json 严格对齐。"""
+        pkg_json_path = os.path.join(PROJECT_DIR, "package.json")
+        with open(pkg_json_path, "r", encoding="utf-8") as f:
+            pkg_data = json.load(f)
+        app_version = pkg_data["version"]
+
+        gradle_path = os.path.join(PROJECT_DIR, "android", "app", "build.gradle")
+        with open(gradle_path, "r", encoding="utf-8") as f:
+            gradle_content = f.read()
+
+        self.assertIn(f'versionName "{app_version}"', gradle_content)
+        self.assertIn('versionCode 110', gradle_content)
 
     def test_cli_help_flag(self):
         """验证 --help 与 -h 返回退出码 0 并输出完整帮助说明。"""
@@ -184,6 +241,13 @@ class TestBuildApkScript(unittest.TestCase):
 
         with self.assertRaises(subprocess.CalledProcessError):
             build_apk.run_step("exit 1", PROJECT_DIR, "测试失败步骤")
+
+    def test_release_candidates_exclude_debug(self):
+        """验证 Release 打包候选集彻底杜绝 app-debug.apk 降级回退。"""
+        with open(BUILD_SCRIPT, "r", encoding="utf-8") as f:
+            content = f.read()
+        self.assertNotIn('app-debug.apk",', content)
+        self.assertNotIn("已降级回退至 Debug 签名包", content)
 
 
 if __name__ == "__main__":

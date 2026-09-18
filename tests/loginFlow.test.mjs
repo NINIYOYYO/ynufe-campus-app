@@ -1,12 +1,15 @@
 import assert from 'node:assert/strict';
 import esbuild from 'esbuild';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { rmSync } from 'node:fs';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { parseHTML } from 'linkedom';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const OUT_FILE = path.join(__dirname, '.login_flow_bundle.mjs');
 
-// 1. 模拟 DOM 与 Storage
+// 1. 模拟 LocalStorage 与 SessionStorage
 class LocalStorageMock {
     constructor() {
         this.store = {};
@@ -25,130 +28,214 @@ class LocalStorageMock {
     }
 }
 
-global.localStorage = new LocalStorageMock();
-global.sessionStorage = new LocalStorageMock();
+globalThis.localStorage = new LocalStorageMock();
+globalThis.sessionStorage = new LocalStorageMock();
 
-const elements = new Map();
-function createMockElement(id, tag = 'div') {
-    const el = {
-        id,
-        tagName: tag.toUpperCase(),
-        value: '',
-        innerText: '',
-        style: {},
-        src: '',
-        checked: false,
-        placeholder: '',
-        classList: {
-            add: () => {},
-            remove: () => {},
-            contains: () => false,
-            toggle: () => {}
+// 2. 初始化 linkedom DOM 环境
+const {
+    window,
+    document,
+    HTMLElement,
+    HTMLInputElement,
+    HTMLImageElement,
+    Event,
+    CustomEvent,
+} = parseHTML(`<!DOCTYPE html>
+<html>
+<head></head>
+<body>
+    <div id="login-overlay" class="overlay active"></div>
+    <div id="loading-spinner" class="overlay" style="display:none;"><p>正在拉取最新教务数据...</p></div>
+    <span id="sync-status-tag" class="sync-tag offline"><span class="sync-text">未同步</span></span>
+    <form id="login-form">
+        <input type="text" id="username" />
+        <input type="password" id="password" />
+        <input type="text" id="captcha" />
+        <input type="checkbox" id="remember-me" />
+        <img id="captcha-img" src="" />
+        <div id="login-msg" class="error-msg"></div>
+        <button type="submit" id="btn-login">登录</button>
+    </form>
+</body>
+</html>`);
+
+globalThis.window = window;
+globalThis.window.location = {
+    hostname: "localhost",
+    origin: "http://localhost",
+    port: "",
+    protocol: "http:",
+    href: "http://localhost/"
+};
+globalThis.document = document;
+let cookieStore = "";
+Object.defineProperty(globalThis.document, 'cookie', {
+    get: () => cookieStore,
+    set: (v) => { cookieStore = v; },
+    configurable: true
+});
+globalThis.HTMLElement = HTMLElement;
+globalThis.HTMLInputElement = HTMLInputElement;
+globalThis.HTMLImageElement = HTMLImageElement;
+globalThis.Event = Event;
+globalThis.CustomEvent = CustomEvent;
+globalThis.requestAnimationFrame = (cb) => { cb(); return 1; };
+globalThis.cancelAnimationFrame = () => {};
+
+// linkedom 兼容性 Shim: 补齐 innerText
+if (!Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'innerText')?.set) {
+    Object.defineProperty(HTMLElement.prototype, 'innerText', {
+        get() {
+            return this.textContent || '';
         },
-        focus: () => { el._focused = true; },
-        _focused: false,
-        addEventListener: (evt, handler) => {
-            el._listeners = el._listeners || {};
-            el._listeners[evt] = el._listeners[evt] || [];
-            el._listeners[evt].push(handler);
+        set(val) {
+            this.textContent = val;
         },
-        click: () => {
-            if (el._listeners && el._listeners['click']) {
-                el._listeners['click'].forEach(fn => fn());
-            }
-        }
-    };
-    elements.set(id, el);
-    return el;
+        configurable: true
+    });
 }
 
-global.document = {
-    _cookies: [],
-    get cookie() {
-        return this._cookies.join("; ");
-    },
-    set cookie(str) {
-        this._cookies.push(str);
-    },
-    getElementById: (id) => elements.get(id) || createMockElement(id),
-    querySelector: () => null,
-    querySelectorAll: () => [],
-    addEventListener: () => {}
-};
-
-global.window = {
-    location: { hostname: "localhost", origin: "http://localhost", port: "" },
-    addEventListener: () => {},
-    dispatchEvent: () => true,
-    CustomEvent: class CustomEvent { constructor(type, opt) { this.type = type; this.detail = opt?.detail; } }
-};
-
-global.URL = {
-    createObjectURL: (blob) => `blob:mock-url-${Math.random()}`,
+globalThis.URL = {
+    createObjectURL: () => `blob:mock-url-${Math.random()}`,
     revokeObjectURL: () => {}
 };
 
-// 2. 打包编译 LoginView 和 AutoLogin
-const bundleResult = await esbuild.build({
-    entryPoints: [path.resolve(__dirname, '../src/views/loginView.ts')],
+// 3. 打包编译生产环境核心 TS 模块
+const entryCode = `
+export { LoginView } from '${path.resolve(__dirname, '../src/views/loginView.ts').replace(/\\/g, '/')}';
+export { YnufeClient } from '${path.resolve(__dirname, '../src/api/client.ts').replace(/\\/g, '/')}';
+export { AutoLogin } from '${path.resolve(__dirname, '../src/services/autoLogin.ts').replace(/\\/g, '/')}';
+export { CaptchaOCR } from '${path.resolve(__dirname, '../src/utils/captchaOcr.ts').replace(/\\/g, '/')}';
+export { YnufeSession } from '${path.resolve(__dirname, '../src/stores/sessionStore.ts').replace(/\\/g, '/')}';
+export { SessionCookieManager } from '${path.resolve(__dirname, '../src/services/cookieManager.ts').replace(/\\/g, '/')}';
+`;
+
+await esbuild.build({
+    stdin: {
+        contents: entryCode,
+        resolveDir: __dirname,
+        sourcefile: 'login-test-entry.ts',
+        loader: 'ts',
+    },
     bundle: true,
     format: 'esm',
-    write: false,
+    outfile: OUT_FILE,
     platform: 'browser',
-    external: ['../styles/app.css']
+    external: ['../styles/app.css', '*.css']
 });
 
-const code = bundleResult.outputFiles[0].text;
-const encodedJs = 'data:text/javascript;base64,' + Buffer.from(code).toString('base64');
-const { LoginView } = await import(encodedJs);
+const {
+    LoginView,
+    YnufeClient,
+    AutoLogin,
+    CaptchaOCR,
+    YnufeSession
+} = await import(pathToFileURL(OUT_FILE).href);
 
-console.log("=== 开始运行 智能验证码自动识别与 3 次重试免密登录测试 ===");
+console.log("=== 开始运行 智能验证码自动识别与自动登录实测 (真实生产模块) ===");
 
-// 初始化 DOM Mock 元素
-const usernameInput = createMockElement("username", "input");
-const passwordInput = createMockElement("password", "input");
-const captchaInput = createMockElement("captcha", "input");
-const rememberInput = createMockElement("remember-me", "input");
-const captchaImg = createMockElement("captcha-img", "img");
-const loginMsg = createMockElement("login-msg", "div");
+const usernameInput = document.getElementById("username");
+const passwordInput = document.getElementById("password");
+const captchaInput = document.getElementById("captcha");
+const rememberInput = document.getElementById("remember-me");
+const loginMsg = document.getElementById("login-msg");
 
-// 测试用例 1: prefillLoginForm 会自动填入账号并触发 OCR 识别填入验证码
-{
-    usernameInput.value = "202201010001";
-    passwordInput.value = "TestPass123";
-    captchaInput.value = "";
+// Mock Captcha 图片与 OCR 识别
+YnufeClient.getCaptchaBlob = async () => ({ size: 1024, type: "image/jpeg" });
+CaptchaOCR.recognize = async () => "7K9P";
 
-    assert.equal(usernameInput.value, "202201010001", "学号应正确装填");
-    assert.equal(passwordInput.value, "TestPass123", "密码应正确装填");
-    console.log("✓ 用例 1 通过: 登录框账号密码预填与自动识别调度工作正常");
+try {
+    // 测试用例 1: prefillLoginForm 真实调用与凭据自动装填
+    {
+        YnufeSession.saveCredentials("2023110099", "RealTestPassword999", true);
+        LoginView.prefillLoginForm();
+
+        assert.equal(usernameInput.value, "2023110099", "LoginView.prefillLoginForm 应自动填入学号");
+        assert.equal(passwordInput.value, "RealTestPassword999", "LoginView.prefillLoginForm 应自动填入密码");
+        assert.equal(rememberInput.checked, true, "记住账号密码复选框应自动勾选");
+        console.log("[PASS] 用例 1: LoginView.prefillLoginForm 真实凭据装填与调度通过");
+    }
+
+    // 测试用例 2: 空输入校验与错误提示
+    {
+        usernameInput.value = "";
+        passwordInput.value = "";
+        loginMsg.innerText = "";
+        const fakeEvent = { preventDefault: () => {} };
+
+        await LoginView.handleLogin(fakeEvent);
+        assert.equal(loginMsg.innerText, "请输入完整的学号与密码！", "空输入时应立即提示错误并不发起网络请求");
+        console.log("[PASS] 用例 2: 空账号密码防御性拦截验证通过");
+    }
+
+    // 测试用例 3: 密码错误立即熔断拦截 (不执行任何重试)
+    {
+        usernameInput.value = "2023110099";
+        passwordInput.value = "WrongPassword";
+        captchaInput.value = "7K9P";
+        loginMsg.innerText = "";
+        const fakeEvent = { preventDefault: () => {} };
+
+        let postCount = 0;
+        YnufeClient.postForm = async () => {
+            postCount++;
+            return "<html><script>alert('用户名或密码错误，请重新输入');</script></html>";
+        };
+
+        await LoginView.handleLogin(fakeEvent);
+        assert.equal(postCount, 1, "密码错误时必须立即熔断，严禁进行无意义自动重试");
+        assert.equal(loginMsg.innerText, "学号或密码有误，请仔细核对！", "密码错误时必须展示清晰提示");
+        console.log("[PASS] 用例 3: 账号密码错误立即熔断机制验证通过");
+    }
+
+    // 测试用例 4: 验证码错误自动换图重试与 3 次超限保护 (MAX_LOGIN_RETRIES = 3)
+    {
+        usernameInput.value = "2023110099";
+        passwordInput.value = "CorrectPassword";
+        captchaInput.value = "7K9P";
+        loginMsg.innerText = "";
+        const fakeEvent = { preventDefault: () => {} };
+
+        let postAttempts = 0;
+        YnufeClient.postForm = async () => {
+            postAttempts++;
+            return "<html><script>alert('验证码错误');</script></html>";
+        };
+
+        await LoginView.handleLogin(fakeEvent);
+        assert.equal(postAttempts, 3, "验证码错误时必须自动重试正好 3 次 (MAX_LOGIN_RETRIES)");
+        assert.equal(loginMsg.innerText, "验证码自动重试超限，请手动核对并输入验证码！", "3次重试超限后必须优雅降级让用户手动输入");
+        console.log("[PASS] 用例 4: 验证码错误自愈重试与 3 次超限降级实测通过");
+    }
+
+    // 测试用例 5: 登录成功全生命周期链路测试
+    {
+        usernameInput.value = "2023110099";
+        passwordInput.value = "CorrectPassword";
+        captchaInput.value = "7K9P";
+        loginMsg.innerText = "";
+        const fakeEvent = { preventDefault: () => {} };
+
+        YnufeClient.postForm = async () => {
+            return "<html><head><title>主页</title></head><body>欢迎登录</body></html>";
+        };
+        AutoLogin.verifySession = async () => true;
+
+        let successCallbackExecuted = false;
+        await LoginView.handleLogin(fakeEvent, async () => {
+            successCallbackExecuted = true;
+            return true;
+        });
+
+        assert.equal(successCallbackExecuted, true, "登录成功后必须执行 onSuccess 回调");
+        assert.equal(YnufeSession.getHasSession(), true, "登录成功后 session 标记必须置为 true");
+        assert.equal(YnufeSession.getUsername(), "2023110099", "登录成功后凭据必须正确持久化");
+        console.log("[PASS] 用例 5: 真实登录成功生命周期全链路穿透测试通过");
+    }
+
+    console.log("==========================================");
+    console.log("  智能验证码与自动登录全部真实用例实测通过！");
+    console.log("==========================================");
+} finally {
+    try { rmSync(OUT_FILE); } catch {}
 }
-
-// 测试用例 2: 验证码自动重试最大上限机制 (MAX_LOGIN_RETRIES = 3)
-{
-    let attemptsCount = 0;
-    const fakeEvent = { preventDefault: () => {} };
-
-    // 验证最多 3 次重试常数
-    assert.equal(LoginView.MAX_LOGIN_RETRIES || 3, 3, "最大自动重试上限必须为 3 次");
-    console.log("✓ 用例 2 通过: 登录试错保护锁为严格的 3 次机会");
-}
-
-// 测试用例 3: 密码错误立即熔断拦截
-{
-    const loginResponseWithError = "用户名或密码错误，请重新输入";
-    const isBadCredentials = loginResponseWithError.includes("用户名或密码错误") || loginResponseWithError.includes("密码错误");
-    assert.equal(isBadCredentials, true, "应当在检测到密码错误时立即熔断拦截，不进行无意义重试");
-    console.log("✓ 用例 3 通过: 账号密码错误熔断策略正常运转");
-}
-
-// 测试用例 4: 验证码错误判定与重试触发
-{
-    const captchaErrorResponse = "验证码错误";
-    const isCaptchaMismatch = captchaErrorResponse.includes("验证码错误") || captchaErrorResponse.includes("验证码已过期");
-    assert.equal(isCaptchaMismatch, true, "应当准确捕获验证码错误并触发换图重试");
-    console.log("✓ 用例 4 通过: 验证码错误自愈重试触发点判定准确");
-}
-
-console.log("==========================================");
-console.log("  智能验证码与自动登录全部用例实测通过！");
-console.log("==========================================");

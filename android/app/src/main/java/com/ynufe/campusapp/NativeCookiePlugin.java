@@ -138,13 +138,37 @@ public class NativeCookiePlugin extends Plugin {
     @PluginMethod
     public void saveAndOpenFile(PluginCall call) {
         try {
-            String fileName = call.getString("fileName", "attachment");
+            String rawFileName = call.getString("fileName", "attachment");
             String base64Data = call.getString("base64Data", "");
             String mimeType = call.getString("mimeType", "*/*");
 
             if (base64Data == null || base64Data.trim().isEmpty()) {
                 call.reject("Base64 data is empty");
                 return;
+            }
+
+            // 文件名防目录穿越清洗与安全加固
+            if (rawFileName == null || rawFileName.trim().isEmpty()) {
+                rawFileName = "attachment.bin";
+            }
+            // 规范化反斜杠并提取纯基本文件名（跨操作系统抹除目录结构）
+            String sanitized = rawFileName.trim().replace('\\', '/');
+            String fileName = new File(sanitized).getName();
+            // 过滤控制字符、反斜杠、正斜杠及 Windows/Android 敏感特殊字符
+            fileName = fileName.replaceAll("[\\p{Cntrl}/\\\\:*?\"<>|]", "_").trim();
+            // 防止清洗后仅包含点或下划线
+            if (fileName.replace(".", "").replace("_", "").isEmpty()) {
+                fileName = "download_" + System.currentTimeMillis() + ".bin";
+            }
+            // 长度防御性截断（最大 120 字符），完整保留后缀
+            if (fileName.length() > 120) {
+                int lastDot = fileName.lastIndexOf('.');
+                if (lastDot > 0 && lastDot > fileName.length() - 20) {
+                    String extPart = fileName.substring(lastDot);
+                    fileName = fileName.substring(0, 100) + extPart;
+                } else {
+                    fileName = fileName.substring(0, 120);
+                }
             }
 
             byte[] fileBytes = Base64.decode(base64Data, Base64.DEFAULT);
@@ -160,6 +184,12 @@ public class NativeCookiePlugin extends Plugin {
             }
 
             File targetFile = new File(targetDir, fileName);
+            String dirCanonical = targetDir.getCanonicalPath();
+            String sep = dirCanonical.endsWith(File.separator) ? "" : File.separator;
+            if (!targetFile.getCanonicalPath().startsWith(dirCanonical + sep)) {
+                throw new SecurityException("Illegal file path traversal detected: " + rawFileName);
+            }
+
             int count = 1;
             String nameWithoutExt = fileName;
             String ext = "";
@@ -168,14 +198,44 @@ public class NativeCookiePlugin extends Plugin {
                 nameWithoutExt = fileName.substring(0, dotIdx);
                 ext = fileName.substring(dotIdx);
             }
-            while (targetFile.exists()) {
+            while (targetFile.exists() && count < 1000) {
                 targetFile = new File(targetDir, nameWithoutExt + " (" + count + ")" + ext);
+                if (!targetFile.getCanonicalPath().startsWith(dirCanonical + sep)) {
+                    throw new SecurityException("Illegal file path traversal detected on collision");
+                }
                 count++;
             }
 
-            try (FileOutputStream fos = new FileOutputStream(targetFile)) {
+            FileOutputStream fos = null;
+            try {
+                fos = new FileOutputStream(targetFile);
                 fos.write(fileBytes);
                 fos.flush();
+            } catch (Exception writeErr) {
+                // 若公共下载目录受 Android 10+ 作用域存储限制拒绝写入，则安全降级到应用专属 Download 目录
+                File fallbackDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+                if (fallbackDir == null || fallbackDir.equals(targetDir)) {
+                    fallbackDir = context.getFilesDir();
+                }
+                targetDir = fallbackDir;
+                dirCanonical = targetDir.getCanonicalPath();
+                sep = dirCanonical.endsWith(File.separator) ? "" : File.separator;
+                targetFile = new File(targetDir, fileName);
+                count = 1;
+                while (targetFile.exists() && count < 1000) {
+                    targetFile = new File(targetDir, nameWithoutExt + " (" + count + ")" + ext);
+                    count++;
+                }
+                if (!targetFile.getCanonicalPath().startsWith(dirCanonical + sep)) {
+                    throw new SecurityException("Illegal file path traversal detected on fallback");
+                }
+                fos = new FileOutputStream(targetFile);
+                fos.write(fileBytes);
+                fos.flush();
+            } finally {
+                if (fos != null) {
+                    try { fos.close(); } catch (Exception ignored) {}
+                }
             }
 
             // 通知系统媒体库与下载管理器刷新
@@ -202,6 +262,7 @@ public class NativeCookiePlugin extends Plugin {
                 viewIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
                 Intent chooser = Intent.createChooser(viewIntent, "打开文件: " + fileName);
+                chooser.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 context.startActivity(chooser);
             } catch (Exception launchErr) {
