@@ -279,6 +279,8 @@ export class YnufeApp {
             });
         }
 
+        TimetableView.initListeners();
+
         const selectGradeSem = document.getElementById("select-grade-semester");
         const inputGradeSearch = document.getElementById("input-grade-search");
         if (selectGradeSem) selectGradeSem.addEventListener("change", () => GradeView.filterGrades());

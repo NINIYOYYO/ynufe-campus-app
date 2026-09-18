@@ -569,13 +569,29 @@ console.log("\n--- 测试套件 5: CSP 安全加固与课表周末支持实测 -
         );
     }
 
-    // 4. app.css 网格列数必须支持 7 天自适应收缩
+    // 4. app.css 网格列数必须支持 7 天自适应收缩与 5 天优化排版
     assert.ok(
         appCss.includes("repeat(7, minmax(0, 1fr))"),
         "app.css 中的 timetable-grid 必须定义 7 列自适应布局"
     );
+    assert.ok(
+        appCss.includes(".timetable-grid.days-5"),
+        "app.css 必须提供 .timetable-grid.days-5 专属紧凑排版类"
+    );
+    assert.ok(
+        appCss.includes(".timetable-grid.hide-late .grid-session-late"),
+        "app.css 必须提供晚间节次智能收起规则"
+    );
+    assert.ok(
+        appCss.includes("#tab-timetable") && appCss.includes("safe-area-inset-bottom"),
+        "app.css 必须为 #tab-timetable 提供悬浮 Dock 安全避让边距"
+    );
 
-    console.log("[PASS] 用例 5.1 通过: CSP 策略严格禁用 unsafe-inline，周末 7 天课程网格完整就绪");
+    // 5. index.html 交互组件验证
+    assert.ok(indexHtml.includes('id="btn-toggle-weekend"'), "课表头部必须提供周末切换按钮");
+    assert.ok(indexHtml.includes('id="btn-toggle-late"'), "课表底部必须提供晚间节次折叠按钮");
+
+    console.log("[PASS] 用例 5.1 通过: CSP 策略严格禁用 unsafe-inline，周末 7 天课程网格、5天模式与晚间收拢完整就绪");
 }
 
 // 清理构建临时目录

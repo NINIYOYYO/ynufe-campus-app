@@ -40,6 +40,10 @@ export const StorageKeys = {
     // 4. 上课与考试通知提醒
     NOTIFY_ENABLED: "ynufe_notify_enabled",
     NOTIFY_LEAD_MIN: "ynufe_notify_lead_min",
+
+    // 5. 课表显示与布局偏好
+    TIMETABLE_DAYS_MODE: "ynufe_timetable_days_mode",
+    TIMETABLE_LATE_EXPANDED: "ynufe_timetable_late_expanded",
 } as const;
 
 export type StorageKey = typeof StorageKeys[keyof typeof StorageKeys];

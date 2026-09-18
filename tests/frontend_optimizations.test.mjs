@@ -92,10 +92,23 @@ const {
     <div id="level-grades-list"></div>
 
     <!-- Timetable DOM -->
+    <button type="button" id="btn-toggle-weekend" class="weekend-toggle-btn">5天</button>
     <select id="select-week"></select>
-    <div class="grid-course-slot" data-day="1" data-session="1"></div>
-    <div class="grid-course-slot" data-day="1" data-session="2"></div>
-    <div class="grid-course-slot" data-day="2" data-session="1"></div>
+    <div class="timetable-grid days-5 hide-late">
+        <div class="grid-header">时间</div>
+        <div class="grid-header">一</div><div class="grid-header">二</div><div class="grid-header">三</div>
+        <div class="grid-header">四</div><div class="grid-header">五</div><div class="grid-header">六</div><div class="grid-header">日</div>
+        <div class="grid-course-slot" data-day="1" data-session="1"></div>
+        <div class="grid-course-slot" data-day="1" data-session="2"></div>
+        <div class="grid-course-slot" data-day="2" data-session="1"></div>
+        <div class="grid-course-slot" data-day="6" data-session="1"></div>
+        <div class="grid-course-slot" data-day="7" data-session="1"></div>
+        <div class="grid-course-slot grid-session-late" data-day="1" data-session="6"></div>
+        <div class="grid-course-slot grid-session-late" data-day="1" data-session="7"></div>
+    </div>
+    <div id="timetable-late-bar" class="timetable-late-bar" style="display:none;">
+        <button type="button" id="btn-toggle-late"><span id="txt-toggle-late">展开晚间 11-14 节</span></button>
+    </div>
 </body>
 </html>`);
 
@@ -602,7 +615,60 @@ assert.equal(
     'NEW_LOGIN_SESSION_456',
     '登录接口返回的合法 Set-Cookie 必须能够正常更新会话'
 );
-console.log('[PASS] 用例 4.3 通过: 登录接口合法 Set-Cookie 正常更新会话');
+// --- 测试套件 5: 课表 5/7 天智能切换与晚间节次收拢测试 ---
+console.log('\n--- 测试套件 5: 课表 5/7 天智能切换与晚间节次收拢测试 ---');
+
+// 5.1 默认无周末且无晚间课程时，自动应用 5 天模式并收起晚间节次
+TimetableView.globalTimetable = [
+    { day: 1, slot: 1, session: 1, name: "微积分", room: "凌云101", teacher: "张老师", weeks: "1-16周", activeWeeks: [1, 2, 3] },
+    { day: 3, slot: 5, session: 3, name: "形势与政策", room: "鹏华302", teacher: "李老师", weeks: "1-8周", activeWeeks: [1, 2, 3] }
+];
+TimetableView.daysMode = 'auto';
+TimetableView.lateSessionsExpanded = false;
+TimetableView.reloadTimetableGrid();
+
+const gridEl = document.querySelector('.timetable-grid');
+const btnWeekend = document.getElementById('btn-toggle-weekend');
+const lateBarEl = document.getElementById('timetable-late-bar');
+const txtLateEl = document.getElementById('txt-toggle-late');
+
+assert.ok(gridEl.classList.contains('days-5'), '无周末课程时必须自动应用 days-5 类');
+assert.ok(!gridEl.classList.contains('days-7'), '无周末课程时不能包含 days-7 类');
+assert.equal(btnWeekend.textContent, '5天', '周末切换按钮文字应显示 5天');
+assert.ok(gridEl.classList.contains('hide-late'), '无晚间课程且未展开时必须应用 hide-late 类');
+assert.equal(lateBarEl.style.display, 'flex', '无晚间课程时必须显示展开晚间节次切换栏');
+console.log('[PASS] 用例 5.1 通过: 无周末与晚间课程时自动适配 5 天视图与晚间折叠');
+
+// 5.2 当包含周末课程时，自动切换为 7 天模式
+TimetableView.globalTimetable.push({
+    day: 6, slot: 1, session: 1, name: "周末讲座", room: "大礼堂", teacher: "王教授", weeks: "1-16周", activeWeeks: [1, 2, 3]
+});
+TimetableView.reloadTimetableGrid();
+assert.ok(gridEl.classList.contains('days-7'), '存在周六课程时自动扩展为 7 天模式 (days-7)');
+assert.ok(!gridEl.classList.contains('days-5'), '存在周六课程时移除 days-5 类');
+assert.equal(btnWeekend.textContent, '7天', '周末切换按钮文字应更新为 7天');
+console.log('[PASS] 用例 5.2 通过: 存在周末课程时自动平滑展开 7 天视图');
+
+// 5.3 手动点击切换按钮自由在 5天 与 7天 之间切换并持久化
+TimetableView.toggleWeekendMode();
+assert.equal(CacheService.get(StorageKeys.TIMETABLE_DAYS_MODE), '5', '切换后偏好应存入 TIMETABLE_DAYS_MODE 为 5');
+assert.ok(gridEl.classList.contains('days-5'), '手动切换后应强制锁定为 5 天模式');
+
+TimetableView.toggleWeekendMode();
+assert.equal(CacheService.get(StorageKeys.TIMETABLE_DAYS_MODE), '7', '再次切换后偏好应存入 TIMETABLE_DAYS_MODE 为 7');
+assert.ok(gridEl.classList.contains('days-7'), '手动切换后应强制锁定为 7 天模式');
+console.log('[PASS] 用例 5.3 通过: 手动切换周末视图与持久化偏好测试成功');
+
+// 5.4 晚间节次展开与收起
+TimetableView.toggleLateSessions();
+assert.equal(CacheService.get(StorageKeys.TIMETABLE_LATE_EXPANDED), true, '展开后状态应持久化为 true');
+assert.ok(!gridEl.classList.contains('hide-late'), '展开晚间节次后应移除 hide-late 类');
+assert.equal(txtLateEl.textContent, '收起晚间节次 (11-14节)', '按钮文本应更新为收起晚间节次');
+
+TimetableView.toggleLateSessions();
+assert.equal(CacheService.get(StorageKeys.TIMETABLE_LATE_EXPANDED), false, '收起后状态应持久化为 false');
+assert.ok(gridEl.classList.contains('hide-late'), '收起晚间节次后应重新添加 hide-late 类');
+console.log('[PASS] 用例 5.4 通过: 晚间节次展开/收起交互与持久化测试成功');
 
 // 清理临时构建目录
 try { rmSync(TMP_DIR, { recursive: true, force: true }); } catch {}

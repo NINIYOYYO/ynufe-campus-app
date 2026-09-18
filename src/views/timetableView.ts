@@ -21,6 +21,82 @@ export class TimetableView {
     private static KEY_CURRENT_SEMESTER = "ynufe_current_semester_id";
     private static activeRequestSeq = 0;
 
+    /** 课表天数展示模式：auto (自适应周末课程), '5' (锁定5天工作日), '7' (锁定7天全周) */
+    public static daysMode: 'auto' | '5' | '7' = 'auto';
+
+    /** 晚间节次 (11-14节) 手动展开标志 */
+    public static lateSessionsExpanded: boolean = false;
+
+    /** 事件监听是否已绑定 */
+    private static isListenersInitialized: boolean = false;
+
+    /**
+     * 初始化课表交互监听器（周末切换按钮与晚间节次折叠条）。
+     */
+    public static initListeners(): void {
+        if (this.isListenersInitialized) return;
+
+        // 从缓存恢复偏好设置
+        const savedDaysMode = CacheService.get<'auto' | '5' | '7'>(StorageKeys.TIMETABLE_DAYS_MODE);
+        if (savedDaysMode === '5' || savedDaysMode === '7' || savedDaysMode === 'auto') {
+            this.daysMode = savedDaysMode;
+        }
+
+        const savedLateExpanded = CacheService.get<boolean>(StorageKeys.TIMETABLE_LATE_EXPANDED);
+        if (typeof savedLateExpanded === 'boolean') {
+            this.lateSessionsExpanded = savedLateExpanded;
+        }
+
+        const btnToggleWeekend = document.getElementById("btn-toggle-weekend");
+        if (btnToggleWeekend) {
+            btnToggleWeekend.addEventListener("click", () => {
+                this.toggleWeekendMode();
+            });
+        }
+
+        const btnToggleLate = document.getElementById("btn-toggle-late");
+        if (btnToggleLate) {
+            btnToggleLate.addEventListener("click", () => {
+                this.toggleLateSessions();
+            });
+        }
+
+        this.isListenersInitialized = true;
+    }
+
+    /**
+     * 切换周末显示模式（在 5天 与 7天 之间灵活切换并持久化偏好）。
+     */
+    public static toggleWeekendMode(): void {
+        const grid = document.querySelector(".timetable-grid");
+        const isCurrently5Days = grid ? grid.classList.contains("days-5") : (this.daysMode === '5');
+        
+        this.daysMode = isCurrently5Days ? '7' : '5';
+        CacheService.set(StorageKeys.TIMETABLE_DAYS_MODE, this.daysMode);
+        this.reloadTimetableGrid();
+    }
+
+    /**
+     * 展开或收起晚间节次（11-14节）并持久化状态。
+     */
+    public static toggleLateSessions(): void {
+        this.lateSessionsExpanded = !this.lateSessionsExpanded;
+        CacheService.set(StorageKeys.TIMETABLE_LATE_EXPANDED, this.lateSessionsExpanded);
+        
+        const grid = document.querySelector(".timetable-grid");
+        const txtToggleLate = document.getElementById("txt-toggle-late");
+
+        if (grid) {
+            if (this.lateSessionsExpanded) {
+                grid.classList.remove("hide-late");
+                if (txtToggleLate) txtToggleLate.textContent = "收起晚间节次 (11-14节)";
+            } else {
+                grid.classList.add("hide-late");
+                if (txtToggleLate) txtToggleLate.textContent = "展开晚间 11-14 节";
+            }
+        }
+    }
+
     /**
      * 从服务器拉取指定学期或当前学期的课程表数据。
      *
@@ -143,9 +219,11 @@ export class TimetableView {
     }
 
     /**
-     * 根据周次筛选条件及去重逻辑，渲染 7x7 课表网格单元格。
+     * 根据周次筛选条件及去重逻辑，渲染课表网格单元格，并动态应用 5/7 天模式与晚间节次智能收拢。
      */
     static reloadTimetableGrid(): void {
+        this.initListeners();
+
         const weekSelect = document.getElementById("select-week") as HTMLSelectElement | null;
         const weekVal = weekSelect ? weekSelect.value : "";
 
@@ -160,7 +238,67 @@ export class TimetableView {
             filtered = this.globalTimetable.filter(c => c.activeWeeks && c.activeWeeks.includes(wkNum));
         }
 
-        // 3. 槽位内去重：同一 (day, session) 内课程名称和教室一致时只保留 1 张卡片
+        // 3. 动态计算周末课程与有效天数模式 (5天工作日 vs 7天全周)
+        const hasWeekendCourses = filtered.some(c => c.day === 6 || c.day === 7);
+        let effectiveDays: 5 | 7 = 5;
+        if (this.daysMode === '7') {
+            effectiveDays = 7;
+        } else if (this.daysMode === '5') {
+            effectiveDays = 5;
+        } else {
+            effectiveDays = hasWeekendCourses ? 7 : 5;
+        }
+
+        const grid = document.querySelector(".timetable-grid");
+        const btnToggleWeekend = document.getElementById("btn-toggle-weekend");
+        if (grid) {
+            if (effectiveDays === 5) {
+                grid.classList.add("days-5");
+                grid.classList.remove("days-7");
+                if (btnToggleWeekend) {
+                    btnToggleWeekend.textContent = "5天";
+                    btnToggleWeekend.setAttribute("title", "当前为5天工作日视图，点击切换为7天全周视图");
+                    btnToggleWeekend.classList.remove("active");
+                }
+            } else {
+                grid.classList.add("days-7");
+                grid.classList.remove("days-5");
+                if (btnToggleWeekend) {
+                    btnToggleWeekend.textContent = "7天";
+                    btnToggleWeekend.setAttribute("title", "当前为7天全周视图，点击切换为5天工作日视图");
+                    btnToggleWeekend.classList.add("active");
+                }
+            }
+        }
+
+        // 4. 动态计算晚间节次 (session 6 & 7 即 11-14节) 显隐与折叠
+        const hasLateCourses = filtered.some(c => {
+            const session = c.session || Math.ceil(c.slot / 2);
+            return session >= 6;
+        });
+
+        const lateBar = document.getElementById("timetable-late-bar");
+        const txtToggleLate = document.getElementById("txt-toggle-late");
+
+        if (grid) {
+            if (hasLateCourses) {
+                // 有晚间课程时自动展开并隐藏折叠按钮
+                grid.classList.remove("hide-late");
+                if (lateBar) lateBar.style.display = "none";
+            } else {
+                // 无晚间课程时提供轻量折叠切换栏
+                if (lateBar) lateBar.style.display = "flex";
+                if (this.lateSessionsExpanded) {
+                    grid.classList.remove("hide-late");
+                    if (txtToggleLate) txtToggleLate.textContent = "收起晚间节次 (11-14节)";
+                } else {
+                    grid.classList.add("hide-late");
+                    if (txtToggleLate) txtToggleLate.textContent = "展开晚间 11-14 节";
+                }
+            }
+        }
+
+        // 5. 槽位内去重：同一 (day, session) 内课程名称和教室一致时只保留 1 张卡片
         const seen = new Set<string>();
         const uniqueCourses: CourseItem[] = [];
 
@@ -173,7 +311,7 @@ export class TimetableView {
             }
         });
 
-        // 4. 渲染去重后的美化卡片
+        // 6. 渲染去重后的精致卡片
         const colorOptions = ["blue", "pink", "cyan", "purple"];
         uniqueCourses.forEach(c => {
             const session = c.session || Math.ceil(c.slot / 2);
