@@ -1320,7 +1320,8 @@ body.theme-light .bg-color-btn.active {
     width: 100%;
 }
 
-/* 晚间节次智能收拢：无 11-14 节课程时自动收起，节省 170px 垂直高度，避开底部浮动导航 */
+/* 晚间扩展行智能收拢，校区没有的大节始终隐藏。 */
+.timetable-grid .grid-session-unavailable,
 .timetable-grid.hide-late .grid-session-late {
     display: none !important;
 }

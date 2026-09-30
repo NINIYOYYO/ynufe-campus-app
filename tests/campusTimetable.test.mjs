@@ -23,6 +23,7 @@ globalThis.document = new DOMParser().parseFromString(`<html><body>
 <select id="select-semester"></select><select id="select-week"></select><select id="select-time-mode"></select>
 <div id="today-courses-list"></div><span id="home-week-badge"></span>
 <div class="timetable-grid">${Array.from({ length: 7 }, (_, i) => `<div class="grid-time-cell"><span></span><small></small></div><div class="grid-course-slot" data-day="3" data-session="${i + 1}"></div>`).join('')}</div>
+<div id="timetable-late-bar"><button id="btn-toggle-late"><span id="txt-toggle-late"></span></button></div>
 <select id="query-xq"><option value="E298641275B7471181C291FA9BC76452" selected>安宁</option></select>
 </body></html>`, 'text/html');
 globalThis.window = document.defaultView;
@@ -74,6 +75,18 @@ try {
     TimetableView.renderTimetableData(parsed);
     assert.match(document.getElementById('today-courses-list').textContent, /14:00/);
     assert.equal(document.querySelectorAll('.grid-time-cell')[2].querySelector('span').textContent, '6-8节');
+    assert.equal(document.getElementById('timetable-late-bar').style.display, 'none', '安宁只有五个大节，不能提供不存在的晚间扩展行');
+    assert.ok(document.querySelector('[data-session="6"]').classList.contains('grid-session-unavailable'));
+    const sixSessions = { ...parsed, timeModeId: south, sessionTimes: [...parsed.sessionTimes,
+        { session: 6, slots: [13, 14], start: '21:10', end: '22:40', label: '第六大节' }] };
+    TimetableView.renderTimetableData(sixSessions);
+    assert.equal(document.getElementById('txt-toggle-late').textContent, '展开晚间 13-14 节');
+    assert.ok(!document.querySelector('[data-session="6"]').classList.contains('grid-session-unavailable'));
+    assert.ok(document.querySelector('[data-session="7"]').classList.contains('grid-session-unavailable'));
+    TimetableView.toggleLateSessions();
+    assert.equal(document.getElementById('txt-toggle-late').textContent, '收起晚间节次 (13-14节)');
+    TimetableView.renderTimetableData(parsed);
+    assert.equal(document.getElementById('timetable-late-bar').style.display, 'none', '切回安宁后，即使之前展开也不能显示空行');
     let endpoint;
     YnufeClient.getHtml = async value => { endpoint = value; return html; };
     assert.equal(await TimetableView.reloadTimetableFromServer('', true, anning), true);
