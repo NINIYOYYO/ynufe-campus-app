@@ -31,7 +31,7 @@ globalThis.localStorage = new LocalStorageMock();
 
 const nativeStore = new Map();
 const capacitorStore = new Map();
-let flushedCount = 0;
+let unsupportedFlushCalls = 0;
 
 globalThis.document = {
     _cookies: [],
@@ -71,14 +71,15 @@ globalThis.window = {
                 getCookies: async ({ url }) => {
                     return capacitorStore.get(url) || {};
                 },
-                setCookie: async ({ url, key, value }) => {
+                setCookie: async ({ url, key, value, expires }) => {
+                    assert.match(expires, /GMT$/, '原生 Cookie 过期时间必须使用 HTTP-date');
                     const existing = capacitorStore.get(url) || {};
                     existing[key] = value;
                     capacitorStore.set(url, existing);
                 },
                 flushCookies: async () => {
-                    flushedCount++;
-                    return true;
+                    unsupportedFlushCalls++;
+                    throw new Error('CapacitorCookies.flushCookies is not implemented');
                 },
                 clearCookies: async ({ url }) => {
                     capacitorStore.delete(url);
@@ -141,10 +142,9 @@ try {
     console.log("[PASS] 用例 4: captureAndPersist 原生层探测与 force 保护策略实测通过");
 
     // 用例 5: 验证 restoreCookies 恢复与 flush 刷盘
-    const prevFlushed = flushedCount;
     const restoredOk = await SessionCookieManager.restoreCookies();
     assert.equal(restoredOk, true, "restoreCookies 必须返回 true");
-    assert.ok(flushedCount >= prevFlushed, "restoreCookies 必须触发 CapacitorCookies 刷盘");
+    assert.equal(unsupportedFlushCalls, 0, '保存和恢复不应调用不存在的 CapacitorCookies.flushCookies');
     console.log("[PASS] 用例 5: restoreCookies 全路径还原与持久化刷盘通过");
 
     // 用例 6: clearCookies 彻底注销清理
@@ -155,6 +155,28 @@ try {
     const clearedNative = nativeStore.get("https://xjwis.ynufe.edu.cn");
     assert.ok(clearedNative.includes("1970"), "清理后 NativeCookie 必须被设置为 1970 过期");
     console.log("[PASS] 用例 6: clearCookies 注销清理与 1970 过期机制实测通过");
+
+    // 用例 7: importCookieString 复杂/多 JSESSIONID 与 jsxsd 原始字符串导入
+    const invalidImport = await SessionCookieManager.importCookieString("foo=bar; baz=qux");
+    assert.equal(invalidImport, false, "缺少 JSESSIONID 时应返回 false");
+
+    const multiCookieString = "JSESSIONID=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA; jsxsd=TEST_USER; JSESSIONID=BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB";
+    const validImport = await SessionCookieManager.importCookieString(multiCookieString);
+    assert.equal(validImport, true, "包含合法 JSESSIONID 时应返回 true");
+    assert.equal(SessionCookieManager.getSavedJsessionId(), "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "应正确提取首个合规 32 位十六进制 JSESSIONID");
+    assert.equal(SessionCookieManager.getSavedJsxsd(), "TEST_USER", "应正确提取 jsxsd");
+    console.log("[PASS] 用例 7: importCookieString 复合 Cookie 提取与导入测试通过");
+
+    // CookieManager 返回作用域会话在前、根路径旧会话在后的真实形态。
+    nativeStore.set("https://xjwis.ynufe.edu.cn/jsxsd", "JSESSIONID=STALE_SCOPED; JSESSIONID=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+    await SessionCookieManager.captureAndPersist(true);
+    assert.equal(SessionCookieManager.getSavedJsessionId(), "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "重复会话必须优先匹配已保存的 ID");
+
+    localStorage.clear();
+    nativeStore.set("https://xjwis.ynufe.edu.cn/jsxsd", "JSESSIONID=VALID_SCOPED; jsxsd=TEST_USER; JSESSIONID=STALE_ROOT");
+    await SessionCookieManager.captureAndPersist();
+    assert.equal(SessionCookieManager.getSavedJsessionId(), "VALID_SCOPED", "没有保存的 ID 时必须保留首个作用域会话");
+    console.log("[PASS] 用例 8: 重复作用域 Cookie 不再误选最后一个旧会话");
 
     console.log("==========================================");
     console.log("  SessionCookieManager 全部真实测试实测通过！");

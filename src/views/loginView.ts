@@ -223,6 +223,61 @@ export class LoginView {
     }
 
     /**
+     * 处理直接通过 Cookie 字符串导入登录。
+     *
+     * Args:
+     *     rawCookie (string): 用户输入的原始 Cookie 字符串。
+     *     onSuccess (Function, optional): 成功登录并同步业务数据的回调。
+     */
+    static async handleCookieLogin(rawCookie: string, onSuccess?: () => Promise<boolean>): Promise<void> {
+        const msgDiv = document.getElementById("login-msg");
+        if (!rawCookie || !rawCookie.includes("JSESSIONID=")) {
+            if (msgDiv) msgDiv.innerText = "请输入包含有效 JSESSIONID 的 Cookie 字符串！";
+            return;
+        }
+
+        showLoading(true, "正在验证并导入 Cookie 会话...");
+        if (msgDiv) msgDiv.innerText = "";
+
+        try {
+            const imported = await SessionCookieManager.importCookieString(rawCookie);
+            if (!imported) {
+                showLoading(false);
+                if (msgDiv) msgDiv.innerText = "未在输入的文本中识别出合法的 JSESSIONID！";
+                return;
+            }
+
+            const verified = await AutoLogin.verifySession();
+            if (!verified) {
+                showLoading(false);
+                if (msgDiv) msgDiv.innerText = "Cookie 已失效或未登录，请重新获取最新 Cookie！";
+                return;
+            }
+
+            YnufeSession.setHasSession(true);
+            resetRenderFingerprints();
+
+            let dataLoaded = true;
+            if (onSuccess) {
+                dataLoaded = await onSuccess();
+            }
+            showLoading(false);
+
+            if (dataLoaded) {
+                updateSyncStatus("online", "数据已最新");
+                toggleModal("login-overlay", false);
+                showToast("Cookie 导入成功，数据已同步", "success");
+            } else {
+                if (msgDiv) msgDiv.innerText = "同步教务网数据异常，请点击右上角重试！";
+            }
+        } catch (e) {
+            showLoading(false);
+            console.error("[LoginView] Cookie import login error:", e);
+            if (msgDiv) msgDiv.innerText = "验证 Cookie 过程中发生异常，请检查网络！";
+        }
+    }
+
+    /**
      * 处理退出登录并清理凭据与缓存。
      *
      * Args:
@@ -249,5 +304,23 @@ export class LoginView {
         document.getElementById("login-form")?.addEventListener("submit", (e) => this.handleLogin(e, onLoginSuccess));
         document.getElementById("captcha-img")?.addEventListener("click", () => this.refreshCaptchaAndAutoFill());
         document.getElementById("btn-logout")?.addEventListener("click", () => this.handleLogout(onLogout));
+
+        document.getElementById("btn-cookie-login-toggle")?.addEventListener("click", () => {
+            const area = document.getElementById("cookie-login-area");
+            if (area) {
+                const isHidden = area.style.display === "none";
+                area.style.display = isHidden ? "block" : "none";
+                const toggleBtn = document.getElementById("btn-cookie-login-toggle");
+                if (toggleBtn) {
+                    toggleBtn.innerText = isHidden ? "收起 Cookie 登录" : "切换为 Cookie 快速登录";
+                }
+            }
+        });
+
+        document.getElementById("btn-submit-cookie")?.addEventListener("click", async () => {
+            const input = document.getElementById("cookie-input") as HTMLTextAreaElement | null;
+            const raw = input?.value.trim() || "";
+            await this.handleCookieLogin(raw, onLoginSuccess);
+        });
     }
 }

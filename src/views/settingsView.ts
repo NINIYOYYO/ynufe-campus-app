@@ -139,7 +139,9 @@ export class SettingsView {
                 if (wantEnabled) {
                     const data = CacheService.get<TimetableData>(StorageKeys.TIMETABLE_CACHE);
                     const count = await NotificationManager.rescheduleFromTimetable(data);
-                    if (count === -1) {
+                    if (count === -2) {
+                        showToast('请先在课表页选择校区时间模式，再排程上课提醒', 'warn');
+                    } else if (count === -1) {
                         showToast("当前不在教学周内（或未获取到教学周），暂无法排程提醒", "warn");
                     } else if (count === 0) {
                         showToast("提醒已开启，未来两周暂无待提醒课程", "info");
@@ -162,6 +164,8 @@ export class SettingsView {
                     const count = await NotificationManager.rescheduleFromTimetable(data);
                     if (count > 0) {
                         showToast(`已改为提前 ${minutes} 分钟提醒（${count} 条已重排）`, "success");
+                    } else if (count === -2) {
+                        showToast('请先在课表页选择校区时间模式，再排程上课提醒', 'warn');
                     }
                 }
                 this.refreshNotifyStatusText();

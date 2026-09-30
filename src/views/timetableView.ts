@@ -4,11 +4,13 @@ import { TimetableData, CourseItem } from '../types/timetable';
 import { NotificationManager } from '../services/notificationManager';
 import { CustomSelect } from '../components/customSelect';
 import { BottomSheet } from '../components/bottomSheet';
-import { AppConfig, StorageKeys } from '../config';
+import { StorageKeys } from '../config';
 import { CacheService } from '../services/cacheService';
 import { escapeHtml } from '../utils/escapeHtml';
 import { playEntrance } from '../utils/uiFeedback';
 import { withViewLoading, renderEmptyState } from '../utils/viewHelper';
+import { getSessionTime, formatSessionSlots } from '../utils/timetableTime';
+import { ReminderScheduler } from '../services/reminderScheduler';
 
 /**
  * 课表展示、5x5 网格矩阵与今日课程视图控制器
@@ -107,16 +109,19 @@ export class TimetableView {
      * Returns:
      *     Promise<boolean>: 是否成功。
      */
-    static async reloadTimetableFromServer(semesterId: string = "", silent: boolean = false): Promise<boolean> {
+    static async reloadTimetableFromServer(semesterId: string = "", silent: boolean = false, timeModeId?: string): Promise<boolean> {
         const currentSeq = ++this.activeRequestSeq;
         const result = await withViewLoading({
             silent,
             loadingText: "正在同步课程表...",
             moduleName: "课表"
         }, async () => {
-            const endpoint = semesterId
-                ? `/jsxsd/xskb/xskb_list.do?xnxq01id=${encodeURIComponent(semesterId)}`
-                : "/jsxsd/xskb/xskb_list.do";
+            const params = new URLSearchParams();
+            if (semesterId) params.set('xnxq01id', semesterId);
+            const mode = timeModeId ?? CacheService.get<string>(StorageKeys.TIMETABLE_TIME_MODE);
+            if (mode) params.set('kbjcmsid', mode);
+            const query = params.toString();
+            const endpoint = `/jsxsd/xskb/xskb_list.do${query ? `?${query}` : ''}`;
             const html = await YnufeClient.getHtml(endpoint);
             if (currentSeq !== this.activeRequestSeq) {
                 console.warn(`[TimetableView] 丢弃已过期的慢请求响应 (seq ${currentSeq} vs latest ${this.activeRequestSeq})`);
@@ -134,6 +139,11 @@ export class TimetableView {
             }
 
             if (data) {
+                if (mode && data.timeModeId !== mode) throw new Error('教务系统未返回所选时间模式，请重新选择');
+                if (data.currentWeek) {
+                    data.week1MondayIso = ReminderScheduler.computeWeek1Monday(new Date(), data.currentWeek).toISOString();
+                }
+                if (data.timeModeId) CacheService.set(StorageKeys.TIMETABLE_TIME_MODE, data.timeModeId);
                 this.renderTimetableData(data, semesterId);
 
                 const currentSemId = semesterId === ""
@@ -166,6 +176,27 @@ export class TimetableView {
         if (!data) return;
         this.currentTimetableData = data;
         this.globalTimetable = data.courses || [];
+
+        const modeSelect = document.getElementById('select-time-mode') as HTMLSelectElement | null;
+        if (modeSelect && data.timeModes?.length) {
+            modeSelect.replaceChildren();
+            data.timeModes.forEach(mode => {
+                const opt = document.createElement('option');
+                opt.value = mode.value;
+                opt.textContent = mode.value === '0' ? '全部（请选择校区时间）' : mode.text;
+                opt.selected = mode.value === data.timeModeId;
+                modeSelect.appendChild(opt);
+            });
+        }
+        const modeHint = document.getElementById('time-mode-hint');
+        if (modeHint) modeHint.style.display = !data.timeModeId || data.timeModeId === '0' ? '' : 'none';
+        document.querySelectorAll('.grid-time-cell').forEach((cell, index) => {
+            const time = getSessionTime(data, index + 1);
+            const title = cell.querySelector('span');
+            const start = cell.querySelector('small');
+            if (title) title.textContent = time ? formatSessionSlots(time) : `第${index + 1}大节`;
+            if (start) start.textContent = time?.start || '—';
+        });
 
         // 填充学期下拉列表
         if (!semesterId) {
@@ -398,7 +429,7 @@ export class TimetableView {
 
         dedupedCourses.forEach(c => {
             const sessionIdx = (c.session || Math.ceil(c.slot / 2)) - 1;
-            const timeCfg = AppConfig.SESSION_TIMES[sessionIdx];
+            const timeCfg = getSessionTime(this.currentTimetableData, sessionIdx + 1);
             const card = document.createElement("div");
             card.className = "course-card-mini glass-card";
             card.innerHTML = `
@@ -428,9 +459,9 @@ export class TimetableView {
      */
     static showCourseDetail(course: CourseItem): void {
         const sessionIdx = (course.session || Math.ceil(course.slot / 2)) - 1;
-        const timeCfg = AppConfig.SESSION_TIMES[sessionIdx];
+        const timeCfg = getSessionTime(this.currentTimetableData, sessionIdx + 1);
         const sessionLabel = timeCfg
-            ? `${timeCfg.label} (${sessionIdx * 2 + 1}-${sessionIdx * 2 + 2}节)`
+            ? `${timeCfg.label} (${formatSessionSlots(timeCfg)})`
             : `第 ${course.slot} 节`;
         const dayNames = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
         const dayStr = (course.day >= 1 && course.day <= 7) ? dayNames[course.day - 1] : `星期${course.day}`;

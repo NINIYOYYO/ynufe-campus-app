@@ -143,7 +143,7 @@ export class ServiceView {
                 xq2: day,
                 jc: jcStart,
                 jc2: jcEnd,
-                kbjcmsid: AppConfig.CLASSROOM_QUERY_KBJCMSID
+                kbjcmsid: AppConfig.CLASSROOM_TIME_MODES[xq] || AppConfig.CLASSROOM_QUERY_KBJCMSID
             });
 
             if (currentSeq !== this.activeQuerySeq) {

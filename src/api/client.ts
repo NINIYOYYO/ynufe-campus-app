@@ -220,6 +220,8 @@ export class YnufeClient {
         if (isNative && cap?.Plugins?.CapacitorHttp?.get) {
             try {
                 const res = await cap.Plugins.CapacitorHttp.get({
+                    connectTimeout: this.DEFAULT_TIMEOUT_MS,
+                    readTimeout: this.DEFAULT_TIMEOUT_MS,
                     url,
                     headers: {
                         ...this.COMMON_HEADERS,
@@ -284,6 +286,8 @@ export class YnufeClient {
         if (isNative && cap?.Plugins?.CapacitorHttp?.post) {
             try {
                 const res = await cap.Plugins.CapacitorHttp.post({
+                    connectTimeout: this.DEFAULT_TIMEOUT_MS,
+                    readTimeout: this.DEFAULT_TIMEOUT_MS,
                     url,
                     headers: {
                         ...this.COMMON_HEADERS,
@@ -297,6 +301,21 @@ export class YnufeClient {
                     this.extractAndSaveCookieFromHeaders(res.headers, endpoint, text);
                 }
                 await SessionCookieManager.captureAndPersist();
+
+                // 登录成功时处理 302 重定向并升级明文 http 为 https 相对路径请求
+                const locHeader = res.headers?.Location || res.headers?.location;
+                if (((res.status >= 300 && res.status < 400) || locHeader) && locHeader) {
+                    let redirectPath = locHeader;
+                    if (redirectPath.startsWith("http://xjwis.ynufe.edu.cn")) {
+                        redirectPath = redirectPath.substring("http://xjwis.ynufe.edu.cn".length);
+                    } else if (redirectPath.startsWith("https://xjwis.ynufe.edu.cn")) {
+                        redirectPath = redirectPath.substring("https://xjwis.ynufe.edu.cn".length);
+                    }
+                    if (redirectPath.startsWith("/")) {
+                        return await this.getHtml(redirectPath);
+                    }
+                }
+
                 this.checkSessionTimeout(text, endpoint);
                 return text;
             } catch (err) {
@@ -364,6 +383,8 @@ export class YnufeClient {
         if (isNative && cap?.Plugins?.CapacitorHttp?.get) {
             try {
                 const res = await cap.Plugins.CapacitorHttp.get({
+                    connectTimeout: this.DEFAULT_TIMEOUT_MS,
+                    readTimeout: this.DEFAULT_TIMEOUT_MS,
                     url,
                     headers: customHeaders,
                     responseType: "blob"
@@ -423,6 +444,8 @@ export class YnufeClient {
         if (isNative && cap?.Plugins?.CapacitorHttp?.get) {
             try {
                 const res = await cap.Plugins.CapacitorHttp.get({
+                    connectTimeout: this.DEFAULT_TIMEOUT_MS,
+                    readTimeout: this.DEFAULT_TIMEOUT_MS,
                     url,
                     headers: {
                         ...this.COMMON_HEADERS,

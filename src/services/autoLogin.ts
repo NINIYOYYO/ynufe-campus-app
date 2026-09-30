@@ -108,8 +108,8 @@ export class AutoLogin {
             const profile = ProfileParser.parseProfile(html);
             const isValid = !!profile.name && profile.name !== "未登录";
             if (isValid) {
-                // 确定为有效已登录 Session，锁死保存最新 JSESSIONID
-                await SessionCookieManager.captureAndPersist(true);
+                // 请求已使用保存的会话验证成功；Cookie Jar 中的旧作用域不能覆盖它。
+                await SessionCookieManager.captureAndPersist();
             }
             return isValid;
         } catch {

@@ -47,10 +47,6 @@ export class AppLifecycleManager {
             if (document.hidden) {
                 HeartbeatService.stop();
                 SessionCookieManager.captureAndPersist().catch(() => {});
-                const cap = window.Capacitor;
-                if (cap?.Plugins?.CapacitorCookies?.flushCookies) {
-                    cap.Plugins.CapacitorCookies.flushCookies().catch(() => {});
-                }
             } else if (YnufeSession.getHasSession()) {
                 HeartbeatService.start();
             }

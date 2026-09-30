@@ -18,7 +18,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Setup uv
@@ -30,6 +30,9 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
+      - name: Audit locked dependencies
+        run: npm audit --audit-level=moderate
+
       - name: Run Node test suites
         run: npm run test
 
@@ -40,13 +43,38 @@ jobs:
         run: uv run --with ruff ruff check .
 
       - name: Run Python unit & native bridge tests
-        run: uv run python tests/test_build_script_and_native.py
+        run: |
+          uv run python tests/test_build_script_and_native.py
+          uv run python tests/test_release_signing.py
 
       - name: Run MCP package tests
         working-directory: mcp
         env:
           VIRTUAL_ENV: ""
-        run: uv run python tests/mcp_protocol_test.py
+        run: |
+          uv run python tests/mcp_protocol_test.py
+          uv run python -m unittest discover -s tests -p 'test_*.py'
 
       - name: Run Structural Smoke Check
         run: uv run python test_suite.py
+
+  android-check:
+    name: Android Tests & APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '21'
+      - run: npm ci
+      - run: npm run build
+      - run: npx cap sync android
+      - working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew testDebugUnitTest assembleDebug

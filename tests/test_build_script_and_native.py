@@ -10,6 +10,7 @@ import re
 import subprocess
 import sys
 import unittest
+import xml.etree.ElementTree as ET
 from urllib.parse import urlparse
 
 if sys.platform.startswith("win"):
@@ -126,15 +127,20 @@ class TestNativeCookiePluginLogic(unittest.TestCase):
         main_manifest = os.path.join(PROJECT_DIR, "android", "app", "src", "main", "AndroidManifest.xml")
         with open(main_manifest, "r", encoding="utf-8") as f:
             content = f.read()
-        self.assertNotIn('android:usesCleartextTraffic="true"', content)
         self.assertIn('android:networkSecurityConfig="@xml/network_security_config"', content)
 
-        # Release 网络安全配置禁止任何明文 HTTP
+        # Android 7+ 使用 XML 配置：默认禁止 HTTP，仅允许教务重定向和本地 WebView。
         main_net_cfg = os.path.join(PROJECT_DIR, "android", "app", "src", "main", "res", "xml", "network_security_config.xml")
         self.assertTrue(os.path.exists(main_net_cfg))
         with open(main_net_cfg, "r", encoding="utf-8") as f:
             main_net_content = f.read()
         self.assertIn('cleartextTrafficPermitted="false"', main_net_content)
+        config = ET.fromstring(main_net_content)
+        self.assertEqual(config.find('base-config').get('cleartextTrafficPermitted'), 'false')
+        allowed = {domain.text for group in config.findall('domain-config')
+                   if group.get('cleartextTrafficPermitted') == 'true' for domain in group.findall('domain')}
+        self.assertEqual(allowed, {'xjwis.ynufe.edu.cn', 'localhost', '127.0.0.1'})
+        self.assertEqual([cert.get('src') for cert in config.findall('base-config/trust-anchors/certificates')], ['system'])
 
         debug_manifest = os.path.join(PROJECT_DIR, "android", "app", "src", "debug", "AndroidManifest.xml")
         self.assertTrue(os.path.exists(debug_manifest))
@@ -165,7 +171,7 @@ class TestBuildApkScript(unittest.TestCase):
             gradle_content = f.read()
 
         self.assertIn(f'versionName "{app_version}"', gradle_content)
-        self.assertIn('versionCode 110', gradle_content)
+        self.assertIn('versionCode 111', gradle_content)
 
     def test_cli_help_flag(self):
         """验证 --help 与 -h 返回退出码 0 并输出完整帮助说明。"""

@@ -28,9 +28,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (rememberEl) rememberEl.checked = YnufeSession.getRememberMe();
 
     const hasCache = YnufeApp.loadCachedData();
+    const hasSessionCookie = !!SessionCookieManager.getSavedJsessionId();
 
-    if (hasCache) {
-        // 有缓存：先秒开显示旧数据，后台静默同步
+    if (hasCache && hasSessionCookie) {
+        // 有缓存且有已保存的会话凭据：先秒开显示旧数据，后台静默同步
         toggleModal("login-overlay", false);
         setTimeout(async () => {
             YnufeApp.isSilentSync = true;
@@ -40,11 +41,21 @@ document.addEventListener("DOMContentLoaded", async () => {
                 updateSyncStatus("online", "数据已最新");
             } else if (YnufeApp.isSessionInvalid) {
                 updateSyncStatus("offline", "登录已过期 · 点击登录");
+                toggleModal("login-overlay", true);
+                LoginView.prefillLoginForm();
             } else {
                 updateSyncStatus("offline", "未同步 · 点击刷新");
             }
             YnufeApp.isSilentSync = false;
         }, 150);
+        return;
+    }
+
+    if (hasCache && !hasSessionCookie) {
+        // 有缓存但本地尚无 Session Cookie：在后台保留旧数据显示，同时弹出登录/Cookie快速登录窗
+        updateSyncStatus("offline", "登录已过期 · 点击登录");
+        toggleModal("login-overlay", true);
+        LoginView.prefillLoginForm();
         return;
     }
 
