@@ -58,7 +58,7 @@ class ServerSafetyTests(unittest.TestCase):
         source = io.StringIO('\n'.join(json.dumps(item) for item in requests))
         output = io.StringIO()
         with patch('sys.stdin', source), patch('sys.stdout', output):
-            run_stdio(lambda: YnufeSession())
+            run_stdio(YnufeSession)
         results = [json.loads(line) for line in output.getvalue().splitlines()]
         self.assertEqual(len(results), len(requests))
         self.assertTrue(all('error' in item for item in results[:-1]))

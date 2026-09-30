@@ -14,7 +14,6 @@ jobs:
     name: Build & Release APK
     runs-on: ubuntu-latest
     env:
-      ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/campus-release.jks
       ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
       ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
@@ -51,7 +50,11 @@ jobs:
           npm audit --audit-level=moderate
 
       - name: Prepare fixed release signing key
-        run: python .github/scripts/prepare_signing.py
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/campus-release.jks
+        run: |
+          python .github/scripts/prepare_signing.py
+          echo "ANDROID_KEYSTORE_PATH=$ANDROID_KEYSTORE_PATH" >> "$GITHUB_ENV"
 
       - name: Make Gradle Wrapper Executable
         run: chmod +x android/gradlew
