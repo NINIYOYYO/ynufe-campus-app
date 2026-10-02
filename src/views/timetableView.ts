@@ -4,11 +4,13 @@ import { TimetableData, CourseItem } from '../types/timetable';
 import { NotificationManager } from '../services/notificationManager';
 import { CustomSelect } from '../components/customSelect';
 import { BottomSheet } from '../components/bottomSheet';
-import { AppConfig, StorageKeys } from '../config';
+import { StorageKeys } from '../config';
 import { CacheService } from '../services/cacheService';
 import { escapeHtml } from '../utils/escapeHtml';
 import { playEntrance } from '../utils/uiFeedback';
 import { withViewLoading, renderEmptyState } from '../utils/viewHelper';
+import { getSessionTime, formatSessionSlots } from '../utils/timetableTime';
+import { ReminderScheduler } from '../services/reminderScheduler';
 
 /**
  * 课表展示、5x5 网格矩阵与今日课程视图控制器
@@ -24,7 +26,7 @@ export class TimetableView {
     /** 课表天数展示模式：auto (自适应周末课程), '5' (锁定5天工作日), '7' (锁定7天全周) */
     public static daysMode: 'auto' | '5' | '7' = 'auto';
 
-    /** 晚间节次 (11-14节) 手动展开标志 */
+    /** 第六大节及以后的节次手动展开标志 */
     public static lateSessionsExpanded: boolean = false;
 
     /** 事件监听是否已绑定 */
@@ -77,24 +79,12 @@ export class TimetableView {
     }
 
     /**
-     * 展开或收起晚间节次（11-14节）并持久化状态。
+     * 展开或收起晚间节次并持久化状态。
      */
     public static toggleLateSessions(): void {
         this.lateSessionsExpanded = !this.lateSessionsExpanded;
         CacheService.set(StorageKeys.TIMETABLE_LATE_EXPANDED, this.lateSessionsExpanded);
-        
-        const grid = document.querySelector(".timetable-grid");
-        const txtToggleLate = document.getElementById("txt-toggle-late");
-
-        if (grid) {
-            if (this.lateSessionsExpanded) {
-                grid.classList.remove("hide-late");
-                if (txtToggleLate) txtToggleLate.textContent = "收起晚间节次 (11-14节)";
-            } else {
-                grid.classList.add("hide-late");
-                if (txtToggleLate) txtToggleLate.textContent = "展开晚间 11-14 节";
-            }
-        }
+        this.reloadTimetableGrid();
     }
 
     /**
@@ -107,16 +97,19 @@ export class TimetableView {
      * Returns:
      *     Promise<boolean>: 是否成功。
      */
-    static async reloadTimetableFromServer(semesterId: string = "", silent: boolean = false): Promise<boolean> {
+    static async reloadTimetableFromServer(semesterId: string = "", silent: boolean = false, timeModeId?: string): Promise<boolean> {
         const currentSeq = ++this.activeRequestSeq;
         const result = await withViewLoading({
             silent,
             loadingText: "正在同步课程表...",
             moduleName: "课表"
         }, async () => {
-            const endpoint = semesterId
-                ? `/jsxsd/xskb/xskb_list.do?xnxq01id=${encodeURIComponent(semesterId)}`
-                : "/jsxsd/xskb/xskb_list.do";
+            const params = new URLSearchParams();
+            if (semesterId) params.set('xnxq01id', semesterId);
+            const mode = timeModeId ?? CacheService.get<string>(StorageKeys.TIMETABLE_TIME_MODE);
+            if (mode) params.set('kbjcmsid', mode);
+            const query = params.toString();
+            const endpoint = `/jsxsd/xskb/xskb_list.do${query ? `?${query}` : ''}`;
             const html = await YnufeClient.getHtml(endpoint);
             if (currentSeq !== this.activeRequestSeq) {
                 console.warn(`[TimetableView] 丢弃已过期的慢请求响应 (seq ${currentSeq} vs latest ${this.activeRequestSeq})`);
@@ -134,6 +127,11 @@ export class TimetableView {
             }
 
             if (data) {
+                if (mode && data.timeModeId !== mode) throw new Error('教务系统未返回所选时间模式，请重新选择');
+                if (data.currentWeek) {
+                    data.week1MondayIso = ReminderScheduler.computeWeek1Monday(new Date(), data.currentWeek).toISOString();
+                }
+                if (data.timeModeId) CacheService.set(StorageKeys.TIMETABLE_TIME_MODE, data.timeModeId);
                 this.renderTimetableData(data, semesterId);
 
                 const currentSemId = semesterId === ""
@@ -166,6 +164,32 @@ export class TimetableView {
         if (!data) return;
         this.currentTimetableData = data;
         this.globalTimetable = data.courses || [];
+
+        const modeSelect = document.getElementById('select-time-mode') as HTMLSelectElement | null;
+        if (modeSelect && data.timeModes?.length) {
+            modeSelect.replaceChildren();
+            data.timeModes.forEach(mode => {
+                const opt = document.createElement('option');
+                opt.value = mode.value;
+                opt.textContent = mode.value === '0' ? '全部（请选择校区时间）' : mode.text;
+                opt.selected = mode.value === data.timeModeId;
+                modeSelect.appendChild(opt);
+            });
+        }
+        const modeHint = document.getElementById('time-mode-hint');
+        if (modeHint) modeHint.style.display = !data.timeModeId || data.timeModeId === '0' ? '' : 'none';
+        document.querySelectorAll('.grid-time-cell').forEach((cell, index) => {
+            const time = getSessionTime(data, index + 1);
+            const unavailable = data.sessionTimes !== undefined && !data.sessionTimes.some(item => item.session === index + 1);
+            cell.classList.toggle('grid-session-unavailable', unavailable);
+            document.querySelectorAll(`.grid-course-slot[data-session="${index + 1}"]`).forEach(slot => {
+                slot.classList.toggle('grid-session-unavailable', unavailable);
+            });
+            const title = cell.querySelector('span');
+            const start = cell.querySelector('small');
+            if (title) title.textContent = time ? formatSessionSlots(time) : `第${index + 1}大节`;
+            if (start) start.textContent = time?.start || '—';
+        });
 
         // 填充学期下拉列表
         if (!semesterId) {
@@ -271,7 +295,11 @@ export class TimetableView {
             }
         }
 
-        // 4. 动态计算晚间节次 (session 6 & 7 即 11-14节) 显隐与折叠
+        // 4. 晚间扩展行按所选校区的大节和小节范围显示。
+        const lateTimes = this.currentTimetableData?.sessionTimes?.filter(time => time.session >= 6)
+            ?? [6, 7].map(session => getSessionTime(null, session)!).filter(Boolean);
+        const lateSlots = lateTimes.flatMap(time => time.slots);
+        const lateRange = lateSlots.length ? `${Math.min(...lateSlots)}-${Math.max(...lateSlots)}` : '';
         const hasLateCourses = filtered.some(c => {
             const session = c.session || Math.ceil(c.slot / 2);
             return session >= 6;
@@ -285,15 +313,18 @@ export class TimetableView {
                 // 有晚间课程时自动展开并隐藏折叠按钮
                 grid.classList.remove("hide-late");
                 if (lateBar) lateBar.style.display = "none";
+            } else if (!lateTimes.length) {
+                grid.classList.add("hide-late");
+                if (lateBar) lateBar.style.display = "none";
             } else {
                 // 无晚间课程时提供轻量折叠切换栏
                 if (lateBar) lateBar.style.display = "flex";
                 if (this.lateSessionsExpanded) {
                     grid.classList.remove("hide-late");
-                    if (txtToggleLate) txtToggleLate.textContent = "收起晚间节次 (11-14节)";
+                    if (txtToggleLate) txtToggleLate.textContent = `收起晚间节次 (${lateRange}节)`;
                 } else {
                     grid.classList.add("hide-late");
-                    if (txtToggleLate) txtToggleLate.textContent = "展开晚间 11-14 节";
+                    if (txtToggleLate) txtToggleLate.textContent = `展开晚间 ${lateRange} 节`;
                 }
             }
         }
@@ -398,7 +429,7 @@ export class TimetableView {
 
         dedupedCourses.forEach(c => {
             const sessionIdx = (c.session || Math.ceil(c.slot / 2)) - 1;
-            const timeCfg = AppConfig.SESSION_TIMES[sessionIdx];
+            const timeCfg = getSessionTime(this.currentTimetableData, sessionIdx + 1);
             const card = document.createElement("div");
             card.className = "course-card-mini glass-card";
             card.innerHTML = `
@@ -428,9 +459,9 @@ export class TimetableView {
      */
     static showCourseDetail(course: CourseItem): void {
         const sessionIdx = (course.session || Math.ceil(course.slot / 2)) - 1;
-        const timeCfg = AppConfig.SESSION_TIMES[sessionIdx];
+        const timeCfg = getSessionTime(this.currentTimetableData, sessionIdx + 1);
         const sessionLabel = timeCfg
-            ? `${timeCfg.label} (${sessionIdx * 2 + 1}-${sessionIdx * 2 + 2}节)`
+            ? `${timeCfg.label} (${formatSessionSlots(timeCfg)})`
             : `第 ${course.slot} 节`;
         const dayNames = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
         const dayStr = (course.day >= 1 && course.day <= 7) ? dayNames[course.day - 1] : `星期${course.day}`;

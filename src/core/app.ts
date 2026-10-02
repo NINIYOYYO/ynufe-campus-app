@@ -1,4 +1,4 @@
-import { YnufeClient } from '../api/client';
+import { YnufeClient, SessionExpiredError } from '../api/client';
 import { YnufeSession } from '../stores/sessionStore';
 import { ProfileParser } from '../parsers/profileParser';
 import { UserProfile } from '../types/profile';
@@ -20,7 +20,6 @@ import { BottomSheet } from '../components/bottomSheet';
 import { WallpaperManager } from '../components/wallpaperManager';
 import { CustomSelect } from '../components/customSelect';
 import { ThemeCustomizer } from '../components/themeCustomizer';
-import { SessionCookieManager } from '../services/cookieManager';
 import { AppConfig, StorageKeys } from '../config';
 import { CacheService } from '../services/cacheService';
 import { encodeInp } from '../utils/crypto';
@@ -53,7 +52,6 @@ export class YnufeApp {
         this.initialized = true;
 
         YnufeSession.migratePlaintextCredentials();
-        SessionCookieManager.restoreCookies().catch(() => {});
         this.bindEvents();
         AppRouter.bindSubTabEvents();
         SettingsView.bindNotifyEvents();
@@ -220,7 +218,13 @@ export class YnufeApp {
 
             return results.some(r => r !== false);
         } catch (err) {
-            handleLoadError("首页数据", err);
+            if (err instanceof SessionExpiredError || (err as Error)?.name === "SessionExpiredError") {
+                console.warn("[YnufeApp] loadHomeBusinessData 捕获到会话失效，标记 sessionInvalid 并触发续期");
+                this.sessionInvalid = true;
+                window.dispatchEvent(new CustomEvent("ynufe-session-expired"));
+                return false;
+            }
+            handleLoadError("首页数据", err, this.isSilentSync);
             return false;
         }
     }
@@ -230,21 +234,26 @@ export class YnufeApp {
      */
     private static bindEvents(): void {
         LoginView.bindEvents(
-            () => this.loadHomeBusinessData(),
+            async () => {
+                this.startHeartbeat();
+                return this.loadHomeBusinessData();
+            },
             () => this.stopHeartbeat()
         );
 
         const syncTag = document.getElementById("sync-status-tag");
         if (syncTag) {
             syncTag.addEventListener("click", async () => {
+                if (this.sessionInvalid) {
+                    await AppLifecycleManager.recoverSession();
+                    return;
+                }
                 updateSyncStatus("syncing", "刷新中...");
                 const success = await this.loadHomeBusinessData();
                 if (success) {
                     updateSyncStatus("online", "数据已最新");
                 } else if (this.sessionInvalid) {
-                    updateSyncStatus("offline", "登录已过期 · 点击登录");
-                    toggleModal("login-overlay", true);
-                    LoginView.refreshCaptchaImg();
+                    await AppLifecycleManager.recoverSession();
                 } else {
                     updateSyncStatus("offline", "未同步 · 点击刷新");
                     showToast("同步失败，请检查网络后重试", "warn");
@@ -272,6 +281,17 @@ export class YnufeApp {
         }
 
         const selectWeek = document.getElementById("select-week");
+        const selectTimeMode = document.getElementById('select-time-mode') as HTMLSelectElement | null;
+        if (selectTimeMode) {
+            selectTimeMode.addEventListener('change', async () => {
+                const semester = (document.getElementById('select-semester') as HTMLSelectElement | null)?.value || '';
+                const ok = await TimetableView.reloadTimetableFromServer(semester, false, selectTimeMode.value);
+                if (!ok && TimetableView.currentTimetableData?.timeModeId) {
+                    selectTimeMode.value = TimetableView.currentTimetableData.timeModeId;
+                    CustomSelect.updateMenuOptions(selectTimeMode);
+                }
+            });
+        }
         if (selectWeek) {
             selectWeek.addEventListener("change", () => {
                 TimetableView.reloadTimetableGrid();

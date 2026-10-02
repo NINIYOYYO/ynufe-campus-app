@@ -89,6 +89,8 @@ public class NativeCookiePlugin extends Plugin {
             }
 
             JSObject ret = new JSObject();
+            // 保留同名、不同作用域的会话，让前端优先匹配已保存的有效 ID。
+            // 直接保留最后一个会丢掉 /jsxsd 的有效会话，误选根路径的旧会话。
             ret.put("cookie", foundCookie);
             call.resolve(ret);
         } catch (Exception e) {
@@ -108,17 +110,25 @@ public class NativeCookiePlugin extends Plugin {
             String baseUrl = resolveBaseUrl(rawUrl);
             CookieManager cookieManager = CookieManager.getInstance();
 
+            // 若写入的是 /jsxsd 路径凭据，主动清理根路径下遗留的过期 JSESSIONID，防止会话分裂
+            if (cookieStr.contains("JSESSIONID=") && cookieStr.contains("Path=/jsxsd")) {
+                cookieManager.setCookie(baseUrl + "/", "JSESSIONID=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/");
+            }
+
             Set<String> writeUrls = new LinkedHashSet<>();
             if (rawUrl != null && !rawUrl.trim().isEmpty()) {
                 writeUrls.add(rawUrl.trim());
             }
-            writeUrls.add(baseUrl);
-            writeUrls.add(baseUrl + "/");
             writeUrls.add(baseUrl + "/jsxsd");
             writeUrls.add(baseUrl + "/jsxsd/");
             writeUrls.add(baseUrl + "/jsxsd/xk/LoginToXkLdap");
             writeUrls.add(baseUrl + "/jsxsd/verifycode.servlet");
             writeUrls.add(baseUrl + "/jsxsd/framework/xsMain.jsp");
+
+            if (!cookieStr.contains("Path=/jsxsd")) {
+                writeUrls.add(baseUrl);
+                writeUrls.add(baseUrl + "/");
+            }
 
             for (String url : writeUrls) {
                 cookieManager.setCookie(url, cookieStr);
@@ -279,4 +289,3 @@ public class NativeCookiePlugin extends Plugin {
         }
     }
 }
-

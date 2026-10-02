@@ -2,6 +2,8 @@ import { registerPlugin } from '@capacitor/core';
 import { ReminderScheduler } from './reminderScheduler';
 import { TimetableData } from '../types/timetable';
 import { ExamItem } from '../types/exam';
+import { CacheService } from './cacheService';
+import { StorageKeys } from '../config/storageKeys';
 
 /* ---- @capacitor/local-notifications 的最小类型与运行时绑定 ----
  * 通过 registerPlugin 直接绑定原生插件（原生实现由 package.json 中的
@@ -248,14 +250,38 @@ export class NotificationManager {
      */
     static async rescheduleFromTimetable(data: TimetableData | null): Promise<number> {
         if (!this.isEnabled()) return 0;
-        if (!data || !Array.isArray(data.courses) || data.courses.length === 0) return 0;
+        if (!data || !Array.isArray(data.courses)) return 0;
+        if (data.timeModeId === '0') {
+            await this.cancelTimetableReminders();
+            return -2;
+        }
+        if (data.courses.length === 0) {
+            await this.cancelTimetableReminders();
+            return 0;
+        }
         if (!data.currentWeek && !data.week1MondayIso) {
             console.warn("[NotificationManager] currentWeek and week1MondayIso missing, cannot map weeks to dates.");
             return -1;
         }
 
         if (!data.week1MondayIso && data.currentWeek) {
-            data.week1MondayIso = ReminderScheduler.computeWeek1Monday(new Date(), data.currentWeek).toISOString();
+            // 旧缓存的教学周属于抓取当天，不能用今天的日期重新解释。
+            let reference = new Date();
+            let cachedData: TimetableData | undefined;
+            try {
+                const envelope = JSON.parse(localStorage.getItem(StorageKeys.TIMETABLE_CACHE) || 'null');
+                const cached = envelope?.data || envelope;
+                if (cached?.currentWeek === data.currentWeek && cached?.currentSemesterId === data.currentSemesterId) {
+                    if (!Number.isFinite(envelope?.cachedAt) || envelope.cachedAt <= 0) return -1;
+                    reference = new Date(envelope.cachedAt);
+                    cachedData = cached;
+                }
+            } catch { /* 损坏或缺失的缓存由 CacheService 处理 */ }
+            data.week1MondayIso = ReminderScheduler.computeWeek1Monday(reference, data.currentWeek).toISOString();
+            if (cachedData) {
+                cachedData.week1MondayIso = data.week1MondayIso;
+                CacheService.set(StorageKeys.TIMETABLE_CACHE, cachedData);
+            }
         }
 
         const leadMin = this.getLeadMinutes();

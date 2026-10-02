@@ -1,7 +1,7 @@
 # 云财智能教务助手 (YNUFE Mobile Assistant)
 
 [![CI](https://img.shields.io/badge/CI-Passing-brightgreen.svg)](https://github.com/NINIYOYYO/ynufe-campus-app/actions/workflows/ci.yml)
-[![Android APK](https://img.shields.io/badge/Android-APK_v1.1.0-blue.svg)](https://github.com/NINIYOYYO/ynufe-campus-app/actions/workflows/build-apk.yml)
+[![Android APK](https://img.shields.io/badge/Android-APK_v1.1.1-blue.svg)](https://github.com/NINIYOYYO/ynufe-campus-app/actions/workflows/build-apk.yml)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue.svg)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-5.1-purple.svg)](https://vitejs.dev/)
 [![Capacitor](https://img.shields.io/badge/Capacitor-6.0-blue.svg)](https://capacitorjs.com/)
@@ -171,7 +171,7 @@ uv run ynufe-campus-mcp   # 启动 MCP 服务器 (stdio)
 ## 快速上手与本地开发
 
 ### 1. 环境准备
-- **Node.js** >= 18.0.0
+- **Node.js** >= 22.12.0（CI 使用 Node 22）
 - **npm** >= 9.0.0
 - **Python** >= 3.10（可选，仅用于执行本地一键打包脚本 `build_apk.py` 与冒烟检查）
 
@@ -214,8 +214,10 @@ $env:YNUFE_REAL_NAME = "张三"
 $env:YNUFE_REAL_ID = "202300000000"
 
 npm run capture:fixtures
-npm run test:parsers
 ```
+两个脱敏参数都必须提供。结果保存在 Git 忽略目录 `.agents/captured-fixtures`，不会覆盖仓库中的回归样本。人工检查并移除其他个人信息后，选择页面复制到 `tests/fixtures`，再执行 `npm run test:parsers`。
+
+课表页可以选择南院、安宁、北院、呈贡或全部时间模式，选择在本机保存。今日课程、课程详情和提醒使用教务返回的大节时间及小节划分；没有时间配置的模式不会凭空生成提醒。空教室查询按查询校区使用对应时间模式。
 
 ### 4. 静态类型检查与代码风格
 ```cmd
@@ -235,18 +237,22 @@ uv run ruff check .
 ### 方式一（推荐）：GitHub Actions 云端免安装出包（无需本地 Android 环境）
 如果您的电脑没有安装 Android Studio 或 Android SDK：
 1. Fork 本仓库并进入您 GitHub 仓库的 **Actions** 标签页；
-2. 选择 **Build Android APK** 工作流，点击 **Run workflow**；
-3. 云端将在 1~2 分钟内完成编译，并在构件区生成打包好的 `云财学子.apk` 供直接下载。
+2. 在仓库 Actions Secrets 配置 `ANDROID_KEYSTORE_BASE64`（固定发布密钥文件的 Base64）、`ANDROID_KEYSTORE_PASSWORD`、`ANDROID_KEY_ALIAS`、`ANDROID_KEY_PASSWORD`；后续发布必须保留同一密钥；
+3. 选择 **Build Android APK** 工作流，点击 **Run workflow**。工作流运行测试和依赖检查，并生成签名 Release APK；缺少签名配置时停止发布。
 
 ### 方式二：本地一键极速打包 (Local CLI)
-如果本地已配置 Java 17 / Android 环境：
+如果本地已配置 Java 21 / Android SDK 36 环境（APK 支持 Android 7.0 及以上）：
 ```cmd
-# 构建离线独立正式版 APK（产物为根目录下的「云财学子.apk」）
+# 构建离线调试版 APK（使用本机 Debug 签名）
 python build_apk.py
 
 # 构建局域网热重载调试版 APK (Live Reload)
 python build_apk.py --dev
+
+# 构建正式签名 APK（产物为「云财学子_Release.apk」）
+python build_apk.py --release
 ```
+正式构建通过上述四个 `ANDROID_*` 环境变量（文件路径为 `ANDROID_KEYSTORE_PATH`），或 Git 忽略的 `android/keystore.properties` 读取签名配置。不要把密钥或密码提交到 Git。历史 Debug APK 与正式发布签名不同，第一次迁移需重新安装；之后同一发布签名可覆盖升级。
 
 ### 3. 真机 USB 调试部署
 开启手机“开发者选项 -> USB 调试”后通过 ADB 直连：

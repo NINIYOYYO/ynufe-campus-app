@@ -16,7 +16,7 @@ import { AppConfig } from '../config';
  * - 将获取到的 JSESSIONID 强行持久化到 localStorage。
  * - 启动与发请求前，手动注入 Cookie 头 + 给 Native CookieManager 重新写入带有
  *   2038 年远期 Expires 的 JSESSIONID（强制将 is_persistent 转为 1），阻止 Android 启动清理。
- * - 写入和恢复 Cookie 后立即调用 flushCookies 刷盘写入磁盘 SQLite。
+ * - NativeCookie.setCookie 由原生桥接调用 CookieManager.flush 持久化。
  */
 export class SessionCookieManager {
     private static KEY_JSESSIONID = "ynufe_saved_jsessionid";
@@ -47,11 +47,12 @@ export class SessionCookieManager {
      *
      * Args:
      *     force (boolean): 是否强制覆盖已有凭据（在刷新验证码或登录成功时传入 true）。
+     *     preferSaved (boolean): 日常捕获保留已验证的会话；认证轮换时设为 false，采用路径优先的首个候选。
      *
      * Returns:
      *     Promise<string>: 捕获到的有效 JSESSIONID 字符串；若未能获取则返回空串。
      */
-    static async captureAndPersist(force: boolean = false): Promise<string> {
+    static async captureAndPersist(force: boolean = false, preferSaved: boolean = true): Promise<string> {
         let jsessionid = "";
         let jsxsd = "";
         const cap = window.Capacitor;
@@ -71,10 +72,18 @@ export class SessionCookieManager {
                     res = await cap.Plugins.NativeCookie.getCookie({ url: targetHost });
                 }
                 if (res && res.cookie) {
-                    const matchJsession = res.cookie.match(/JSESSIONID=([^;]+)/i);
                     const matchJsxsd = res.cookie.match(/jsxsd=([^;]+)/i);
-                    if (matchJsession && matchJsession[1]) {
-                        jsessionid = matchJsession[1].trim();
+                    const jsessionMatches = [...res.cookie.matchAll(/JSESSIONID=([^;]+)/gi)];
+                    if (jsessionMatches.length === 1) {
+                        jsessionid = jsessionMatches[0][1].trim();
+                    } else if (jsessionMatches.length > 1) {
+                        const saved = this.getSavedJsessionId();
+                        const found = preferSaved && jsessionMatches.find(m => m[1].trim() === saved);
+                        if (found) {
+                            jsessionid = saved;
+                        } else {
+                            jsessionid = jsessionMatches[0][1].trim();
+                        }
                     }
                     if (matchJsxsd && matchJsxsd[1]) {
                         jsxsd = matchJsxsd[1].trim();
@@ -88,9 +97,17 @@ export class SessionCookieManager {
         // 2. 尝试从 document.cookie 中解析
         if (typeof document !== "undefined" && document.cookie) {
             if (!jsessionid) {
-                const matchJsession = document.cookie.match(/JSESSIONID=([^;]+)/i);
-                if (matchJsession && matchJsession[1]) {
-                    jsessionid = matchJsession[1].trim();
+                const docMatches = [...document.cookie.matchAll(/JSESSIONID=([^;]+)/gi)];
+                if (docMatches.length === 1) {
+                    jsessionid = docMatches[0][1].trim();
+                } else if (docMatches.length > 1) {
+                    const saved = this.getSavedJsessionId();
+                    const found = preferSaved && docMatches.find(m => m[1].trim() === saved);
+                    if (found) {
+                        jsessionid = saved;
+                    } else {
+                        jsessionid = docMatches[0][1].trim();
+                    }
                 }
             }
             if (!jsxsd) {
@@ -147,7 +164,6 @@ export class SessionCookieManager {
         }
 
         const farFuture = "Fri, 31 Dec 2038 23:59:59 GMT";
-        const isoFarFuture = "2038-01-01T00:00:00.000Z";
         const targetHost = AppConfig.TARGET_HOST;
         const targetJsxsdUrl = `${targetHost}/jsxsd`;
         const localOrigin = typeof window !== "undefined" ? window.location.origin : "";
@@ -203,14 +219,14 @@ export class SessionCookieManager {
                     url: targetHost,
                     key: "JSESSIONID",
                     value: jsessionid,
-                    expires: isoFarFuture,
+                    expires: farFuture,
                     path: "/"
                 }),
                 cap.Plugins.CapacitorCookies.setCookie({
                     url: targetJsxsdUrl,
                     key: "JSESSIONID",
                     value: jsessionid,
-                    expires: isoFarFuture,
+                    expires: farFuture,
                     path: "/jsxsd"
                 })
             ];
@@ -221,23 +237,20 @@ export class SessionCookieManager {
                         url: targetHost,
                         key: "jsxsd",
                         value: jsxsd,
-                        expires: isoFarFuture,
+                        expires: farFuture,
                         path: "/"
                     }),
                     cap.Plugins.CapacitorCookies.setCookie({
                         url: targetJsxsdUrl,
                         key: "jsxsd",
                         value: jsxsd,
-                        expires: isoFarFuture,
+                        expires: farFuture,
                         path: "/jsxsd"
                     })
                 );
             }
 
             Promise.all(setPromises).then(() => {
-                if (cap?.Plugins?.CapacitorCookies?.flushCookies) {
-                    cap.Plugins.CapacitorCookies.flushCookies().catch(() => {});
-                }
             }).catch(() => {});
         }
     }
@@ -256,7 +269,6 @@ export class SessionCookieManager {
         const jsxsd = this.getSavedJsxsd();
 
         const farFuture = "Fri, 31 Dec 2038 23:59:59 GMT";
-        const isoFarFuture = "2038-01-01T00:00:00.000Z";
         const targetHost = AppConfig.TARGET_HOST;
         const targetJsxsdUrl = `${targetHost}/jsxsd`;
         const localOrigin = typeof window !== "undefined" ? window.location.origin : "";
@@ -316,14 +328,14 @@ export class SessionCookieManager {
                     url: targetHost,
                     key: "JSESSIONID",
                     value: jsessionid,
-                    expires: isoFarFuture,
+                    expires: farFuture,
                     path: "/"
                 });
                 await cap.Plugins.CapacitorCookies.setCookie({
                     url: targetJsxsdUrl,
                     key: "JSESSIONID",
                     value: jsessionid,
-                    expires: isoFarFuture,
+                    expires: farFuture,
                     path: "/jsxsd"
                 });
                 if (jsxsd) {
@@ -331,14 +343,14 @@ export class SessionCookieManager {
                         url: targetHost,
                         key: "jsxsd",
                         value: jsxsd,
-                        expires: isoFarFuture,
+                        expires: farFuture,
                         path: "/"
                     });
                     await cap.Plugins.CapacitorCookies.setCookie({
                         url: targetJsxsdUrl,
                         key: "jsxsd",
                         value: jsxsd,
-                        expires: isoFarFuture,
+                        expires: farFuture,
                         path: "/jsxsd"
                     });
                 }
@@ -347,19 +359,16 @@ export class SessionCookieManager {
                         url: localOrigin,
                         key: "JSESSIONID",
                         value: jsessionid,
-                        expires: isoFarFuture,
+                        expires: farFuture,
                         path: "/"
                     });
                     await cap.Plugins.CapacitorCookies.setCookie({
                         url: localJsxsdUrl,
                         key: "JSESSIONID",
                         value: jsessionid,
-                        expires: isoFarFuture,
+                        expires: farFuture,
                         path: "/jsxsd"
                     });
-                }
-                if (cap?.Plugins?.CapacitorCookies?.flushCookies) {
-                    await cap.Plugins.CapacitorCookies.flushCookies();
                 }
             } catch (e) {
                 console.warn("[CookieManager] CapacitorCookies restore error:", e);
@@ -389,6 +398,46 @@ export class SessionCookieManager {
             return { "Cookie": cookies.join("; ") };
         }
         return {};
+    }
+
+    /**
+     * 从原始 Cookie 字符串（支持包含多个 JSESSIONID 与 jsxsd 的复合字符串）中解析出有效凭据并直接导入持久化。
+     *
+     * Args:
+     *     rawCookie (string): 原始 Cookie 文本。
+     *
+     * Returns:
+     *     Promise<boolean>: 是否成功提取并持久化了有效的 JSESSIONID。
+     */
+    static async importCookieString(rawCookie: string): Promise<boolean> {
+        if (!rawCookie || !rawCookie.includes("JSESSIONID=")) {
+            return false;
+        }
+        const matches = [...rawCookie.matchAll(/JSESSIONID=([^;]+)/gi)];
+        if (matches.length === 0) {
+            return false;
+        }
+        let chosenJsession = "";
+        for (const m of matches) {
+            const val = m[1].trim();
+            if (/^[0-9A-Fa-f]{32}$/.test(val)) {
+                chosenJsession = val;
+                break;
+            }
+        }
+        if (!chosenJsession) {
+            chosenJsession = matches[0][1].trim();
+        }
+
+        let jsxsdVal: string | undefined = undefined;
+        const matchJsxsd = rawCookie.match(/jsxsd=([^;]+)/i);
+        if (matchJsxsd && matchJsxsd[1]) {
+            jsxsdVal = matchJsxsd[1].trim();
+        }
+
+        this.saveJsessionId(chosenJsession, jsxsdVal);
+        await this.restoreCookies();
+        return true;
     }
 
     /**
@@ -431,4 +480,3 @@ export class SessionCookieManager {
         }
     }
 }
-

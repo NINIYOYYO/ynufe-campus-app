@@ -1,4 +1,4 @@
-import { AppConfig } from '../config';
+import { getSessionTime } from '../utils/timetableTime';
 import { CourseItem, TimetableData } from '../types/timetable';
 import { ExamItem } from '../types/exam';
 
@@ -82,7 +82,7 @@ export class ReminderScheduler {
         for (const c of data.courses) {
             if (!Array.isArray(c.activeWeeks) || c.activeWeeks.length === 0) continue;
             const session = c.session || Math.ceil(c.slot / 2);
-            const timeCfg = AppConfig.SESSION_TIMES[session - 1];
+            const timeCfg = getSessionTime(data, session);
             if (!timeCfg) continue;
             const [hh, mm] = timeCfg.start.split(":").map(Number);
 

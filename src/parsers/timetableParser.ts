@@ -1,4 +1,4 @@
-import { CourseItem, SemesterOption, TimetableData, WeekOption } from '../types/timetable';
+import { CourseItem, SemesterOption, TimetableData, WeekOption, TimeModeOption, TimetableSessionTime } from '../types/timetable';
 import { hasEmptyMarker, ParseError } from '../utils/tableUtils';
 
 /**
@@ -213,10 +213,45 @@ export class TimetableParser {
             });
         }
 
+        const modeSelect = doc.querySelector("select#kbjcmsid, select[name='kbjcmsid']");
+        const timeModes: TimeModeOption[] = Array.from(modeSelect?.querySelectorAll('option') || []).map(opt => ({
+            value: opt.getAttribute('value') || '0',
+            text: opt.textContent?.trim() || '全部',
+            selected: opt.hasAttribute('selected') || (opt as HTMLOptionElement).selected,
+        }));
+        const timeModeId = timeModes.find(mode => mode.selected)?.value || timeModes[0]?.value;
+
+        // 大节可能有三小节或空节，必须读取学校的行头，不能用 slot / 2 推断。
+        const sessionTimes: TimetableSessionTime[] = [];
+        const rowSessions = new Map<Element, number>();
+        const numerals: Record<string, number> = { 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9, 十: 10 };
+
         // 3. 提取详细课程表数据 (强智系统的 table#kbtable 与 div.kbcontent)
         const courses: CourseItem[] = [];
         const kbTable = doc.querySelector("table#kbtable") || doc.querySelector("table.kbtable");
         if (kbTable) {
+            let currentSession: number | undefined;
+            kbTable.querySelectorAll('tr').forEach(row => {
+                const header = row.firstElementChild?.textContent || '';
+                const section = header.match(/第([一二三四五六七八九十]|\d+)大节/);
+                const range = header.match(/(\d{1,2}:\d{2})\s*[-~～—至]\s*(\d{1,2}:\d{2})/);
+                if (section) currentSession = numerals[section[1]] || Number(section[1]);
+                else if (header.includes('空节')) currentSession = undefined;
+                if (currentSession && section && range) {
+                    if (!sessionTimes.some(time => time.session === currentSession)) {
+                        sessionTimes.push({ session: currentSession, start: range[1], end: range[2],
+                            label: `${range[1]}-${range[2]}`, slots: [] });
+                    }
+                }
+                if (currentSession) {
+                    rowSessions.set(row, currentSession);
+                    const time = sessionTimes.find(time => time.session === currentSession);
+                    row.querySelectorAll('.kbcontent').forEach(div => {
+                        const slot = Number(div.id.split('_')[0]);
+                        if (time && slot > 0 && !time.slots.includes(slot)) time.slots.push(slot);
+                    });
+                }
+            });
             const divs = kbTable.querySelectorAll("div.kbcontent");
             divs.forEach(div => {
                 const divId = div.id || "";
@@ -257,7 +292,7 @@ export class TimetableParser {
                             code,
                             day: dayOfWeek,
                             slot: slotIndex,
-                            session: Math.ceil(slotIndex / 2),
+                            session: rowSessions.get(div.closest('tr')!) || Math.ceil(slotIndex / 2),
                             isAdjusted,
                             activeWeeks
                         });
@@ -275,7 +310,10 @@ export class TimetableParser {
             semesters,
             weeks,
             currentSemesterId: currentSemester,
-            currentWeek
+            currentWeek,
+            timeModes,
+            timeModeId,
+            sessionTimes: sessionTimes.length || timeModeId ? sessionTimes : undefined,
         };
     }
 }

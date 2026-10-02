@@ -44,6 +44,7 @@ export const StorageKeys = {
     // 5. 课表显示与布局偏好
     TIMETABLE_DAYS_MODE: "ynufe_timetable_days_mode",
     TIMETABLE_LATE_EXPANDED: "ynufe_timetable_late_expanded",
+    TIMETABLE_TIME_MODE: "ynufe_timetable_time_mode",
 } as const;
 
 export type StorageKey = typeof StorageKeys[keyof typeof StorageKeys];

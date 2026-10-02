@@ -20,6 +20,18 @@ CONFIG_PATH = os.path.join(PROJECT_DIR, "capacitor.config.json")
 ANDROID_DIR = os.path.join(PROJECT_DIR, "android")
 
 
+def validate_release_signing() -> None:
+    """Refuse to publish an unsigned APK or a newly generated debug signature."""
+    names = ("ANDROID_KEYSTORE_PATH", "ANDROID_KEYSTORE_PASSWORD", "ANDROID_KEY_ALIAS", "ANDROID_KEY_PASSWORD")
+    if all(os.environ.get(name) for name in names):
+        if not os.path.isfile(os.environ["ANDROID_KEYSTORE_PATH"]):
+            raise FileNotFoundError("ANDROID_KEYSTORE_PATH 指定的签名文件不存在")
+        return
+    if os.path.isfile(os.path.join(ANDROID_DIR, "keystore.properties")):
+        return  # Gradle validates the property values and keystore.
+    raise RuntimeError("缺少固定 Release 签名配置：请设置 ANDROID_KEYSTORE_PATH、ANDROID_KEYSTORE_PASSWORD、ANDROID_KEY_ALIAS、ANDROID_KEY_PASSWORD，或 android/keystore.properties")
+
+
 def get_local_ip() -> str:
     """自动获取本机在局域网中的 IPv4 地址。
 
@@ -98,7 +110,7 @@ def main() -> None:
     """
     parser = argparse.ArgumentParser(description="云财智能教务助手 Android APK 一键构建工具")
     parser.add_argument("--dev", action="store_true", help="构建开发热重载版 APK (连接局域网 Vite 服务)")
-    parser.add_argument("--release", action="store_true", help="构建 Release 签名优化版 APK")
+    parser.add_argument("--release", action="store_true", help="构建使用固定密钥签名的 Release APK，缺少签名配置时失败")
     parser.add_argument("--clean", action="store_true", help="在构建前执行 Gradle clean 清理历史缓存")
     args = parser.parse_args()
 
@@ -114,7 +126,7 @@ def main() -> None:
     elif is_release:
         mode_name = "正式发布版 (Release)"
         gradle_task = "assembleRelease"
-        apk_subpath = os.path.join("app", "build", "outputs", "apk", "release", "app-release-unsigned.apk")
+        apk_subpath = os.path.join("app", "build", "outputs", "apk", "release", "app-release.apk")
         output_name = "云财学子_Release.apk"
     else:
         mode_name = "正式离线独立版 (Debug签名)"
@@ -127,6 +139,8 @@ def main() -> None:
     gradle_bin = "gradlew.bat" if sys.platform.startswith("win") else "./gradlew"
 
     try:
+        if is_release:
+            validate_release_signing()
         print("\n0. 更新 Capacitor 配置...")
         update_capacitor_config(is_dev)
 
@@ -146,7 +160,6 @@ def main() -> None:
         print("\n4. 复制并归档 APK 产物...")
         if is_release:
             candidates = [
-                os.path.join(ANDROID_DIR, "app", "build", "outputs", "apk", "release", "app-release-unsigned.apk"),
                 os.path.join(ANDROID_DIR, "app", "build", "outputs", "apk", "release", "app-release.apk"),
             ]
             src_apk = next((p for p in candidates if os.path.exists(p)), None)
@@ -154,10 +167,7 @@ def main() -> None:
                 raise FileNotFoundError(
                     f"未找到生成的 Release APK 产物 (已尝试: {candidates})。请检查 Gradle 编译日志或配置 release 签名。"
                 )
-            if "unsigned" in os.path.basename(src_apk):
-                print(f"[提示] Release APK 未签名 ({os.path.basename(src_apk)})。安装真机前请使用 apksigner 签名，或直接打包默认版。")
-            else:
-                print(f"[提示] 成功定位已签名的 Release APK: {os.path.basename(src_apk)}")
+            print(f"[提示] 成功定位已签名的 Release APK: {os.path.basename(src_apk)}")
         else:
             src_apk = os.path.join(ANDROID_DIR, apk_subpath)
             if not os.path.exists(src_apk):
@@ -181,4 +191,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
