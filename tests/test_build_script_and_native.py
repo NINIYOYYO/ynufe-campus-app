@@ -171,7 +171,7 @@ class TestBuildApkScript(unittest.TestCase):
             gradle_content = f.read()
 
         self.assertIn(f'versionName "{app_version}"', gradle_content)
-        self.assertIn('versionCode 111', gradle_content)
+        self.assertIn('versionCode 112', gradle_content)
 
     def test_cli_help_flag(self):
         """验证 --help 与 -h 返回退出码 0 并输出完整帮助说明。"""
