@@ -2,9 +2,9 @@ import './styles/app.css';
 import { YnufeApp } from './core/app';
 import { YnufeSession } from './stores/sessionStore';
 import { SessionCookieManager } from './services/cookieManager';
-import { AutoLogin } from './services/autoLogin';
+import { AppLifecycleManager } from './core/lifecycle';
 import { LoginView } from './views/loginView';
-import { toggleModal, updateSyncStatus, showLoading, showToast } from './utils/uiFeedback';
+import { toggleModal, updateSyncStatus, showLoading } from './utils/uiFeedback';
 
 /**
  * 兼容类别名导出
@@ -14,9 +14,10 @@ export const YnufeUI = YnufeApp;
 /**
  * 应用主入口引导流程
  */
-document.addEventListener("DOMContentLoaded", async () => {
+export async function bootstrapApp(): Promise<void> {
+    // 在验证已保存的会话前不展示登录表单，避免重启时闪出登录页。
+    toggleModal("login-overlay", false);
     YnufeApp.init();
-    await SessionCookieManager.restoreCookies();
 
     const savedUser = YnufeSession.getUsername();
     const savedPass = YnufeSession.getPassword();
@@ -29,55 +30,25 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const hasCache = YnufeApp.loadCachedData();
     const hasSessionCookie = !!SessionCookieManager.getSavedJsessionId();
-
-    if (hasCache && hasSessionCookie) {
-        // 有缓存且有已保存的会话凭据：先秒开显示旧数据，后台静默同步
-        toggleModal("login-overlay", false);
-        setTimeout(async () => {
-            YnufeApp.isSilentSync = true;
-            updateSyncStatus("syncing", "同步中...");
-            const success = await YnufeApp.loadHomeBusinessData();
-            if (success) {
-                updateSyncStatus("online", "数据已最新");
-            } else if (YnufeApp.isSessionInvalid) {
-                updateSyncStatus("offline", "登录已过期 · 点击登录");
-                toggleModal("login-overlay", true);
-                LoginView.prefillLoginForm();
-            } else {
-                updateSyncStatus("offline", "未同步 · 点击刷新");
-            }
-            YnufeApp.isSilentSync = false;
-        }, 150);
-        return;
-    }
-
-    if (hasCache && !hasSessionCookie) {
-        // 有缓存但本地尚无 Session Cookie：在后台保留旧数据显示，同时弹出登录/Cookie快速登录窗
-        updateSyncStatus("offline", "登录已过期 · 点击登录");
+    if (!hasSessionCookie && !(savedUser && savedPass)) {
+        updateSyncStatus("offline", hasCache ? "登录已过期 · 点击登录" : "请先登录");
         toggleModal("login-overlay", true);
         LoginView.prefillLoginForm();
         return;
     }
 
-    // 无缓存但有保存的凭据：先尝试全自动静默登录（持久化登录）
-    if (savedUser && savedPass) {
-        toggleModal("login-overlay", false);
-        showLoading(true, "正在自动登录...");
-        const ok = await AutoLogin.attempt();
-        if (ok) {
-            YnufeApp.startHeartbeat();
-            const success = await YnufeApp.loadHomeBusinessData();
-            showLoading(false);
-            if (success) {
-                updateSyncStatus("online", "数据已最新");
-                showToast("已自动登录", "success");
-                return;
-            }
-        }
+    // 缓存只决定是否显示加载遮罩；所有启动路径都等待同一次自动恢复。
+    // 网络层会在验证请求前恢复 Cookie，过期时再用保存的密码续期。
+    YnufeApp.isSilentSync = hasCache;
+    if (!hasCache) showLoading(true, "正在自动登录...");
+    try {
+        await AppLifecycleManager.recoverSession();
+    } finally {
         showLoading(false);
+        YnufeApp.isSilentSync = false;
     }
+}
 
-    // 自动登录不可用/失败：弹出登录框并自动识别填入验证码
-    toggleModal("login-overlay", true);
-    LoginView.prefillLoginForm();
+document.addEventListener("DOMContentLoaded", () => {
+    void bootstrapApp();
 });

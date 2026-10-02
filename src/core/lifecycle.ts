@@ -15,7 +15,7 @@ import { LoginView } from '../views/loginView';
  * 3. 监听 ynufe-theme-preset-applied 主题变更事件并分发至壁纸自适应调色引擎。
  */
 export class AppLifecycleManager {
-    private static recovering = false;
+    private static recoveryPromise: Promise<boolean> | null = null;
     private static lastRecoverAt = 0;
     private static onRefreshNeededCallback: (() => Promise<boolean>) | null = null;
     private static initialized = false;
@@ -47,8 +47,13 @@ export class AppLifecycleManager {
             if (document.hidden) {
                 HeartbeatService.stop();
                 SessionCookieManager.captureAndPersist().catch(() => {});
-            } else if (YnufeSession.getHasSession()) {
-                HeartbeatService.start();
+            } else if (YnufeSession.getHasSession() || (YnufeSession.getUsername() && YnufeSession.getPassword())) {
+                if (YnufeSession.getHasSession() && !this.recoveryPromise && !AutoLogin.isRunning && !LoginView.isAuthenticating) {
+                    // 即使这次会话探测被 30 秒限流，也要恢复后台暂停的心跳。
+                    HeartbeatService.start();
+                }
+                // 回到前台立即验证/恢复，而不是等下一次心跳才发现会话已过期。
+                this.handleSessionExpired();
             }
         });
 
@@ -68,6 +73,8 @@ export class AppLifecycleManager {
      */
     static resetForTesting(): void {
         this.initialized = false;
+        this.recoveryPromise = null;
+        this.lastRecoverAt = 0;
     }
 
     /**
@@ -122,29 +129,55 @@ export class AppLifecycleManager {
      * 处理会话过期事件（带 30s 防抖锁与自动续期尝试）。
      */
     static handleSessionExpired(): void {
-        if (this.recovering) return;
+        // 认证探测本身也可能返回登录页，不能据此启动另一轮认证。
+        if (this.recoveryPromise || AutoLogin.isRunning || LoginView.isAuthenticating) return;
         const now = Date.now();
-        if (now - this.lastRecoverAt < 30000) return;
-        this.recovering = true;
-        this.lastRecoverAt = now;
+        if (this.lastRecoverAt && now - this.lastRecoverAt < 30000) return;
+        void this.recoverSession();
+    }
+
+    /** 启动、前台恢复与显式重试共用同一个恢复任务，成功后只同步一次数据。 */
+    static recoverSession(): Promise<boolean> {
+        if (this.recoveryPromise) return this.recoveryPromise;
+        this.lastRecoverAt = Date.now();
         HeartbeatService.stop();
         updateSyncStatus("syncing", "会话续期中...");
-
-        AutoLogin.attempt().then(async (ok) => {
-            this.recovering = false;
-            if (ok) {
-                HeartbeatService.start();
-                showToast("登录已自动续期", "success");
-                if (this.onRefreshNeededCallback) {
-                    const success = await this.onRefreshNeededCallback();
-                    updateSyncStatus(success ? "online" : "offline", success ? "数据已最新" : "未同步 · 点击刷新");
-                }
-            } else {
-                updateSyncStatus("offline", "登录已过期");
-                showToast("自动续期未成功，请输入验证码完成登录", "warn");
-                LoginView.prefillLoginForm();
-                toggleModal("login-overlay", true);
-            }
+        toggleModal("login-overlay", false);
+        this.recoveryPromise = Promise.resolve().then(() => this.performRecovery()).finally(() => {
+            this.recoveryPromise = null;
         });
+        return this.recoveryPromise;
+    }
+
+    private static async performRecovery(): Promise<boolean> {
+        let authenticated = false;
+        try {
+            // 上轮失败后的登录表单可能仍在预填验证码，先结束它再轮换会话。
+            await LoginView.waitForPendingCaptcha();
+            authenticated = await AutoLogin.attempt();
+        } catch (err) {
+            console.warn("[AppLifecycle] Automatic login failed:", err);
+        }
+        if (!authenticated) {
+            YnufeSession.setHasSession(false);
+            updateSyncStatus("offline", "自动登录未成功 · 点击重试");
+            showToast("自动登录未成功，请检查网络或手动登录", "warn");
+            LoginView.prefillLoginForm();
+            toggleModal("login-overlay", true);
+            return false;
+        }
+
+        toggleModal("login-overlay", false);
+        HeartbeatService.start();
+        let refreshed = true;
+        try {
+            if (this.onRefreshNeededCallback) refreshed = await this.onRefreshNeededCallback();
+        } catch (err) {
+            console.warn("[AppLifecycle] Session restored but data refresh failed:", err);
+            refreshed = false;
+        }
+        // 数据同步失败不等于登录失败，保留缓存与已经恢复的会话。
+        updateSyncStatus(refreshed ? "online" : "offline", refreshed ? "数据已最新" : "未同步 · 点击刷新");
+        return true;
     }
 }

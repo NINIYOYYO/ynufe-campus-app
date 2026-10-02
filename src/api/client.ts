@@ -60,7 +60,7 @@ export class YnufeClient {
         respOrHeaders: Response | Record<string, string>,
         endpoint: string = "",
         responseText: string = ""
-    ): void {
+    ): boolean {
         try {
             // 1. 过滤 404、500 及错误页响应
             if (
@@ -72,13 +72,13 @@ export class YnufeClient {
                 responseText.includes("HTTP Status 404") ||
                 responseText.includes("HTTP Status 500")
             ) {
-                return;
+                return false;
             }
 
             let setCookie = "";
             if (respOrHeaders instanceof Response) {
                 if (!respOrHeaders.ok && respOrHeaders.status >= 400) {
-                    return;
+                    return false;
                 }
                 setCookie = respOrHeaders.headers.get("Set-Cookie") || respOrHeaders.headers.get("set-cookie") || "";
                 if (!setCookie && typeof respOrHeaders.headers.forEach === "function") {
@@ -93,8 +93,8 @@ export class YnufeClient {
             }
 
             if (setCookie) {
-                const jsessionMatch = setCookie.match(/JSESSIONID=([^;]+)/i);
-                const jsxsdMatch = setCookie.match(/jsxsd=([^;]+)/i);
+                const jsessionMatch = setCookie.match(/(?:^|[,;]\s*)JSESSIONID=([^;,\s]+)/i);
+                const jsxsdMatch = setCookie.match(/(?:^|[,;]\s*)jsxsd=([^;,\s]+)/i);
                 if (jsessionMatch && jsessionMatch[1]) {
                     const newJsession = jsessionMatch[1].trim();
                     const currentSaved = SessionCookieManager.getSavedJsessionId();
@@ -105,11 +105,21 @@ export class YnufeClient {
                             newJsession,
                             jsxsdMatch ? jsxsdMatch[1].trim() : undefined
                         );
+                        return true;
                     }
                 }
             }
         } catch (e) {
             console.warn("[YnufeClient] Extract Set-Cookie error:", e);
+        }
+        return false;
+    }
+
+    /** 认证响应头优先；没有可见响应头时，仅接纳请求期间真正轮换的 Jar 会话。 */
+    private static async captureAuthResponseCookie(hasResponseSession: boolean, previousJarSession: string): Promise<void> {
+        const jarSession = await SessionCookieManager.captureAndPersist(false, false);
+        if (!hasResponseSession && jarSession && jarSession !== previousJarSession) {
+            await SessionCookieManager.captureAndPersist(true, false);
         }
     }
 
@@ -274,6 +284,8 @@ export class YnufeClient {
         const url = `${this.BASE_URL}${endpoint}`;
         await SessionCookieManager.restoreCookies();
         const cookieHeader = SessionCookieManager.getCookieHeader();
+        const isLogin = endpoint.includes("LoginToXk");
+        const previousJarSession = isLogin ? await SessionCookieManager.captureAndPersist(false, false) : "";
 
         const params = new URLSearchParams();
         for (const key in formDataObj) {
@@ -297,10 +309,15 @@ export class YnufeClient {
                     data: params.toString()
                 });
                 const text = typeof res.data === "string" ? res.data : JSON.stringify(res.data);
-                if (res.headers) {
-                    this.extractAndSaveCookieFromHeaders(res.headers, endpoint, text);
+                const hasResponseSession = res.headers
+                    ? this.extractAndSaveCookieFromHeaders(res.headers, endpoint, text)
+                    : false;
+                // 登录响应中的会话最可信；自动跟随重定向时未透出的会话才从路径优先的 Jar 捕获。
+                if (isLogin && res.status >= 200 && res.status < 400) {
+                    await this.captureAuthResponseCookie(hasResponseSession, previousJarSession);
+                } else {
+                    await SessionCookieManager.captureAndPersist();
                 }
-                await SessionCookieManager.captureAndPersist();
 
                 // 登录成功时处理 302 重定向并升级明文 http 为 https 相对路径请求
                 const locHeader = res.headers?.Location || res.headers?.location;
@@ -336,8 +353,12 @@ export class YnufeClient {
                 body: params.toString()
             });
             const text = await resp.text();
-            this.extractAndSaveCookieFromHeaders(resp, endpoint, text);
-            await SessionCookieManager.captureAndPersist();
+            const hasResponseSession = this.extractAndSaveCookieFromHeaders(resp, endpoint, text);
+            if (isLogin && resp.ok) {
+                await this.captureAuthResponseCookie(hasResponseSession, previousJarSession);
+            } else {
+                await SessionCookieManager.captureAndPersist();
+            }
             this.checkSessionTimeout(text, endpoint);
             return text;
         } catch (err) {
@@ -437,6 +458,7 @@ export class YnufeClient {
         const url = `${this.BASE_URL}${endpoint}`;
         await SessionCookieManager.restoreCookies();
         const cookieHeader = SessionCookieManager.getCookieHeader();
+        const previousJarSession = await SessionCookieManager.captureAndPersist(false, false);
 
         const cap = window.Capacitor;
         const isNative = typeof cap?.isNativePlatform === "function" && cap.isNativePlatform() === true;
@@ -455,21 +477,25 @@ export class YnufeClient {
                     responseType: "blob"
                 });
 
-                if (res.headers) {
-                    this.extractAndSaveCookieFromHeaders(res.headers);
-                }
-
                 const contentType = res.headers?.["Content-Type"] || res.headers?.["content-type"] || "image/jpeg";
+                if (res.status < 200 || res.status >= 300 || !contentType.toLowerCase().startsWith("image/")) {
+                    throw new Error("Captcha response is not a successful image response");
+                }
+                const hasResponseSession = res.headers
+                    ? this.extractAndSaveCookieFromHeaders(res.headers, endpoint)
+                    : false;
                 if (typeof res.data === "string") {
                     const byteChars = atob(res.data);
                     const byteNumbers = new Array(byteChars.length);
                     for (let i = 0; i < byteChars.length; i++) {
                         byteNumbers[i] = byteChars.charCodeAt(i);
                     }
-                    await SessionCookieManager.captureAndPersist(true);
+                    if (byteNumbers.length === 0) throw new Error("Captcha response is empty");
+                    await this.captureAuthResponseCookie(hasResponseSession, previousJarSession);
                     return new Blob([new Uint8Array(byteNumbers)], { type: contentType });
                 } else if (res.data instanceof Blob) {
-                    await SessionCookieManager.captureAndPersist(true);
+                    if (res.data.size === 0) throw new Error("Captcha response is empty");
+                    await this.captureAuthResponseCookie(hasResponseSession, previousJarSession);
                     return res.data;
                 }
             } catch (err) {
@@ -490,9 +516,15 @@ export class YnufeClient {
             if (!resp.ok) {
                 throw new Error(`Captcha request failed with status ${resp.status}`);
             }
-            this.extractAndSaveCookieFromHeaders(resp);
-            await SessionCookieManager.captureAndPersist(true);
-            return await resp.blob();
+            const contentType = resp.headers.get("Content-Type") || "";
+            if (contentType && !contentType.toLowerCase().startsWith("image/")) {
+                throw new Error("Captcha response is not an image");
+            }
+            const blob = await resp.blob();
+            if (blob.size === 0) throw new Error("Captcha response is empty");
+            const hasResponseSession = this.extractAndSaveCookieFromHeaders(resp, endpoint);
+            await this.captureAuthResponseCookie(hasResponseSession, previousJarSession);
+            return blob;
         } catch (err) {
             console.error("[YnufeClient] Fetch captcha blob error:", err);
             throw err;

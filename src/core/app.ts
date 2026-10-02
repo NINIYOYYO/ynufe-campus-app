@@ -20,7 +20,6 @@ import { BottomSheet } from '../components/bottomSheet';
 import { WallpaperManager } from '../components/wallpaperManager';
 import { CustomSelect } from '../components/customSelect';
 import { ThemeCustomizer } from '../components/themeCustomizer';
-import { SessionCookieManager } from '../services/cookieManager';
 import { AppConfig, StorageKeys } from '../config';
 import { CacheService } from '../services/cacheService';
 import { encodeInp } from '../utils/crypto';
@@ -53,7 +52,6 @@ export class YnufeApp {
         this.initialized = true;
 
         YnufeSession.migratePlaintextCredentials();
-        SessionCookieManager.restoreCookies().catch(() => {});
         this.bindEvents();
         AppRouter.bindSubTabEvents();
         SettingsView.bindNotifyEvents();
@@ -236,7 +234,10 @@ export class YnufeApp {
      */
     private static bindEvents(): void {
         LoginView.bindEvents(
-            () => this.loadHomeBusinessData(),
+            async () => {
+                this.startHeartbeat();
+                return this.loadHomeBusinessData();
+            },
             () => this.stopHeartbeat()
         );
 
@@ -244,8 +245,7 @@ export class YnufeApp {
         if (syncTag) {
             syncTag.addEventListener("click", async () => {
                 if (this.sessionInvalid) {
-                    toggleModal("login-overlay", true);
-                    LoginView.refreshCaptchaImg();
+                    await AppLifecycleManager.recoverSession();
                     return;
                 }
                 updateSyncStatus("syncing", "刷新中...");
@@ -253,9 +253,7 @@ export class YnufeApp {
                 if (success) {
                     updateSyncStatus("online", "数据已最新");
                 } else if (this.sessionInvalid) {
-                    updateSyncStatus("offline", "登录已过期 · 点击登录");
-                    toggleModal("login-overlay", true);
-                    LoginView.refreshCaptchaImg();
+                    await AppLifecycleManager.recoverSession();
                 } else {
                     updateSyncStatus("offline", "未同步 · 点击刷新");
                     showToast("同步失败，请检查网络后重试", "warn");

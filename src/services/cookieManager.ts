@@ -47,11 +47,12 @@ export class SessionCookieManager {
      *
      * Args:
      *     force (boolean): 是否强制覆盖已有凭据（在刷新验证码或登录成功时传入 true）。
+     *     preferSaved (boolean): 日常捕获保留已验证的会话；认证轮换时设为 false，采用路径优先的首个候选。
      *
      * Returns:
      *     Promise<string>: 捕获到的有效 JSESSIONID 字符串；若未能获取则返回空串。
      */
-    static async captureAndPersist(force: boolean = false): Promise<string> {
+    static async captureAndPersist(force: boolean = false, preferSaved: boolean = true): Promise<string> {
         let jsessionid = "";
         let jsxsd = "";
         const cap = window.Capacitor;
@@ -77,7 +78,7 @@ export class SessionCookieManager {
                         jsessionid = jsessionMatches[0][1].trim();
                     } else if (jsessionMatches.length > 1) {
                         const saved = this.getSavedJsessionId();
-                        const found = jsessionMatches.find(m => m[1].trim() === saved);
+                        const found = preferSaved && jsessionMatches.find(m => m[1].trim() === saved);
                         if (found) {
                             jsessionid = saved;
                         } else {
@@ -101,7 +102,7 @@ export class SessionCookieManager {
                     jsessionid = docMatches[0][1].trim();
                 } else if (docMatches.length > 1) {
                     const saved = this.getSavedJsessionId();
-                    const found = docMatches.find(m => m[1].trim() === saved);
+                    const found = preferSaved && docMatches.find(m => m[1].trim() === saved);
                     if (found) {
                         jsessionid = saved;
                     } else {

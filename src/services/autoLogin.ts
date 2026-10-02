@@ -16,6 +16,10 @@ export class AutoLogin {
     private static inFlight: Promise<boolean> | null = null;
     private static readonly MAX_RETRIES = 3;
 
+    static get isRunning(): boolean {
+        return this.inFlight !== null;
+    }
+
     /**
      * 尝试静默自动重新登录。
      *
@@ -24,7 +28,7 @@ export class AutoLogin {
      */
     static attempt(): Promise<boolean> {
         if (this.inFlight) return this.inFlight;
-        this.inFlight = this.doAttempt().finally(() => { this.inFlight = null; });
+        this.inFlight = Promise.resolve().then(() => this.doAttempt()).finally(() => { this.inFlight = null; });
         return this.inFlight;
     }
 
@@ -58,8 +62,10 @@ export class AutoLogin {
                     const captchaBlob = await YnufeClient.getCaptchaBlob();
                     captchaCode = await CaptchaOCR.recognize(captchaBlob);
                 } catch (e) {
-                    console.warn("[AutoLogin] Captcha fetch or OCR failed, proceeding with blank code:", e);
+                    console.warn("[AutoLogin] Captcha fetch or OCR failed, retrying:", e);
+                    continue;
                 }
+                if (!captchaCode.trim()) continue;
 
                 const encoded = `${encodeInp(user)}%%%${encodeInp(pass)}`;
                 const loginHtml = await YnufeClient.postForm("/jsxsd/xk/LoginToXkLdap", {

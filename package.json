@@ -1,6 +1,6 @@
 {
   "name": "ynufe-campus-app",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "YNufe Campus App Enterprise Edition",
   "author": "NINIYOYYO",
   "license": "MIT",
@@ -17,7 +17,7 @@
     "capture:fixtures": "node tests/capture-fixtures.mjs",
     "test:parsers": "node tests/parsers.test.mjs",
     "test": "node tests/parsers.test.mjs && node tests/cookieManager.test.mjs && node tests/reminderScheduler.test.mjs && node tests/cacheService.test.mjs && node tests/crypto.test.mjs && node tests/heartbeat.test.mjs && node tests/loginFlow.test.mjs && node tests/ui_architecture.test.mjs && node tests/frontend_optimizations.test.mjs && node tests/adversarial_probe.mjs && node tests/notificationManager.test.mjs && npm run test:regressions",
-    "test:regressions": "node tests/campusTimetable.test.mjs && node tests/nativeHttp.test.mjs && node tests/fixturePrivacy.test.mjs"
+    "test:regressions": "node tests/campusTimetable.test.mjs && node tests/nativeHttp.test.mjs && node tests/fixturePrivacy.test.mjs && node tests/startupRecovery.test.mjs && node tests/captchaRecovery.test.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",
