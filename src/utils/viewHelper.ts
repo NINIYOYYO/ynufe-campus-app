@@ -28,7 +28,7 @@ export async function withViewLoading<T>(
     try {
         return await task();
     } catch (err) {
-        handleLoadError(options.moduleName, err);
+        handleLoadError(options.moduleName, err, !!options.silent);
         return null;
     } finally {
         if (!options.silent) {

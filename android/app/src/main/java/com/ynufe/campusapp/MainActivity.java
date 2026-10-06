@@ -31,15 +31,37 @@ public class MainActivity extends BridgeActivity {
             CookieHandler.setDefault(new CookieHandler() {
                 @Override
                 public Map<String, List<String>> get(URI uri, Map<String, List<String>> requestHeaders) throws IOException {
-                    Map<String, List<String>> map = new HashMap<>(requestHeaders);
+                    Map<String, List<String>> res = new HashMap<>();
+                    boolean hasExplicitJsession = false;
+                    if (requestHeaders != null) {
+                        for (String key : requestHeaders.keySet()) {
+                            if ("cookie".equalsIgnoreCase(key)) {
+                                List<String> cookies = requestHeaders.get(key);
+                                if (cookies != null) {
+                                    for (String c : cookies) {
+                                        if (c != null && c.contains("JSESSIONID=")) {
+                                            hasExplicitJsession = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            if (hasExplicitJsession) break;
+                        }
+                    }
+                    if (hasExplicitJsession) {
+                        return Collections.emptyMap();
+                    }
+
                     if (uri != null) {
                         String url = uri.toString();
                         String cookie = CookieManager.getInstance().getCookie(url);
                         if (cookie != null && !cookie.isEmpty()) {
-                            map.put("Cookie", Collections.singletonList(cookie));
+                            String sanitized = CookieHeaderPolicy.sanitize(cookie);
+                            res.put("Cookie", Collections.singletonList(sanitized));
                         }
                     }
-                    return map;
+                    return res;
                 }
 
                 @Override
@@ -53,8 +75,7 @@ public class MainActivity extends BridgeActivity {
                         if (setCookieList != null) {
                             for (String cookieStr : setCookieList) {
                                 CookieManager.getInstance().setCookie(url, cookieStr);
-                                if (cookieStr.contains("JSESSIONID")) {
-                                    // 给 JSESSIONID 强制注入 2038 远期过期时间以保存在磁盘 SQLite
+                                if (url.contains("/jsxsd") && cookieStr.contains("JSESSIONID")) {
                                     String persistentCookie = cookieStr + "; Expires=Fri, 31 Dec 2038 23:59:59 GMT; Path=/jsxsd";
                                     CookieManager.getInstance().setCookie(url, persistentCookie);
                                 }

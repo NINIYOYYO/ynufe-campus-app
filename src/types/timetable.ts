@@ -31,6 +31,20 @@ export interface SemesterOption {
     selected?: boolean;
 }
 
+export interface TimeModeOption {
+    value: string;
+    text: string;
+    selected?: boolean;
+}
+
+export interface TimetableSessionTime {
+    session: number;
+    slots: number[];
+    start: string;
+    end: string;
+    label: string;
+}
+
 /**
  * 完整课表数据集
  */
@@ -41,5 +55,7 @@ export interface TimetableData {
     currentSemesterId?: string;
     currentWeek?: number; // 当前教务系统默认/选中的教学周 (1-20)
     week1MondayIso?: string; // 固化的第 1 教学周周一 00:00:00 ISO 字符串基准点
+    timeModes?: TimeModeOption[];
+    timeModeId?: string;
+    sessionTimes?: TimetableSessionTime[];
 }
-

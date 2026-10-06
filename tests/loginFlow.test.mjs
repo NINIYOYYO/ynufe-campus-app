@@ -3,7 +3,7 @@ import esbuild from 'esbuild';
 import path from 'node:path';
 import { rmSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { parseHTML } from 'linkedom';
+import { parseHTML, DOMParser } from 'linkedom';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -68,6 +68,7 @@ globalThis.window.location = {
     href: "http://localhost/"
 };
 globalThis.document = document;
+globalThis.DOMParser = DOMParser;
 let cookieStore = "";
 Object.defineProperty(globalThis.document, 'cookie', {
     get: () => cookieStore,
@@ -129,8 +130,11 @@ const {
     YnufeClient,
     AutoLogin,
     CaptchaOCR,
-    YnufeSession
+    YnufeSession,
+    SessionCookieManager
 } = await import(pathToFileURL(OUT_FILE).href);
+
+const verifySession = AutoLogin.verifySession.bind(AutoLogin);
 
 console.log("=== 开始运行 智能验证码自动识别与自动登录实测 (真实生产模块) ===");
 
@@ -231,6 +235,39 @@ try {
         assert.equal(YnufeSession.getHasSession(), true, "登录成功后 session 标记必须置为 true");
         assert.equal(YnufeSession.getUsername(), "2023110099", "登录成功后凭据必须正确持久化");
         console.log("[PASS] 用例 5: 真实登录成功生命周期全链路穿透测试通过");
+    }
+
+    // 验证成功后，即便原生 Cookie Jar 仍有旧作用域，也必须继续使用已验证的请求凭据。
+    {
+        const previousCapacitor = window.Capacitor;
+        const previousGetHtml = YnufeClient.getHtml;
+        const requestCookies = [];
+        window.Capacitor = {
+            Plugins: {
+                NativeCookie: {
+                    getCookie: async () => ({ cookie: "JSESSIONID=STALE_ROOT_SESSION; jsxsd=TEST_USER" }),
+                    setCookie: async () => {}
+                }
+            }
+        };
+        SessionCookieManager.saveJsessionId("VERIFIED_SESSION", "TEST_USER");
+        YnufeClient.getHtml = async () => {
+            requestCookies.push(SessionCookieManager.getCookieHeader().Cookie);
+            return `<html><body>${["", "测试用户", "TEST_USER", "测试学院", "测试专业", "测试班级"]
+                .map(v => `<div class="middletopdwxxcont">${v}</div>`).join("")}</body></html>`;
+        };
+        try {
+            assert.equal(await verifySession(), true, "有效首页应通过会话验证");
+            await YnufeClient.getHtml("/jsxsd/framework/xsMain_new.jsp?t1=1");
+            assert.deepEqual(requestCookies, [
+                "JSESSIONID=VERIFIED_SESSION; jsxsd=TEST_USER",
+                "JSESSIONID=VERIFIED_SESSION; jsxsd=TEST_USER"
+            ], "验证成功后下一次请求必须仍携带同一个有效会话");
+            console.log("[PASS] 用例 6: 会话验证不会用原生旧 Cookie 覆盖已验证的会话");
+        } finally {
+            window.Capacitor = previousCapacitor;
+            YnufeClient.getHtml = previousGetHtml;
+        }
     }
 
     console.log("==========================================");

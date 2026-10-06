@@ -16,6 +16,10 @@ export class AutoLogin {
     private static inFlight: Promise<boolean> | null = null;
     private static readonly MAX_RETRIES = 3;
 
+    static get isRunning(): boolean {
+        return this.inFlight !== null;
+    }
+
     /**
      * 尝试静默自动重新登录。
      *
@@ -24,7 +28,7 @@ export class AutoLogin {
      */
     static attempt(): Promise<boolean> {
         if (this.inFlight) return this.inFlight;
-        this.inFlight = this.doAttempt().finally(() => { this.inFlight = null; });
+        this.inFlight = Promise.resolve().then(() => this.doAttempt()).finally(() => { this.inFlight = null; });
         return this.inFlight;
     }
 
@@ -58,8 +62,10 @@ export class AutoLogin {
                     const captchaBlob = await YnufeClient.getCaptchaBlob();
                     captchaCode = await CaptchaOCR.recognize(captchaBlob);
                 } catch (e) {
-                    console.warn("[AutoLogin] Captcha fetch or OCR failed, proceeding with blank code:", e);
+                    console.warn("[AutoLogin] Captcha fetch or OCR failed, retrying:", e);
+                    continue;
                 }
+                if (!captchaCode.trim()) continue;
 
                 const encoded = `${encodeInp(user)}%%%${encodeInp(pass)}`;
                 const loginHtml = await YnufeClient.postForm("/jsxsd/xk/LoginToXkLdap", {
@@ -108,8 +114,8 @@ export class AutoLogin {
             const profile = ProfileParser.parseProfile(html);
             const isValid = !!profile.name && profile.name !== "未登录";
             if (isValid) {
-                // 确定为有效已登录 Session，锁死保存最新 JSESSIONID
-                await SessionCookieManager.captureAndPersist(true);
+                // 请求已使用保存的会话验证成功；Cookie Jar 中的旧作用域不能覆盖它。
+                await SessionCookieManager.captureAndPersist();
             }
             return isValid;
         } catch {

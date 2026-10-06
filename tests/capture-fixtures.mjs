@@ -1,20 +1,22 @@
 /**
  * 抓取教务网真实响应，脱敏后存为解析器回归测试的 fixture。
  *
- * 这些页面含个人信息（姓名/学号/成绩），因此不随仓库分发，需要开发者本地生成一次：
+ * 这些页面含个人信息（姓名/学号/成绩），抓取结果仅写入 Git 忽略目录：
  *
  *   1. 浏览器登录 https://xjwis.ynufe.edu.cn/jsxsd/ ，从开发者工具复制 Cookie
  *   2. set YNUFE_COOKIE=JSESSIONID=...; jsxsd=...     (PowerShell: $env:YNUFE_COOKIE="...")
- *   3. npm run capture:fixtures
+ *   3. 同时设置 YNUFE_REAL_NAME 和 YNUFE_REAL_ID 为账户的真实姓名和学号
+ *   4. npm run capture:fixtures
  *
- * 脚本会把姓名与学号替换为占位值后再落盘。会话很快过期，重跑一次即可。
+ * 检查 .agents/captured-fixtures 中的页面，确认没有其他个人信息后，手动复制到 tests/fixtures。
  */
 import { writeFileSync, readFileSync, mkdirSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
+import { requireRedactionIdentity, redactFixture } from './fixturePrivacy.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const OUT = join(HERE, 'fixtures');
+const OUT = join(HERE, '..', '.agents', 'captured-fixtures');
 const HOST = 'https://xjwis.ynufe.edu.cn';
 
 const COOKIE = process.env.YNUFE_COOKIE;
@@ -29,16 +31,13 @@ const TERM = process.env.YNUFE_TERM || '2025-2026-2';
 const KBJCMSID = process.env.YNUFE_KBJCMSID || 'C8B3C60AE20444B499A15ABFA3ECFF9D';
 
 /** 脱敏规则：真实姓名与学号 → 占位值。通过环境变量安全注入。 */
-const rawRedactions = [
-    [process.env.YNUFE_REAL_NAME, '张三'],
-    [process.env.YNUFE_REAL_ID, '200000000000'],
-];
-const seenKeys = new Set();
-const REDACTIONS = rawRedactions.filter(([from]) => {
-    if (!from || seenKeys.has(from)) return false;
-    seenKeys.add(from);
-    return true;
-});
+let identity;
+try {
+    identity = requireRedactionIdentity(process.env);
+} catch (error) {
+    console.error(error.message);
+    process.exit(1);
+}
 
 /**
  * 请求单个教务网页面。
@@ -98,7 +97,7 @@ for (const [name, endpoint, body] of TARGETS) {
             failed++;
             continue;
         }
-        for (const [from, to] of REDACTIONS) html = html.split(from).join(to);
+        html = redactFixture(html, identity);
 
         writeFileSync(join(OUT, `${name}.html`), html, 'utf-8');
         console.log(`  ✓ ${name.padEnd(16)} ${String(html.length).padStart(7)} chars`);
@@ -115,7 +114,7 @@ try {
     const m = specificMatch || listHtml.match(/openWindow\(\s*['"]([^'"]*ggly_show[^'"]*)['"]/);
     if (m) {
         let html = await fetchPage(m[1]);
-        for (const [from, to] of REDACTIONS) html = html.split(from).join(to);
+        html = redactFixture(html, identity);
         writeFileSync(join(OUT, 'announcement_detail.html'), html, 'utf-8');
         console.log(`  ✓ ${'announcement_detail'.padEnd(16)} ${String(html.length).padStart(7)} chars`);
     } else {
@@ -132,7 +131,7 @@ try {
     const m = gradesHtml.match(/openWindow\(\s*['"]([^'"]*pscj_list[^'"]*)['"]/);
     if (m) {
         let html = await fetchPage(m[1].replace(/&amp;/g, '&'));
-        for (const [from, to] of REDACTIONS) html = html.split(from).join(to);
+        html = redactFixture(html, identity);
         writeFileSync(join(OUT, 'score_detail.html'), html, 'utf-8');
         console.log(`  ✓ ${'score_detail'.padEnd(16)} ${String(html.length).padStart(7)} chars`);
     } else {
@@ -148,7 +147,5 @@ console.log(
         ? '\nfixture 抓取完成，现在可以运行 npm run test:parsers'
         : `\n有 ${failed} 个 fixture 抓取失败`
 );
-if (REDACTIONS.length === 0) {
-    console.warn('注意：未设置 YNUFE_REAL_NAME / YNUFE_REAL_ID，fixture 中仍含真实姓名与学号，请勿提交到公开仓库。');
-}
+console.log(`样本保存在 Git 忽略目录 ${OUT}。人工检查个人信息后，再选择样本复制到 tests/fixtures。`);
 process.exit(failed === 0 ? 0 : 1);

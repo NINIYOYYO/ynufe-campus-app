@@ -35,6 +35,13 @@ export const AppConfig = {
      * 注意：这是学校教务配置的一个固定 GUID，若学校重新配置作息表会失效，需要抓包更新。
      */
     CLASSROOM_QUERY_KBJCMSID: "C8B3C60AE20444B499A15ABFA3ECFF9D",
+    /** 教室校区编码和时间模式编码是不同的字段。 */
+    CLASSROOM_TIME_MODES: {
+        '1': 'C8B3C60AE20444B499A15ABFA3ECFF9D',
+        '2': '99AD70D6C93069BEE0531FC610ACA67C',
+        '3': '0333E246CBD0461D8FDC24DB443C67A8',
+        'E298641275B7471181C291FA9BC76452': '49FBA90C4D064812908BAB02593318B2',
+    } as Record<string, string>,
 
     /**
      * 根据当前日期推算默认学年学期 ID（如 "2025-2026-1"）。

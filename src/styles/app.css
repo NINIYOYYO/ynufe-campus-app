@@ -124,7 +124,7 @@ body {
     color: var(--text-primary);
     overflow-x: hidden;
     min-height: 100vh;
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 125px); /* 垫高底部，为悬浮玻璃 Dock 预留无障碍滚动呼吸空间并适配全面屏安全区 */
+    padding-bottom: calc(var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)) + 125px); /* 垫高底部，为悬浮玻璃 Dock 预留无障碍滚动呼吸空间并适配全面屏安全区 */
     transition: background-color 0.8s ease, background-image 0.8s ease;
 }
 
@@ -644,7 +644,7 @@ select option {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 25px;
-    padding-top: env(safe-area-inset-top);
+    padding-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
 }
 
 .user-greeting p {
@@ -957,7 +957,7 @@ select option {
 /* === 课表页面与网格 === */
 .section-header {
     margin-bottom: 20px;
-    padding-top: calc(env(safe-area-inset-top, 0px) + 6px);
+    padding-top: calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 6px);
 }
 
 .section-header h1 {
@@ -1279,7 +1279,7 @@ body.theme-light .bg-color-btn.active {
 
 
 #tab-timetable {
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 95px);
+    padding-bottom: calc(var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)) + 95px);
 }
 
 .timetable-scroll-wrapper {
@@ -1320,7 +1320,8 @@ body.theme-light .bg-color-btn.active {
     width: 100%;
 }
 
-/* 晚间节次智能收拢：无 11-14 节课程时自动收起，节省 170px 垂直高度，避开底部浮动导航 */
+/* 晚间扩展行智能收拢，校区没有的大节始终隐藏。 */
+.timetable-grid .grid-session-unavailable,
 .timetable-grid.hide-late .grid-session-late {
     display: none !important;
 }
@@ -1906,7 +1907,7 @@ body.theme-light .bg-color-btn.active {
 /* === 底部固定导航栏 (5 Tabs) 升级为悬浮 Dock 玻璃栏 === */
 .bottom-nav {
     position: fixed;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+    bottom: calc(var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)) + 16px);
     left: 16px;
     right: 16px;
     width: calc(100vw - 32px);
@@ -2228,7 +2229,7 @@ body.theme-light .logout-icon {
 /* ---------- 1. Toast 轻提示（替代 alert） ---------- */
 #toast-container {
     position: fixed;
-    top: calc(env(safe-area-inset-top, 0px) + 18px);
+    top: calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 18px);
     left: 0;
     right: 0;
     z-index: 999999;

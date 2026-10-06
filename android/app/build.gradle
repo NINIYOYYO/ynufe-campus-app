@@ -1,5 +1,17 @@
 apply plugin: 'com.android.application'
 
+def signingProperties = new Properties()
+def signingPropertiesFile = rootProject.file('keystore.properties')
+if (signingPropertiesFile.exists()) {
+    signingPropertiesFile.withInputStream { signingProperties.load(it) }
+}
+def signingValue = { name -> System.getenv(name) ?: signingProperties.getProperty(name) }
+def releaseKeyPath = signingValue('ANDROID_KEYSTORE_PATH')
+def releaseStorePassword = signingValue('ANDROID_KEYSTORE_PASSWORD')
+def releaseKeyAlias = signingValue('ANDROID_KEY_ALIAS')
+def releaseKeyPassword = signingValue('ANDROID_KEY_PASSWORD')
+def releaseSigningReady = releaseKeyPath && releaseStorePassword && releaseKeyAlias && releaseKeyPassword
+
 android {
     namespace "com.ynufe.campusapp"
     compileSdk rootProject.ext.compileSdkVersion
@@ -7,8 +19,8 @@ android {
         applicationId "com.ynufe.campusapp"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 110
-        versionName "1.1.0"
+        versionCode 112
+        versionName "1.1.2"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,11 +28,28 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (releaseSigningReady) {
+                storeFile rootProject.file(releaseKeyPath)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
     buildTypes {
         release {
+            if (releaseSigningReady) signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+    }
+}
+
+gradle.taskGraph.whenReady { graph ->
+    if (graph.hasTask(':app:assembleRelease') && !releaseSigningReady) {
+        throw new GradleException('Release signing missing. Configure ANDROID_KEYSTORE_PATH, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS and ANDROID_KEY_PASSWORD.')
     }
 }
 

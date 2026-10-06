@@ -13,6 +13,11 @@ jobs:
   build-apk:
     name: Build & Release APK
     runs-on: ubuntu-latest
+    env:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
 
     steps:
       - name: Checkout repository
@@ -21,34 +26,50 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Setup Java JDK
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '21'
 
       - name: Setup uv
         uses: astral-sh/setup-uv@v5
         with:
           version: "latest"
           python-version: "3.10"
+          enable-cache: false
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Test application and dependencies
+        run: |
+          npm test
+          npm audit --audit-level=moderate
+
+      - name: Prepare fixed release signing key
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/campus-release.jks
+        run: |
+          python .github/scripts/prepare_signing.py
+          echo "ANDROID_KEYSTORE_PATH=$ANDROID_KEYSTORE_PATH" >> "$GITHUB_ENV"
 
       - name: Make Gradle Wrapper Executable
         run: chmod +x android/gradlew
 
       - name: Build Android APK via build_apk.py
-        run: python build_apk.py
+        run: python build_apk.py --release
+
+      - name: Verify release signature
+        run: python .github/scripts/verify_apk.py 云财学子_Release.apk
 
       - name: Stage Release Artifact
         run: |
           mkdir -p release-artifacts
-          cp 云财学子.apk release-artifacts/云财学子.apk
+          cp 云财学子_Release.apk release-artifacts/云财学子.apk
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4

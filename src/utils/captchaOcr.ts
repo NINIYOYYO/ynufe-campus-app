@@ -444,6 +444,7 @@ export function recognizeCaptchaRgba(
  * 封装给外部业务（如 autoLogin.ts、loginView.ts）的统一验证码识别门面类。
  */
 export class CaptchaOCR {
+  private static readonly IMAGE_DECODE_TIMEOUT_MS = 5000;
   /**
    * 识别验证码输入源并返回 4 位英数字符串。
    *
@@ -469,44 +470,44 @@ export class CaptchaOCR {
     const img = new Image();
     let blobUrl = '';
 
-    if (typeof input === 'string') {
-      img.src = input.startsWith('data:') ? input : `data:image/jpeg;base64,${input}`;
-    } else if (input instanceof Blob) {
-      blobUrl = URL.createObjectURL(input);
-      img.src = blobUrl;
-    } else if (input instanceof ArrayBuffer) {
-      const b = new Blob([input], { type: 'image/jpeg' });
-      blobUrl = URL.createObjectURL(b);
-      img.src = blobUrl;
-    }
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    try {
+      let source: string;
+      if (typeof input === 'string') {
+        source = input.startsWith('data:') ? input : `data:image/jpeg;base64,${input}`;
+      } else {
+        const blob = input instanceof Blob ? input : new Blob([input], { type: 'image/jpeg' });
+        blobUrl = URL.createObjectURL(blob);
+        source = blobUrl;
+      }
 
-    await new Promise<void>((resolve, reject) => {
-      img.onload = () => resolve();
-      img.onerror = () => reject(new Error('Failed to load captcha image into element'));
-    });
+      await new Promise<void>((resolve, reject) => {
+        // 部分 WebView 会在设置 src 后立即完成缓存图片解码，必须先注册事件。
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error('Failed to load captcha image into element'));
+        timeoutId = setTimeout(() => reject(new Error('Captcha image decoding timed out')), this.IMAGE_DECODE_TIMEOUT_MS);
+        img.src = source;
+      });
 
-    const canvas = document.createElement('canvas');
-    canvas.width = img.naturalWidth || img.width;
-    canvas.height = img.naturalHeight || img.height;
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    if (!ctx) {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth || img.width;
+      canvas.height = img.naturalHeight || img.height;
+      if (!canvas.width || !canvas.height) throw new Error('Captcha image has no pixels');
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      if (!ctx) throw new Error('Cannot get 2d context for captcha decoding');
+
+      // 保留验证码原始像素，避免高分辨率 WebView 的平滑插值影响识别。
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(img, 0, 0);
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const result = recognizeCaptchaRgba(imgData.data, canvas.width, canvas.height);
+      return result;
+    } finally {
+      if (timeoutId !== undefined) clearTimeout(timeoutId);
+      img.onload = null;
+      img.onerror = null;
       if (blobUrl) URL.revokeObjectURL(blobUrl);
-      throw new Error('Cannot get 2d context for captcha decoding');
     }
-
-    // 关闭 Canvas 双线性平滑插值滤波，保持高分辨率屏幕与 Webview 下的原始二值化像素精度
-    ctx.imageSmoothingEnabled = false;
-
-    ctx.drawImage(img, 0, 0);
-    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-    if (blobUrl) {
-      URL.revokeObjectURL(blobUrl);
-    }
-
-    const result = recognizeCaptchaRgba(imgData.data, canvas.width, canvas.height);
-    console.log(`[CaptchaOCR] Output: "${result.text}" (Confidence: ${(result.confidence * 100).toFixed(1)}%, chars: [${result.charConfidences.map(c => (c * 100).toFixed(0) + '%').join(', ')}])`);
-    return result;
   }
 }
 

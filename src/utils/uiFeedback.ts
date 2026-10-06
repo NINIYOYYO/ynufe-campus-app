@@ -109,11 +109,13 @@ export function showLoading(show: boolean, msg: string = "加载中..."): void {
  * Args:
  *     moduleName (string): 出错模块的中文名。
  *     e (unknown): 捕获到的异常。
+ *     silent (boolean, optional): 是否静默（为 true 时仅记录日志不弹出错误 Toast 弹窗）。
  */
-export function handleLoadError(moduleName: string, e: unknown): void {
-    if (e instanceof SessionExpiredError) return;
+export function handleLoadError(moduleName: string, e: unknown, silent: boolean = false): void {
+    if (e instanceof SessionExpiredError || (e as Error)?.name === "SessionExpiredError") return;
+    if (silent) return;
 
-    if (e instanceof ParseError) {
+    if (e instanceof ParseError || (e as Error)?.name === "ParseError") {
         console.error(`[YnufeUI] ${moduleName} 解析失败:`, e);
         showToast(`${moduleName}解析异常，可能是教务系统改版`, "error");
         return;

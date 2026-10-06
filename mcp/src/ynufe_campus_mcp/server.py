@@ -37,6 +37,10 @@ UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
 _ENCODE_KEY = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
 
 
+class SessionExpiredError(RuntimeError):
+    """The school returned a login page instead of the requested business data."""
+
+
 def encode_inp(s: str) -> str:
     out = ""
     i = 0
@@ -70,21 +74,36 @@ class YnufeSession:
         self.student_name: str | None = None
         self.student_id: str | None = None
 
+    def _check_response(self, response) -> str:
+        response.raise_for_status()
+        response.encoding = response.apparent_encoding or "utf-8"
+        html = response.text
+        login_form = re.search(r'(?:name|id)\s*=\s*[\"\']?userAccount\b', html, re.I)
+        login_url = re.search(r'/(?:sys|xk)/login\.jsp', getattr(response, "url", ""), re.I)
+        business = any(marker in html for marker in ('id="kbtable"', 'id="dataList"', "middletopdwxxcont", 'id="Table1"'))
+        expired = any(marker in html for marker in ("非法访问", "请重新登录", "登录超时")) and not business
+        if login_form or login_url or expired:
+            self.logged_in = False
+            self.student_name = None
+            self.student_id = None
+            raise SessionExpiredError("教务会话已过期，请重新调用 login 登录")
+        return html
+
     def _get(self, path: str) -> str:
         r = self.s.get(HOST + path, timeout=self.timeout,
                        headers={"Referer": f"{HOST}/jsxsd/framework/xsMain.jsp"})
-        r.raise_for_status()
-        r.encoding = r.apparent_encoding or "utf-8"
-        return r.text
+        return self._check_response(r)
 
     def _post(self, path: str, data: dict, referer: str | None = None) -> str:
         hdrs = {}
         if referer:
             hdrs["Referer"] = HOST + referer
         r = self.s.post(HOST + path, data=data, timeout=self.timeout, headers=hdrs)
-        r.raise_for_status()
-        r.encoding = r.apparent_encoding or "utf-8"
-        return r.text
+        if "LoginToXkLdap" in path:
+            r.raise_for_status()
+            r.encoding = r.apparent_encoding or "utf-8"
+            return r.text
+        return self._check_response(r)
 
     def get_captcha(self) -> bytes:
         return self.s.get(f"{HOST}/jsxsd/verifycode.servlet?t={time.time()}",
@@ -116,7 +135,7 @@ class YnufeSession:
             # 验证会话
             try:
                 main = self._get("/jsxsd/framework/xsMain_new.jsp?t1=1")
-            except requests.RequestException:
+            except (requests.RequestException, SessionExpiredError):
                 continue
             if len(main) > 2000:
                 name, sid = self._parse_profile(main)
@@ -488,7 +507,12 @@ def build_tools(get_session) -> list[dict]:
     def tool_login(user: str | None = None, password: str | None = None, max_retries: int = 5) -> dict:
         s = sess()
         if s.logged_in:
-            return {"ok": True, "already_logged_in": True, "name": s.student_name}
+            try:
+                s._get("/jsxsd/framework/xsMain_new.jsp?t1=1")
+            except SessionExpiredError:
+                pass
+            else:
+                return {"ok": True, "already_logged_in": True, "name": s.student_name}
         if not user or not password:
             return {"ok": False, "error": "需要提供 user (学号) 和 password"}
         return s.login_with_ocr(user, password, max_retries=max_retries)
@@ -596,6 +620,9 @@ def run_stdio(get_session) -> None:
         except json.JSONDecodeError:
             send({"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": "parse error"}})
             continue
+        if not isinstance(msg, dict) or msg.get("jsonrpc") != "2.0" or not isinstance(msg.get("method"), str):
+            send({"jsonrpc": "2.0", "id": None, "error": {"code": -32600, "message": "invalid request"}})
+            continue
         method = msg.get("method")
         msg_id = msg.get("id")
         if method == "initialize":
@@ -611,6 +638,9 @@ def run_stdio(get_session) -> None:
                                         "inputSchema": t["inputSchema"]} for t in tools]}})
         elif method == "tools/call":
             params = msg.get("params", {})
+            if not isinstance(params, dict) or not isinstance(params.get("arguments", {}), dict):
+                send({"jsonrpc": "2.0", "id": msg_id, "error": {"code": -32602, "message": "invalid params"}})
+                continue
             name = params.get("name")
             args = params.get("arguments", {})
             tool = next((t for t in tools if t["name"] == name), None)
